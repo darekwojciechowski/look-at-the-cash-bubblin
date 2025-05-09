@@ -12,8 +12,8 @@
 *history*
 *operacji*
 
-# Ensure example file for_google_spreadsheet.csv is not ignored
-!assets/for_google_spreadsheet.csv
+# Ensure example_for_google_spreadsheet.csv is not ignored
+!assets/example_for_google_spreadsheet.csv
 
 .DS_Store
 

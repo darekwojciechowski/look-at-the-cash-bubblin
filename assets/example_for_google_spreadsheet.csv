@@ -1,0 +1,31 @@
+Month	Year	Item	Category	Amount	Importance
+1	2025	FOOD	🥦 Food	50,0	Essential
+1	2025	GREENFOOD	🥦 Food	30,0	Essential
+1	2025	TRANSPORTATION	🚊 Transportation	15,0	Have to Have
+1	2025	FUEL	🚗 Car	200,0	Have to Have
+1	2025	REPAIRS	🚗 Car	500,0	Have to Have
+1	2025	COFFEE	🦞 Eating Out	15,0	Nice to Have
+1	2025	FASTFOOD	🥦 Food	25,0	Essential
+1	2025	GROCERIES	🦞 Eating Out	100,0	Nice to Have
+1	2025	CATERING	🦞 Eating Out	300,0	Nice to Have
+1	2025	ALCOHOL	☠ Self Destruction	50,0	Shouldn't Have
+1	2025	APARTMENT	🏯 Apartment	1500,0	Essential
+1	2025	BILLS	🏯 Apartment	200,0	Essential
+1	2025	RENOVATION	🏯 Apartment	1000,0	Essential
+1	2025	CLOTHES	👘 Clothes	200,0	Nice to Have
+1	2025	JEWELRY	👘 Clothes	500,0	Nice to Have
+1	2025	ENTERTAINMENT	🎥 Entertainment	50,0	Nice to Have
+1	2025	Misc	Misc	200,0	Nice to Have
+1	2025	BIKE	🛀🏾 Care	100,0	Nice to Have
+1	2025	SPORT	🛀🏾 Care	150,0	Nice to Have
+1	2025	PHARMACY	🛀🏾 Care	50,0	Nice to Have
+1	2025	COSMETICS	🛀🏾 Care	100,0	Nice to Have
+1	2025	TRAVEL	🗺️ Travel	500,0	Nice to Have
+1	2025	BOOKS	🚀 Self Development	30,0	Nice to Have
+1	2025	ANIMALS	🐺 Animals	100,0	Have to Have
+1	2025	INSURANCE	🛀🏾 Care	300,0	Nice to Have
+1	2025	SUBSCRIPTIONS	🎥 Entertainment	50,0	Nice to Have
+1	2025	INVESTMENTS	💸 Investments	200,0	Nice to Have
+1	2025	SELF_DEVELOPMENT	🚀 Self Development	150,0	Nice to Have
+1	2025	ELECTRONIC	🛒 Shopping	300,0	Nice to Have
+1	2025	SHOPPING	🛒 Shopping	100,0	Nice to Have
