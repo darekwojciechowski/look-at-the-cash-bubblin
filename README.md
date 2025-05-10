@@ -26,11 +26,12 @@
 
 ## 🚀 How to Use
 1. Place your transaction CSV file in the `data/` directory.
-2. Run the main script:
+2. Fill the `data_processing/category.py` file with your personal category data.
+3. Run the main script:
    ```bash
    python main.py
    ```
-3. Processed data will be available in `for_google_spreadsheet.csv`.
+4. Processed data will be available in `for_google_spreadsheet.csv`.
 
 ## 🤔 Why I Built This
 
