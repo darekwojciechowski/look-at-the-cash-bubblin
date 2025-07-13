@@ -3,7 +3,7 @@ import pandas as pd
 from data_processing.data_imports import read_transaction_csv
 from data_processing.data_core import process_dataframe
 from data_processing.exporter import export_for_google_sheets, export_misc_transactions
-from logging_setup import setup_logging
+from config.logging_setup import setup_logging
 
 # Constants
 CSV_INPUT_FILE = 'data/demo_ipko.csv'
