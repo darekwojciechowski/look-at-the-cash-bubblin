@@ -72,3 +72,19 @@ def test_process_dataframe(mock_ipko_import, sample_dataframe, mappings_mock):
     # Verify column order
     expected_columns = ["month", "year", "price", "category", "data"]
     assert list(processed_df.columns) == expected_columns
+
+
+@patch("data_processing.data_core.ipko_import")
+@patch("logging.error")
+def test_process_dataframe_ipko_import_failure(mock_logging_error, mock_ipko_import, sample_dataframe):
+    """Test process_dataframe when ipko_import fails."""
+    # Mock ipko_import to raise an exception
+    mock_ipko_import.side_effect = Exception("Import failed")
+
+    # Verify that the exception is raised and logged
+    with pytest.raises(Exception, match="Import failed"):
+        process_dataframe(sample_dataframe)
+
+    # Verify that error was logged
+    mock_logging_error.assert_called_once_with(
+        "ipko_import failed: Import failed")

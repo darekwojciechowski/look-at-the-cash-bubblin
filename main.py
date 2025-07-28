@@ -23,9 +23,6 @@ def main():
     # Print processed DataFrame to terminal (only once)
     logging.info("Processed DataFrame preview:")
 
-    # Print row data for debugging
-    # print(processed_df.to_string())
-
     # Export Misc transactions for manual review
     export_misc_transactions(processed_df)
 

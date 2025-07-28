@@ -68,3 +68,22 @@ def test_read_transaction_csv(mock_read_csv, mock_file):
     assert not df.empty
     assert df["col1"].iloc[0] == "val1"
     assert df["col2"].iloc[0] == "val2"
+
+
+@patch("pandas.read_csv")
+@patch("logging.error")
+def test_read_transaction_csv_file_error(mock_logging_error, mock_read_csv):
+    """
+    Tests the read_transaction_csv function when file reading fails.
+    """
+    # Mock read_csv to raise an exception
+    mock_read_csv.side_effect = FileNotFoundError("File not found")
+
+    # Verify that the exception is raised and logged
+    with pytest.raises(FileNotFoundError, match="File not found"):
+        read_transaction_csv("nonexistent.csv", "utf-8")
+
+    # Verify that error was logged
+    mock_logging_error.assert_called_once_with(
+        "Failed to read CSV file: nonexistent.csv. Error: File not found"
+    )
