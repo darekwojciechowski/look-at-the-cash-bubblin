@@ -28,6 +28,7 @@ class IMPORTANCE(Enum):
     NICE_TO_HAVE = "Nice to Have"
     HAVE_TO_HAVE = "Have to Have"
     ESSENTIAL = "Essential"
+    NEEDS_REVIEW = "Needs Review"
 
 
 class Expense:
@@ -68,7 +69,7 @@ class Expense:
             return CATEGORY.TRAVEL, IMPORTANCE.NICE_TO_HAVE
         if "alcohol" in item or "fastfood" in item:
             return CATEGORY.SELF_DESTRUCTION, IMPORTANCE.SHOULDNT_HAVE
-        return CATEGORY.MISC, IMPORTANCE.NICE_TO_HAVE
+        return CATEGORY.MISC, IMPORTANCE.NEEDS_REVIEW
 
     def __repr__(self) -> str:
         return f"{self.month},{self.year},{self.item},{self.category.value},{self.price},{self.importance.value}"

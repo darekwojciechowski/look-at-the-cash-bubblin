@@ -13,7 +13,7 @@ from data_processing.data_loader import Expense, CATEGORY, IMPORTANCE
          CATEGORY.INVESTMENTS, IMPORTANCE.NICE_TO_HAVE),
         (7, 2023, "travel to Paris", 800, CATEGORY.TRAVEL, IMPORTANCE.NICE_TO_HAVE),
         (8, 2023, "pharmacy purchase", 50, CATEGORY.CARE, IMPORTANCE.NICE_TO_HAVE),
-        (9, 2023, "unknown expense", 100, CATEGORY.MISC, IMPORTANCE.NICE_TO_HAVE),
+        (9, 2023, "unknown expense", 100, CATEGORY.MISC, IMPORTANCE.NEEDS_REVIEW),
     ],
 )
 def test_expense_category_and_importance(
