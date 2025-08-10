@@ -3,6 +3,32 @@ import urllib.parse
 import re
 
 
+def clean_location_text(location):
+    """Remove unnecessary country information and clean up formatting"""
+    if not location:
+        return location
+
+    # Remove country information (any pattern like "kraj: xxxxx")
+    location = re.sub(r'\s*kraj\s*:\s*[^,]*',
+                      '', location, flags=re.IGNORECASE)
+
+    # Clean up common prefixes that might remain
+    prefixes_to_remove = ['miasto :', 'miasto:',
+                          'adres :', 'adres:', 'lokalizacja :', 'lokalizacja:']
+    for prefix in prefixes_to_remove:
+        location = location.replace(prefix, ' ')
+
+    # Clean up formatting
+    location = re.sub(r'\s*:\s*', ', ', location)  # Replace colons with commas
+    # Replace multiple spaces with single
+    location = re.sub(r'\s+', ' ', location)
+    location = re.sub(r',\s*,', ',', location)  # Remove double commas
+    # Remove leading/trailing spaces and commas
+    location = location.strip(' ,')
+
+    return location
+
+
 def normalize_polish_names(location):
     """Replace Polish names without diacritics with proper Polish characters"""
     if not location:
@@ -64,24 +90,43 @@ def extract_location_from_data(data_string):
 
     parts = str(data_string).split('//')
 
-    # First priority: Look for structured location data
+    # First priority: Look for structured location data in any part
     for part in parts:
         part = part.strip()
-        if 'lokalizacja:' in part.lower():
-            # Extract after "lokalizacja:"
-            lokalizacja_pos = part.lower().find('lokalizacja:')
-            lokalizacja_text = part[lokalizacja_pos +
-                                    len('lokalizacja:'):].strip()
+        # Check if this part contains structured location data (with or without spaces before colons)
+        if ('lokalizacja:' in part.lower() or 'lokalizacja :' in part.lower()) and ('adres:' in part.lower() or 'adres :' in part.lower()):
+            # Extract the structured part - it might be after " - "
+            if ' - ' in part:
+                # Take everything after the last " - " if it contains lokalizacja
+                location_part = part.split(' - ')[-1].strip()
+                if 'lokalizacja:' in location_part.lower() or 'lokalizacja :' in location_part.lower():
+                    part = location_part
 
-            # Extract address and city
+            # Extract after "lokalizacja:" or "lokalizacja :"
+            if 'lokalizacja:' in part.lower():
+                lokalizacja_pos = part.lower().find('lokalizacja:')
+                lokalizacja_text = part[lokalizacja_pos +
+                                        len('lokalizacja:'):].strip()
+            else:
+                lokalizacja_pos = part.lower().find('lokalizacja :')
+                lokalizacja_text = part[lokalizacja_pos +
+                                        len('lokalizacja :'):].strip()
+
+            # Extract address and city with improved parsing
             address = ""
             city = ""
 
-            if 'adres:' in lokalizacja_text.lower():
-                adres_start = lokalizacja_text.lower().find('adres:') + len('adres:')
+            if 'adres:' in lokalizacja_text.lower() or 'adres :' in lokalizacja_text.lower():
+                if 'adres:' in lokalizacja_text.lower():
+                    adres_start = lokalizacja_text.lower().find('adres:') + len('adres:')
+                else:
+                    adres_start = lokalizacja_text.lower().find('adres :') + len('adres :')
+
+                # Look for explicit "miasto:" first
                 miasto_pos = lokalizacja_text.lower().find('miasto:', adres_start)
 
                 if miasto_pos != -1:
+                    # Standard format: "adres: ... miasto: ... kraj: ..."
                     address = lokalizacja_text[adres_start:miasto_pos].strip()
                     miasto_start = miasto_pos + len('miasto:')
                     kraj_pos = lokalizacja_text.lower().find('kraj:', miasto_start)
@@ -91,9 +136,30 @@ def extract_location_from_data(data_string):
                     else:
                         city = lokalizacja_text[miasto_start:].strip()
                 else:
-                    address = lokalizacja_text[adres_start:].strip()
+                    # Alternative format: "adres: ul. name : city kraj: ..."
+                    # Look for "kraj:" to find where city ends
+                    kraj_pos = lokalizacja_text.lower().find('kraj:', adres_start)
 
-            # Combine address and city
+                    if kraj_pos != -1:
+                        # Extract everything between "adres:" and "kraj:"
+                        full_address = lokalizacja_text[adres_start:kraj_pos].strip(
+                        )
+
+                        # Try to split by last colon to separate address from city
+                        colon_parts = full_address.split(':')
+                        if len(colon_parts) >= 2:
+                            # Last part after colon is likely the city
+                            city = colon_parts[-1].strip()
+                            # Everything before last colon is the address
+                            address = ':'.join(colon_parts[:-1]).strip()
+                        else:
+                            # No additional colon found, treat as address only
+                            address = full_address
+                    else:
+                        # No "kraj:" found, treat everything as address
+                        address = lokalizacja_text[adres_start:].strip()
+
+            # Clean up and combine address and city
             if address and city:
                 location = f"{address}, {city}"
             elif address:
@@ -101,17 +167,20 @@ def extract_location_from_data(data_string):
             elif city:
                 location = city
             else:
+                # If structured parsing failed, try to extract just the useful part
                 location = lokalizacja_text.strip()
 
+            # Always clean the location before returning
+            location = clean_location_text(location)
             return normalize_polish_names(location) if location else ""
-
-    # Second priority: Look for location after " - "
+    # Second priority: Look for location after " - " (but only for non-structured data)
     for part in parts:
         part = part.strip()
-        if ' - ' in part:
+        if ' - ' in part and 'lokalizacja:' not in part.lower() and 'lokalizacja :' not in part.lower():
             potential_location = part.split(' - ')[-1].strip()
             if potential_location and potential_location.lower() not in ['nan', 'null']:
-                return normalize_polish_names(potential_location)
+                cleaned_location = clean_location_text(potential_location)
+                return normalize_polish_names(cleaned_location)
 
     # Third priority: Look for address patterns
     for part in parts:
@@ -121,7 +190,8 @@ def extract_location_from_data(data_string):
             if (any(keyword in part.lower() for keyword in ['ul.', 'al.', 'pl.', 'os.', 'centrum'])
                 or re.search(r'\w+\s+\w+\s+\d+', part)
                     or (re.search(r'\d+', part) and len(part) > 8)):
-                return normalize_polish_names(part)
+                cleaned_part = clean_location_text(part)
+                return normalize_polish_names(cleaned_part)
 
     # Fourth priority: Any meaningful text
     exclude_terms = ['nan', 'null', 'zakup w terminalu', 'pc game purchase',
@@ -129,7 +199,8 @@ def extract_location_from_data(data_string):
     for part in parts:
         part = part.strip()
         if part and part.lower() not in exclude_terms and len(part) > 3:
-            return normalize_polish_names(part)
+            cleaned_part = clean_location_text(part)
+            return normalize_polish_names(cleaned_part)
 
     return ""
 
@@ -144,10 +215,35 @@ def create_google_maps_link(location):
     if not location:
         return ""
 
+    # Remove any leftover prefixes that shouldn't be in Google Maps links
+    prefixes_to_remove = [
+        'lokalizacja:',
+        'lokalizacja :',
+        'adres:',
+        'adres :',
+        'miasto:',
+        'miasto :',
+        'kraj:',
+        'kraj :'
+    ]
+
+    location_lower = location.lower()
+    for prefix in prefixes_to_remove:
+        if location_lower.startswith(prefix):
+            location = location[len(prefix):].strip()
+            location_lower = location.lower()
+
+    # Additional cleanup for Google Maps - remove internal prefixes and format nicely
+    # Replace patterns like ": warszawa kraj : polska" with ", warszawa"
+    location = re.sub(r'\s*:\s*([^:]+?)\s+kraj\s*:\s*\w+$', r', \1', location)
+    # Clean up any remaining colons and multiple spaces
+    location = re.sub(r'\s*:\s*', ', ', location)
+    location = re.sub(r'\s+', ' ', location)
+    location = re.sub(r',\s*,', ',', location)
+    location = location.strip(' ,')
+
     # URL encode the location for Google Maps
     encoded_location = urllib.parse.quote(location)
     return f"https://www.google.com/maps/search/{encoded_location}"
-
-
 # This module is now integrated into the main data processing pipeline
 # The functions above are imported and used in data_core.py
