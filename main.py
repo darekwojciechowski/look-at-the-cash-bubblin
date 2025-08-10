@@ -2,7 +2,7 @@ import logging
 import pandas as pd
 from data_processing.data_imports import read_transaction_csv, ipko_import
 from data_processing.data_core import process_dataframe
-from data_processing.exporter import export_for_google_sheets, export_misc_transactions
+from data_processing.exporter import export_misc_transactions
 from config.logging_setup import setup_logging
 
 # Constants

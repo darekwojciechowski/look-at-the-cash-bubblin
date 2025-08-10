@@ -20,6 +20,7 @@ def sample_dataframe():
         "price": [100, 200, 300],
         "month": [1, 1, 1],
         "year": [2023, 2023, 2023],
+        "data": ["location 1", "location 2", "location 3"]
     })
 
 
@@ -58,7 +59,7 @@ def test_export_misc_transactions(mock_to_csv, sample_dataframe):
     export_misc_transactions(sample_dataframe)
 
     mock_to_csv.assert_called_once_with(
-        "unassigned_transactions.csv", index=False)
+        "unassigned_transactions.csv", index=False, encoding='utf-8-sig')
     expected_df = sample_dataframe[sample_dataframe["category"] == "Misc"]
     pd.testing.assert_frame_equal(
         expected_df, sample_dataframe[sample_dataframe["category"] == "Misc"]
@@ -74,7 +75,7 @@ def test_export_unassigned_transactions_to_csv(mock_to_csv, sample_dataframe):
     export_unassigned_transactions_to_csv(sample_dataframe)
 
     mock_to_csv.assert_called_once_with(
-        "unassigned_transactions.csv", index=False)
+        "unassigned_transactions.csv", index=False, encoding='utf-8-sig')
 
 
 @patch("builtins.open", new_callable=mock_open, read_data="month,year,item,price\n1,2023,item1,100\n")

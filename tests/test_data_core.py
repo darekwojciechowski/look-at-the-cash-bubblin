@@ -45,12 +45,8 @@ def test_clean_date(sample_dataframe):
     assert cleaned_df["data"].iloc[4] == "Biedronka - Piotrkowska 157a"
 
 
-@patch("data_processing.data_core.ipko_import")
-def test_process_dataframe(mock_ipko_import, sample_dataframe, mappings_mock):
+def test_process_dataframe(sample_dataframe, mappings_mock):
     """Test the process_dataframe function."""
-    # Mock ipko_import to return the input DataFrame
-    mock_ipko_import.return_value = sample_dataframe
-
     # Patch the mappings dictionary
     with patch("data_processing.data_core.mappings", mappings_mock):
         processed_df = process_dataframe(sample_dataframe)
@@ -74,17 +70,17 @@ def test_process_dataframe(mock_ipko_import, sample_dataframe, mappings_mock):
     assert list(processed_df.columns) == expected_columns
 
 
-@patch("data_processing.data_core.ipko_import")
 @patch("logging.error")
-def test_process_dataframe_ipko_import_failure(mock_logging_error, mock_ipko_import, sample_dataframe):
-    """Test process_dataframe when ipko_import fails."""
-    # Mock ipko_import to raise an exception
-    mock_ipko_import.side_effect = Exception("Import failed")
+def test_process_dataframe_ipko_import_failure(mock_logging_error, sample_dataframe):
+    """Test process_dataframe when there's a processing error."""
+    # Create an invalid DataFrame that will cause an error during processing
+    invalid_df = pd.DataFrame({
+        "invalid_column": ["test"],
+        "price": ["invalid_price"],
+        "month": [1],
+        "year": [2023]
+    })
 
-    # Verify that the exception is raised and logged
-    with pytest.raises(Exception, match="Import failed"):
-        process_dataframe(sample_dataframe)
-
-    # Verify that error was logged
-    mock_logging_error.assert_called_once_with(
-        "ipko_import failed: Import failed")
+    # Verify that the exception is raised
+    with pytest.raises(KeyError):
+        process_dataframe(invalid_df)
