@@ -1,5 +1,4 @@
 import logging
-from data_processing.data_imports import ipko_import
 from data_processing.mappings import mappings
 import numpy as np
 import pandas as pd
@@ -45,17 +44,9 @@ def clean_date(df):
 
 def process_dataframe(df):
     """
-    Process the DataFrame: import, clean, categorize, and filter transactions.
+    Process the DataFrame: clean, categorize, and filter transactions.
     Returns the cleaned and categorized DataFrame.
     """
-    # Use ipko_import for processing
-    try:
-        df = ipko_import(df)
-        logging.info("Processed DataFrame using ipko_import.")
-    except Exception as e:
-        logging.error(f"ipko_import failed: {e}")
-        raise
-
     # Clean transaction descriptions
     df = clean_date(df)
 

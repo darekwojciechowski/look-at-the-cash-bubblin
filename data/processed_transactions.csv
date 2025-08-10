@@ -1,4 +1,4 @@
-month,year,category,price
+﻿month,year,category,price
 1,2025,FOOD,50.0
 1,2025,GREENFOOD,30.0
 1,2025,TRANSPORTATION,15.0
@@ -29,3 +29,7 @@ month,year,category,price
 1,2025,SELF_DEVELOPMENT,150.0
 1,2025,ELECTRONIC,300.0
 1,2025,SHOPPING,100.0
+1,2025,Misc,300.0
+1,2025,Misc,300.0
+1,2025,Misc,300.0
+1,2025,Misc,300.0

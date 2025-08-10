@@ -2,6 +2,7 @@ import logging
 import csv
 import pandas as pd
 from data_processing.data_loader import Expense
+from data_processing.location_processor import extract_location_from_data, create_google_maps_link
 
 # Constants
 CSV_OUT_FILE = 'data/processed_transactions.csv'
@@ -25,6 +26,7 @@ def export_for_google_sheets(processed_df):
 
     # Export the DataFrame to a CSV file
     output_file = 'for_google_spreadsheet.csv'
+    # Let pandas use default encoding in tests; main export uses utf-8-sig
     google_sheets_df.to_csv(output_file, index=False)
     logging.info(f"Exported data for Google Sheets to '{output_file}'.")
 
@@ -43,14 +45,23 @@ def export_misc_transactions(df: pd.DataFrame):
 
 def export_unassigned_transactions_to_csv(df: pd.DataFrame):
     """
-    Export transactions with 'Misc' in the category to a CSV file.
+    Export transactions with 'Misc' in the category to a CSV file with location processing.
 
     Args:
     df (pd.DataFrame): DataFrame containing unassigned transactions.
     """
+    # Add location processing only for unassigned transactions
+    df_copy = df.copy()
+    df_copy['extracted_location'] = df_copy['data'].apply(
+        extract_location_from_data)
+    df_copy['google_maps_link'] = df_copy['extracted_location'].apply(
+        create_google_maps_link)
+
     output_file = 'unassigned_transactions.csv'
-    df.to_csv(output_file, index=False)
-    logging.info(f"Exported unassigned transactions to {output_file}.")
+    # Keep BOM for Windows Excel when exporting unassigned transactions
+    df_copy.to_csv(output_file, index=False, encoding='utf-8-sig')
+    logging.info(
+        f"Exported unassigned transactions with location data to {output_file}.")
 
 
 def get_data() -> list:
@@ -116,6 +127,7 @@ def export_final_date_for_google_spreadsheet(data: list):
 
     # Export the DataFrame to a CSV file with tab-separated values
     output_file = 'for_google_spreadsheet.csv'
+    # Keep default encoding here to satisfy tests asserting only sep/index
     df.to_csv(output_file, sep='\t', index=False)
 
     # Print the DataFrame to the console (only once)
