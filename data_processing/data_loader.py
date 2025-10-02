@@ -20,6 +20,7 @@ class CATEGORY(Enum):
     INVESTMENTS = "💸 Investments"
     CARE = '🛀🏾 Care'
     SELF_DESTRUCTION = '☠ Self Destruction'
+    KIDS = "🧸 Kids"
     MISC = "Misc"
 
 
@@ -69,6 +70,8 @@ class Expense:
             return CATEGORY.TRAVEL, IMPORTANCE.NICE_TO_HAVE
         if "alcohol" in item or "fastfood" in item:
             return CATEGORY.SELF_DESTRUCTION, IMPORTANCE.SHOULDNT_HAVE
+        if "kids" in item:
+            return CATEGORY.KIDS, IMPORTANCE.HAVE_TO_HAVE
         return CATEGORY.MISC, IMPORTANCE.NEEDS_REVIEW
 
     def __repr__(self) -> str:
