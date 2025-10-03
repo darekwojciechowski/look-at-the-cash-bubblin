@@ -2,8 +2,12 @@ from data_processing.category import (
     FOOD, GREENFOOD, TRANSPORTATION, CAR, LEASING, FUEL, REPAIRS, ALCOHOL, COFFEE, FASTFOOD,
     GROCERIES, CATERING, APARTMENT, BILLS, RENOVATION, CLOTHES, JEWELRY, ENTERTAINMENT,
     PCGAMES, BIKE, SPORT, PHARMACY, COSMETICS, TRAVEL, BOOKS, ANIMALS,
-    INSURANCE, SUBSCRIPTIONS, INVESTMENTS, SELF_DEVELOPMENT, ELECTRONIC, KIDS, SHOPPING,
+    INSURANCE, SUBSCRIPTIONS, INVESTMENTS, SELF_DEVELOPMENT, ELECTRONIC, KIDS, SHOPPING, MISC,
+    all_category
 )
+
+# Default category for unmatched transactions
+DEFAULT_CATEGORY = "MISC"
 
 # Note: If two categories have overlapping keywords, the category listed first in the mappings dictionary will take precedence.
 # Example: To debug, you can print a specific category's keywords using dict() or access them directly (e.g., print(FOOD)).
@@ -17,12 +21,12 @@ def mappings(data):
     data (str): The input string to be categorized by matching keywords.
 
     Returns:
-    str: The name of the matching category, or "🔖🔖🔖Misc" if no match is found.
+    str: The name of the matching category, or DEFAULT_CATEGORY if no match is found.
 
     How it works:
     1. A dictionary `categories` maps category names to sets of keywords.
     2. The function checks if any keyword from each category is present in the input `data`.
-    3. It returns the first matching category name. If no keywords match, it returns "🔖🔖🔖Misc".
+    3. It returns the first matching category name. If no keywords match, it returns DEFAULT_CATEGORY.
 
     Example:
     If `FOOD = {"apple", "bread"}` and `GREENFOOD = {"spinach", "kale"}`, 
@@ -61,11 +65,12 @@ def mappings(data):
         "SELF_DEVELOPMENT": SELF_DEVELOPMENT,
         "ELECTRONIC": ELECTRONIC,
         "KIDS": KIDS,
-        "SHOPPING": SHOPPING
+        "SHOPPING": SHOPPING,
+        "MISC": MISC
     }
 
     for category, keywords in categories.items():
         if any(keyword in data.lower() for keyword in keywords):
             return category
 
-    return "🔖🔖🔖Misc"
+    return DEFAULT_CATEGORY

@@ -2,7 +2,7 @@ all_category = [
     "FOOD", "GREENFOOD", "TRANSPORTATION", "CAR", "LEASING", "FUEL", "REPAIRS", "COFFEE", "FASTFOOD",
     "GROCERIES", "CATERING", "ALCOHOL", "APARTMENT", "BILLS", "RENOVATION", "CLOTHES", "JEWELRY",
     "ENTERTAINMENT", "PCGAMES", "BIKE", "SPORT", "PHARMACY", "COSMETICS", "TRAVEL", "BOOKS", "ANIMALS",
-    "INSURANCE", "SUBSCRIPTIONS", "INVESTMENTS", "SELF_DEVELOPMENT", "ELECTRONIC", "SELF_CARE", "KIDS", "SHOPPING"
+    "INSURANCE", "SUBSCRIPTIONS", "INVESTMENTS", "SELF_DEVELOPMENT", "ELECTRONIC", "SELF_CARE", "KIDS", "SHOPPING", "MISC"
 ]
 
 # Categories
@@ -154,3 +154,6 @@ KIDS = {
 SHOPPING = {
     "shopping", "allegro", "olx", "amazon", "empik"
 }
+
+MISC = set()  # Empty set - this category is used as fallback for unmatched transactions
+# Keywords can be added here for specific miscellaneous items if needed

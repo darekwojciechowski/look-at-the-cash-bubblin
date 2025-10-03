@@ -11,7 +11,7 @@ from data_processing.category import (
     BILLS, RENOVATION, CLOTHES, JEWELRY, ENTERTAINMENT, PCGAMES,
     BIKE, SPORT, PHARMACY, COSMETICS, TRAVEL, BOOKS, ANIMALS,
     INSURANCE, SUBSCRIPTIONS, INVESTMENTS, SELF_DEVELOPMENT,
-    ELECTRONIC, SHOPPING
+    ELECTRONIC, SHOPPING, MISC
 )
 
 
@@ -132,7 +132,7 @@ class TestMappingsFunction:
 
         for transaction in unknown_transactions:
             result = mappings(transaction)
-            assert result == "🔖🔖🔖Misc"
+            assert result == "MISC"
 
     def test_case_insensitive_matching(self):
         """Test that keyword matching is case-insensitive."""
@@ -212,7 +212,7 @@ class TestMappingsFunction:
         """Test behavior when category sets might be empty (edge case)."""
         # This test ensures the function doesn't break if a category set is empty
         result = mappings("unknown transaction")
-        assert result == "🔖🔖🔖Misc"
+        assert result == "MISC"
 
     def test_numeric_transaction_descriptions(self):
         """Test handling of numeric transaction descriptions."""
@@ -224,7 +224,7 @@ class TestMappingsFunction:
 
         for transaction in numeric_transactions:
             result = mappings(transaction)
-            assert result == "🔖🔖🔖Misc"
+            assert result == "MISC"
 
     def test_unicode_characters(self):
         """Test handling of unicode characters in transaction descriptions."""
@@ -251,14 +251,14 @@ class TestCategorySetIntegrity:
             BILLS, RENOVATION, CLOTHES, JEWELRY, ENTERTAINMENT, PCGAMES,
             BIKE, SPORT, PHARMACY, COSMETICS, TRAVEL, BOOKS, ANIMALS,
             INSURANCE, SUBSCRIPTIONS, INVESTMENTS, SELF_DEVELOPMENT,
-            ELECTRONIC, SHOPPING
+            ELECTRONIC, SHOPPING, MISC
         ]
 
         for category_set in category_sets:
             assert category_set is not None
             assert isinstance(category_set, set)
             # Most categories should have at least one keyword
-            # (allowing empty sets for future expansion)
+            # (allowing empty sets for fallback categories like MISC)
 
     def test_no_duplicate_keywords_across_categories(self):
         """Test that keywords are not duplicated across different categories."""
@@ -272,7 +272,7 @@ class TestCategorySetIntegrity:
                                            COFFEE), ("FASTFOOD", FASTFOOD),
             ("GROCERIES", GROCERIES), ("ALCOHOL", ALCOHOL), ("CLOTHES", CLOTHES),
             ("ENTERTAINMENT", ENTERTAINMENT), ("SUBSCRIPTIONS", SUBSCRIPTIONS),
-            ("ELECTRONIC", ELECTRONIC), ("SHOPPING", SHOPPING)
+            ("ELECTRONIC", ELECTRONIC), ("SHOPPING", SHOPPING), ("MISC", MISC)
         ]
 
         for category_name, category_set in category_sets:

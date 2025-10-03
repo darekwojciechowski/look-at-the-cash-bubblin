@@ -33,19 +33,19 @@ def export_for_google_sheets(processed_df):
 
 def export_misc_transactions(df: pd.DataFrame):
     """
-    Export transactions with 'Misc' in the category to a CSV for manual review.
+    Export transactions with 'MISC' in the category to a CSV for manual review.
 
     Args:
     df (pd.DataFrame): DataFrame containing all transactions.
     """
-    misc_df = df[df["category"].str.contains("Misc", na=False)]
+    misc_df = df[df["category"].str.contains("MISC", na=False)]
     export_unassigned_transactions_to_csv(misc_df)
-    logging.info("Exported unassigned (Misc) transactions to CSV.")
+    logging.info("Exported unassigned (MISC) transactions to CSV.")
 
 
 def export_unassigned_transactions_to_csv(df: pd.DataFrame):
     """
-    Export transactions with 'Misc' in the category to a CSV file with location processing.
+    Export transactions with 'MISC' in the category to a CSV file with location processing.
 
     Args:
     df (pd.DataFrame): DataFrame containing unassigned transactions.

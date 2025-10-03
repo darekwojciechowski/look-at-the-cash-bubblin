@@ -16,7 +16,7 @@ from data_processing.data_loader import Expense
 def sample_dataframe():
     """Provides a sample DataFrame for testing purposes."""
     return pd.DataFrame({
-        "category": ["Misc", "Food", "Misc"],
+        "category": ["MISC", "Food", "MISC"],
         "price": [100, 200, 300],
         "month": [1, 1, 1],
         "year": [2023, 2023, 2023],
@@ -53,16 +53,16 @@ def test_export_for_google_sheets(mock_to_csv, mock_print, sample_dataframe):
 def test_export_misc_transactions(mock_to_csv, sample_dataframe):
     """
     Tests the export_misc_transactions function to ensure:
-    - Only rows with the 'Misc' category are exported.
+    - Only rows with the 'MISC' category are exported.
     - The resulting DataFrame is saved to 'unassigned_transactions.csv'.
     """
     export_misc_transactions(sample_dataframe)
 
     mock_to_csv.assert_called_once_with(
         "unassigned_transactions.csv", index=False, encoding='utf-8-sig')
-    expected_df = sample_dataframe[sample_dataframe["category"] == "Misc"]
+    expected_df = sample_dataframe[sample_dataframe["category"] == "MISC"]
     pd.testing.assert_frame_equal(
-        expected_df, sample_dataframe[sample_dataframe["category"] == "Misc"]
+        expected_df, sample_dataframe[sample_dataframe["category"] == "MISC"]
     )
 
 
