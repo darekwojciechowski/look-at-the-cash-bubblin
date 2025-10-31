@@ -11,7 +11,7 @@ from data_processing.category import (
     BILLS, RENOVATION, CLOTHES, JEWELRY, ENTERTAINMENT, PCGAMES,
     BIKE, SPORT, PHARMACY, COSMETICS, TRAVEL, BOOKS, ANIMALS,
     INSURANCE, SUBSCRIPTIONS, INVESTMENTS, SELF_DEVELOPMENT,
-    ELECTRONIC, SHOPPING, MISC
+    ELECTRONIC, SHOPPING, MISC, SELF_CARE, KIDS
 )
 
 
@@ -287,3 +287,78 @@ class TestCategorySetIntegrity:
 
         # This test is informational - duplicates might be intentional
         # depending on business logic requirements
+
+    def test_each_keyword_appears_in_only_one_category(self):
+        """
+        Test that each keyword appears in only one category to avoid ambiguous transaction categorization.
+
+        This test ensures that no keyword exists in multiple categories, which could lead to
+        unpredictable categorization results depending on the order of category checks.
+        """
+        # Dictionary to track which category each keyword belongs to
+        keyword_to_category = {}
+        # Dictionary to track keywords that appear in multiple categories
+        duplicate_keywords = {}
+
+        # All category sets with their names
+        all_categories = [
+            ("FOOD", FOOD),
+            ("GREENFOOD", GREENFOOD),
+            ("TRANSPORTATION", TRANSPORTATION),
+            ("CAR", CAR),
+            ("LEASING", LEASING),
+            ("FUEL", FUEL),
+            ("REPAIRS", REPAIRS),
+            ("COFFEE", COFFEE),
+            ("FASTFOOD", FASTFOOD),
+            ("GROCERIES", GROCERIES),
+            ("CATERING", CATERING),
+            ("ALCOHOL", ALCOHOL),
+            ("APARTMENT", APARTMENT),
+            ("BILLS", BILLS),
+            ("RENOVATION", RENOVATION),
+            ("CLOTHES", CLOTHES),
+            ("JEWELRY", JEWELRY),
+            ("ENTERTAINMENT", ENTERTAINMENT),
+            ("PCGAMES", PCGAMES),
+            ("BIKE", BIKE),
+            ("SPORT", SPORT),
+            ("PHARMACY", PHARMACY),
+            ("COSMETICS", COSMETICS),
+            ("TRAVEL", TRAVEL),
+            ("BOOKS", BOOKS),
+            ("ANIMALS", ANIMALS),
+            ("INSURANCE", INSURANCE),
+            ("SUBSCRIPTIONS", SUBSCRIPTIONS),
+            ("INVESTMENTS", INVESTMENTS),
+            ("SELF_DEVELOPMENT", SELF_DEVELOPMENT),
+            ("ELECTRONIC", ELECTRONIC),
+            ("SELF_CARE", SELF_CARE),
+            ("KIDS", KIDS),
+            ("SHOPPING", SHOPPING),
+            ("MISC", MISC),
+        ]
+
+        # Check each keyword in each category
+        for category_name, category_set in all_categories:
+            for keyword in category_set:
+                if keyword in keyword_to_category:
+                    # Keyword already exists in another category
+                    if keyword not in duplicate_keywords:
+                        duplicate_keywords[keyword] = [
+                            keyword_to_category[keyword]]
+                    duplicate_keywords[keyword].append(category_name)
+                else:
+                    keyword_to_category[keyword] = category_name
+
+        # Build detailed error message if duplicates found
+        if duplicate_keywords:
+            error_message = "\n\nDuplicate keywords found across categories:\n"
+            for keyword, categories in duplicate_keywords.items():
+                error_message += f"  - '{keyword}' appears in: {', '.join(categories)}\n"
+            error_message += "\nEach keyword must appear in only one category to avoid ambiguous categorization."
+
+            pytest.fail(error_message)
+
+        # If we reach here, all keywords are unique across categories
+        assert len(keyword_to_category) > 0, "No keywords found in any category"
