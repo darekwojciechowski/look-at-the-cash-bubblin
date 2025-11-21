@@ -215,6 +215,25 @@ def create_google_maps_link(location):
     if not location:
         return ""
 
+    # Check if the location contains actual address information
+    # Only create links for locations that have:
+    # - Street indicators (ul., al., pl., os.)
+    # - Numbers (suggesting address)
+    # - City names (common Polish cities)
+    # - Commas (suggesting structured address like "ul. name, city")
+    location_lower = location.lower()
+
+    has_street_indicator = any(indicator in location_lower for indicator in [
+                               'ul.', 'al.', 'pl.', 'os.', 'aleja', 'ulica', 'plac', 'osiedle'])
+    has_comma = ',' in location
+    has_number = re.search(r'\d+', location)
+    has_city_keywords = any(city in location_lower for city in [
+                            'warszawa', 'kraków', 'łódź', 'wrocław', 'poznań', 'gdańsk', 'szczecin', 'bydgoszcz', 'lublin', 'katowice'])
+
+    # Only generate link if location looks like a real address
+    if not (has_street_indicator or (has_comma and (has_number or has_city_keywords))):
+        return ""
+
     # Remove any leftover prefixes that shouldn't be in Google Maps links
     prefixes_to_remove = [
         'lokalizacja:',
@@ -227,7 +246,6 @@ def create_google_maps_link(location):
         'kraj :'
     ]
 
-    location_lower = location.lower()
     for prefix in prefixes_to_remove:
         if location_lower.startswith(prefix):
             location = location[len(prefix):].strip()
