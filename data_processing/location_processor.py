@@ -284,7 +284,14 @@ def create_google_maps_link(location: str | None) -> str:
 
 
 def _split_parts(data_string: str | float | None) -> list[str]:
-    """Split raw transaction text by '//' and trim whitespace."""
+    """Split raw transaction text by '//' and trim whitespace.
+
+    Args:
+        data_string: Raw transaction data that may contain multiple segments.
+
+    Returns:
+        List of non-empty trimmed text segments.
+    """
     return [
         part.strip()
         for part in str(data_string).split('//')
@@ -293,15 +300,28 @@ def _split_parts(data_string: str | float | None) -> list[str]:
 
 
 def _parse_structured_part(part: str) -> str | None:
-    """Handle fragments that expose 'lokalizacja' metadata blocks."""
+    """Handle fragments that expose 'lokalizacja' metadata blocks.
+
+    Extracts location data from structured format like:
+    "lokalizacja: adres: ul. Name miasto: City kraj: Country"
+
+    Args:
+        part: Text fragment potentially containing structured location metadata.
+
+    Returns:
+        Extracted address string, or None if no valid structure found.
+    """
     lowered = part.lower()
+    # Require both 'lokalizacja' and 'adres' keywords
     if 'lokalizacja' not in lowered or 'adres' not in lowered:
         return None
 
+    # Handle cases where location is after " - " separator
     candidate = part.split(' - ')[-1].strip()
     candidate_lower = candidate.lower()
     working = candidate if 'lokalizacja' in candidate_lower else part
 
+    # Split at the 'lokalizacja:' marker
     split_payload = re.split(r'(?i)lokalizacja\s*:\s*', working, maxsplit=1)
     if len(split_payload) != 2:
         return None
@@ -310,7 +330,20 @@ def _parse_structured_part(part: str) -> str | None:
 
 
 def _extract_address_payload(payload: str) -> str | None:
-    """Extract "adres", "miasto" chunks from the structured payload."""
+    """Extract "adres", "miasto" chunks from the structured payload.
+
+    Handles multiple formats:
+    - "adres: Street miasto: City kraj: Country"
+    - "adres: Street : City kraj: Country" (alternative colon separator)
+    - "adres: Street kraj: Country" (city missing)
+
+    Args:
+        payload: The text following "lokalizacja:" in structured data.
+
+    Returns:
+        Formatted "address, city" string, or None if parsing fails.
+    """
+    # Try regex-based structured parsing first
     match = _STRUCTURED_ADDRESS_RE.search(payload)
     if match:
         address = (match.group('address') or '').strip(' ,')
@@ -319,11 +352,13 @@ def _extract_address_payload(payload: str) -> str | None:
             return f'{address}, {city}'
         return address or city or None
 
+    # Fallback: manually parse by removing country field
     without_country = re.split(
         r'(?i)kraj\s*:\s*', payload, maxsplit=1)[0].strip(' ,')
     if not without_country:
         return None
 
+    # Try to split address from city using colon separator
     if ':' in without_country:
         address, _, city = without_country.rpartition(':')
         address = address.strip(' ,')
@@ -335,36 +370,75 @@ def _extract_address_payload(payload: str) -> str | None:
 
 
 def _extract_dash_part(part: str) -> str | None:
-    """Fallback for patterns like 'something - ADDRESS'."""
+    """Fallback for patterns like 'something - ADDRESS'.
+
+    Extracts the text after the last dash separator when no structured
+    metadata is present. Common in transaction descriptions.
+
+    Args:
+        part: Text fragment potentially containing dash-separated location.
+
+    Returns:
+        Text after the last dash, or None if invalid or structured data present.
+    """
     if ' - ' not in part:
         return None
 
     lowered = part.lower()
+    # Skip if this is structured data (handled by _parse_structured_part)
     if 'lokalizacja' in lowered:
         return None
 
     candidate = part.split(' - ')[-1].strip()
+    # Filter out generic terms
     if candidate and candidate.lower() not in _EXCLUDE_TERMS:
         return candidate
     return None
 
 
 def _looks_like_address(part: str) -> bool:
-    """Decide whether the text resembles an address using heuristics."""
+    """Decide whether the text resembles an address using heuristics.
+
+    Checks for:
+    - Street indicators (ul., al., via, calle, etc.)
+    - Patterns like "word word number" (street name + number)
+    - Any text with digits longer than 8 characters
+
+    Args:
+        part: Text fragment to evaluate.
+
+    Returns:
+        True if the text appears to be an address.
+    """
     lowered = part.lower()
+    # Exclude generic terms
     if lowered in _EXCLUDE_TERMS:
         return False
 
+    # Check for explicit street indicators
     if any(keyword in lowered for keyword in _ADDRESS_INDICATORS):
         return True
 
+    # Look for "street name number" pattern
     if _THREE_TOKEN_NUMBER_RE.search(part):
         return True
 
+    # Long text with digits might be an address
     return bool(_DIGIT_RE.search(part) and len(part) > 8)
 
 
 def _finalise_location(part: str) -> str:
-    """Run the standard cleaning pipeline for a raw location candidate."""
+    """Run the standard cleaning pipeline for a raw location candidate.
+
+    Applies two-stage normalization:
+    1. Clean metadata markers and standardize formatting
+    2. Restore Polish diacritical characters
+
+    Args:
+        part: Raw location text extracted from transaction data.
+
+    Returns:
+        Cleaned and normalized location string ready for export.
+    """
     cleaned = clean_location_text(part)
     return normalize_polish_names(cleaned)
