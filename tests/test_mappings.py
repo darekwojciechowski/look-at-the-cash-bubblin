@@ -391,39 +391,35 @@ class TestCategorySetIntegrity:
             f"Expected {len(defined_category_variables)} categories but found {len(all_category)}"
 
     def test_mappings_categories_match_all_category(self):
-        """Test that categories dict in mappings() matches all_category dynamically."""
+        """Test that categories dict in mappings() matches all_category dynamically.
+
+        This test works by calling mappings() with a dummy value, which triggers
+        the dictionary comprehension to build the categories dict. We then verify
+        that all categories from all_category are accessible in the function scope.
+        """
         from data_processing.mappings import mappings
-        import inspect
-        import ast
 
-        # Get the source code of the mappings function
-        source = inspect.getsource(mappings)
+        # The mappings function now uses: categories = {category: globals()[category] for category in all_category}
+        # This means it dynamically builds the dict from all_category, so we just need to verify
+        # that all categories in all_category are importable and accessible
 
-        # Parse the source code to extract the categories dictionary
-        tree = ast.parse(source)
+        # Test that mappings() can access all categories by attempting to categorize
+        # a transaction with each category's first keyword
+        from data_processing import category
 
-        # Find the categories dictionary assignment
-        categories_keys = []
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Assign):
-                for target in node.targets:
-                    if isinstance(target, ast.Name) and target.id == 'categories':
-                        if isinstance(node.value, ast.Dict):
-                            # Extract all keys from the dictionary
-                            categories_keys = [
-                                key.value for key in node.value.keys
-                                if isinstance(key, ast.Constant)
-                            ]
+        for cat_name in all_category:
+            cat_set = getattr(category, cat_name)
+            assert isinstance(cat_set, set), f"{cat_name} should be a set"
 
-        # Check that categories dict keys match all_category
-        missing_in_mappings = [
-            cat for cat in all_category if cat not in categories_keys]
-        extra_in_mappings = [
-            cat for cat in categories_keys if cat not in all_category]
+            # MISC is intentionally empty (default category), skip keyword check for it
+            if cat_name == "MISC":
+                continue
 
-        assert not missing_in_mappings, \
-            f"Categories in all_category but missing from mappings() dict: {missing_in_mappings}"
-        assert not extra_in_mappings, \
-            f"Categories in mappings() dict but not in all_category: {extra_in_mappings}"
-        assert len(categories_keys) == len(all_category), \
-            f"Expected {len(all_category)} categories in mappings() but found {len(categories_keys)}"
+            assert len(cat_set) > 0, f"{cat_name} should not be empty"
+
+            # Test that mappings() can use this category
+            # (if globals()[category] failed, this would raise an error)
+            first_keyword = list(cat_set)[0]
+            result = mappings(first_keyword)
+            # We expect it to match this category or another if there's overlap
+            assert result in all_category, f"mappings() returned invalid category: {result}"

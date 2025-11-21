@@ -24,51 +24,22 @@ def mappings(data):
     str: The name of the matching category, or DEFAULT_CATEGORY if no match is found.
 
     How it works:
-    1. A dictionary `categories` maps category names to sets of keywords.
-    2. The function checks if any keyword from each category is present in the input `data`.
-    3. It returns the first matching category name. If no keywords match, it returns DEFAULT_CATEGORY.
+    1. Automatically builds a categories dictionary from all_category list using dictionary comprehension.
+    2. Each category name is mapped to its corresponding keyword set via globals().
+    3. The function checks if any keyword from each category is present in the input data (case-insensitive).
+    4. Returns the first matching category name. If no keywords match, returns DEFAULT_CATEGORY.
+
+    Note:
+    The dictionary comprehension {category: globals()[category] for category in all_category}
+    dynamically creates the categories dict, eliminating manual mapping and ensuring all categories
+    from all_category are automatically included.
 
     Example:
     If `FOOD = {"apple", "bread"}` and `GREENFOOD = {"spinach", "kale"}`, 
     calling `mappings("I bought some bread and spinach")` will return "FOOD".
     """
-    categories = {
-        "FOOD": FOOD,
-        "GREENFOOD": GREENFOOD,
-        "TRANSPORTATION": TRANSPORTATION,
-        "CAR": CAR,
-        "LEASING": LEASING,
-        "FUEL": FUEL,
-        "REPAIRS": REPAIRS,
-        "COFFEE": COFFEE,
-        "FASTFOOD": FASTFOOD,
-        "GROCERIES": GROCERIES,
-        "CATERING": CATERING,
-        "ALCOHOL": ALCOHOL,
-        "APARTMENT": APARTMENT,
-        "BILLS": BILLS,
-        "RENOVATION": RENOVATION,
-        "CLOTHES": CLOTHES,
-        "JEWELRY": JEWELRY,
-        "ENTERTAINMENT": ENTERTAINMENT,
-        "PCGAMES": PCGAMES,
-        "BIKE": BIKE,
-        "SPORT": SPORT,
-        "PHARMACY": PHARMACY,
-        "COSMETICS": COSMETICS,
-        "TRAVEL": TRAVEL,
-        "BOOKS": BOOKS,
-        "ANIMALS": ANIMALS,
-        "INSURANCE": INSURANCE,
-        "SUBSCRIPTIONS": SUBSCRIPTIONS,
-        "INVESTMENTS": INVESTMENTS,
-        "SELF_DEVELOPMENT": SELF_DEVELOPMENT,
-        "ELECTRONIC": ELECTRONIC,
-        "SELF_CARE": SELF_CARE,
-        "KIDS": KIDS,
-        "SHOPPING": SHOPPING,
-        "MISC": MISC
-    }
+    # Automatically build categories dictionary from all_category list
+    categories = {category: globals()[category] for category in all_category}
 
     for category, keywords in categories.items():
         if any(keyword in data.lower() for keyword in keywords):
