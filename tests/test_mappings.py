@@ -389,3 +389,41 @@ class TestCategorySetIntegrity:
             f"Extra categories in all_category list not defined as sets: {extra_categories}"
         assert len(all_category) == len(defined_category_variables), \
             f"Expected {len(defined_category_variables)} categories but found {len(all_category)}"
+
+    def test_mappings_categories_match_all_category(self):
+        """Test that categories dict in mappings() matches all_category dynamically."""
+        from data_processing.mappings import mappings
+        import inspect
+        import ast
+
+        # Get the source code of the mappings function
+        source = inspect.getsource(mappings)
+
+        # Parse the source code to extract the categories dictionary
+        tree = ast.parse(source)
+
+        # Find the categories dictionary assignment
+        categories_keys = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign):
+                for target in node.targets:
+                    if isinstance(target, ast.Name) and target.id == 'categories':
+                        if isinstance(node.value, ast.Dict):
+                            # Extract all keys from the dictionary
+                            categories_keys = [
+                                key.value for key in node.value.keys
+                                if isinstance(key, ast.Constant)
+                            ]
+
+        # Check that categories dict keys match all_category
+        missing_in_mappings = [
+            cat for cat in all_category if cat not in categories_keys]
+        extra_in_mappings = [
+            cat for cat in categories_keys if cat not in all_category]
+
+        assert not missing_in_mappings, \
+            f"Categories in all_category but missing from mappings() dict: {missing_in_mappings}"
+        assert not extra_in_mappings, \
+            f"Categories in mappings() dict but not in all_category: {extra_in_mappings}"
+        assert len(categories_keys) == len(all_category), \
+            f"Expected {len(all_category)} categories in mappings() but found {len(categories_keys)}"
