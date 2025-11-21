@@ -1,267 +1,278 @@
-import pandas as pd
-import urllib.parse
+from __future__ import annotations
+
 import re
+import urllib.parse
+
+import pandas as pd
+
+_PREFIXES_TO_REMOVE: tuple[str, ...] = (
+    'miasto :',
+    'miasto:',
+    'adres :',
+    'adres:',
+    'lokalizacja :',
+    'lokalizacja:',
+)
+
+_POLISH_REPLACEMENTS: dict[str, str] = {
+    # Cities
+    'lodz': 'łódź',
+    'krakow': 'kraków',
+    'poznan': 'poznań',
+    'wroclaw': 'wrocław',
+    'gdansk': 'gdańsk',
+    'czestochowa': 'częstochowa',
+    'torun': 'toruń',
+    'bialystok': 'białystok',
+    'rzeszow': 'rzeszów',
+    'piotrkow': 'piotrków',
+    'walbrzych': 'wałbrzych',
+    'wloclawek': 'włocławek',
+    'jelenia gora': 'jelenia góra',
+    'nowy sacz': 'nowy sącz',
+    'zielona gora': 'zielona góra',
+    # Street names and common words
+    'kosciuszki': 'kościuszki',
+    'pilsudskiego': 'piłsudskiego',
+    'slowackiego': 'słowackiego',
+    'zeromskiego': 'żeromskiego',
+    'swietokrzyska': 'świętokrzyska',
+    'stanislawa': 'stanisława',
+    'wladyslawa': 'władysława',
+    'jozefa': 'józefa',
+    'legionow': 'legionów',
+    'zwyciestwa': 'zwycięstwa',
+    'polnocna': 'północna',
+    'poludniowa': 'południowa',
+    'krolowej': 'królowej',
+    'powstancow': 'powstańców',
+    # Common prefixes
+    'sw.': 'św.',
+    'sw ': 'św. ',
+}
+
+_ADDRESS_INDICATORS: tuple[str, ...] = ('ul.', 'al.', 'pl.', 'os.', 'centrum')
+
+_MAPS_STREET_TOKENS: tuple[str, ...] = (
+    'ul.', 'al.', 'pl.', 'os.', 'aleja', 'ulica', 'plac', 'osiedle',
+    'street', 'st.', 'avenue', 'ave.', 'road', 'rd.', 'boulevard', 'blvd.',
+    'lane', 'ln.', 'drive', 'dr.', 'calle', 'avenida', 'avda.', 'paseo', 'plaza',
+    'via', 'viale', 'piazza', 'corso', 'strada',
+)
+
+_MAPS_CITY_KEYWORDS: tuple[str, ...] = (
+    # Polish cities
+    'warszawa', 'kraków', 'łódź', 'wrocław', 'poznań', 'gdańsk', 'szczecin',
+    'bydgoszcz', 'lublin', 'katowice', 'białystok', 'gdynia', 'częstochowa',
+    'radom', 'sosnowiec', 'toruń', 'kielce', 'gliwice', 'zabrze', 'bytom',
+    'olsztyn', 'bielsko-biała', 'rzeszów',
+    # Spanish cities
+    'madrid', 'barcelona', 'valencia', 'sevilla', 'zaragoza', 'málaga',
+    'murcia', 'palma', 'bilbao', 'alicante', 'córdoba', 'valladolid',
+    'granada', 'salamanca', 'toledo',
+    # Italian cities
+    'roma', 'milano', 'napoli', 'torino', 'palermo', 'genova', 'bologna',
+    'firenze', 'bari', 'catania', 'venezia', 'verona', 'messina', 'padova',
+    'trieste', 'brescia', 'parma', 'modena',
+)
+
+_EXCLUDE_TERMS: set[str] = {
+    'nan',
+    'null',
+    'zakup w terminalu',
+    'pc game purchase',
+    'grocery store',
+    'groceries',
+    'store',
+    'shop',
+    'market',
+}
+
+_COUNTRY_FIELD_RE = re.compile(r'\s*kraj\s*:\s*[^,]*', re.IGNORECASE)
+_COLON_SPACING_RE = re.compile(r'\s*:\s*')
+_MULTIPLE_SPACE_RE = re.compile(r'\s+')
+_DOUBLE_COMMA_RE = re.compile(r',\s*,')
+_THREE_TOKEN_NUMBER_RE = re.compile(r'\w+\s+\w+\s+\d+')
+_DIGIT_RE = re.compile(r'\d+')
+_STRUCTURED_ADDRESS_RE = re.compile(
+    r'adres\s*:\s*(?P<address>.*?)\s*(?:miasto\s*:\s*(?P<city>.*?))?(?:kraj\s*:\s*.*)?$',
+    re.IGNORECASE,
+)
+_MAPS_SUFFIX_RE = re.compile(
+    r'\s*:\s*([^:]+?)\s+kraj\s*:\s*\w+$', re.IGNORECASE)
 
 
-def clean_location_text(location):
-    """Remove unnecessary country information and clean up formatting"""
+def clean_location_text(location: str | None) -> str:
+    """Strip boilerplate markers and standardise separators."""
     if not location:
-        return location
+        return ""
 
-    # Remove country information (any pattern like "kraj: xxxxx")
-    location = re.sub(r'\s*kraj\s*:\s*[^,]*',
-                      '', location, flags=re.IGNORECASE)
+    cleaned = _COUNTRY_FIELD_RE.sub('', location)
+    for prefix in _PREFIXES_TO_REMOVE:
+        cleaned = cleaned.replace(prefix, ' ')
 
-    # Clean up common prefixes that might remain
-    prefixes_to_remove = ['miasto :', 'miasto:',
-                          'adres :', 'adres:', 'lokalizacja :', 'lokalizacja:']
-    for prefix in prefixes_to_remove:
-        location = location.replace(prefix, ' ')
-
-    # Clean up formatting
-    location = re.sub(r'\s*:\s*', ', ', location)  # Replace colons with commas
-    # Replace multiple spaces with single
-    location = re.sub(r'\s+', ' ', location)
-    location = re.sub(r',\s*,', ',', location)  # Remove double commas
-    # Remove leading/trailing spaces and commas
-    location = location.strip(' ,')
-
-    return location
+    cleaned = _COLON_SPACING_RE.sub(', ', cleaned)
+    cleaned = _MULTIPLE_SPACE_RE.sub(' ', cleaned)
+    cleaned = _DOUBLE_COMMA_RE.sub(',', cleaned)
+    return cleaned.strip(' ,')
 
 
-def normalize_polish_names(location):
-    """Replace Polish names without diacritics with proper Polish characters"""
+def normalize_polish_names(location: str | None) -> str:
+    """Restore missing Polish diacritics for common tokens."""
     if not location:
-        return location
+        return ""
 
-    # Only keep the most common replacements for names without diacritics
-    replacements = {
-        # Cities
-        'lodz': 'łódź',
-        'krakow': 'kraków',
-        'poznan': 'poznań',
-        'wroclaw': 'wrocław',
-        'gdansk': 'gdańsk',
-        'czestochowa': 'częstochowa',
-        'torun': 'toruń',
-        'bialystok': 'białystok',
-        'rzeszow': 'rzeszów',
-        'piotrkow': 'piotrków',
-        'walbrzych': 'wałbrzych',
-        'wloclawek': 'włocławek',
-        'jelenia gora': 'jelenia góra',
-        'nowy sacz': 'nowy sącz',
-        'zielona gora': 'zielona góra',
-
-        # Street names and common words
-        'kosciuszki': 'kościuszki',
-        'pilsudskiego': 'piłsudskiego',
-        'slowackiego': 'słowackiego',
-        'zeromskiego': 'żeromskiego',
-        'swietokrzyska': 'świętokrzyska',
-        'stanislawa': 'stanisława',
-        'wladyslawa': 'władysława',
-        'jozefa': 'józefa',
-        'legionow': 'legionów',
-        'zwyciestwa': 'zwycięstwa',
-        'polnocna': 'północna',
-        'poludniowa': 'południowa',
-        'krolowej': 'królowej',
-        'powstancow': 'powstańców',
-
-        # Common prefixes
-        'sw.': 'św.',
-        'sw ': 'św. '
-    }
-
-    location_lower = location.lower()
-    for incorrect, correct in replacements.items():
-        # Use word boundaries to avoid partial matches
+    normalised = location
+    for incorrect, correct in _POLISH_REPLACEMENTS.items():
         pattern = r'\b' + re.escape(incorrect) + r'\b'
-        location = re.sub(pattern, correct, location, flags=re.IGNORECASE)
+        normalised = re.sub(pattern, correct, normalised, flags=re.IGNORECASE)
+    return normalised
 
-    return location
 
+def extract_location_from_data(data_string: str | float | None) -> str:
+    """Derive the most reliable location fragment from raw transaction data."""
+    if data_string is None or data_string == '' or pd.isna(data_string):
+        return ''
 
-def extract_location_from_data(data_string):
-    """Extract potential location from data string"""
-    if pd.isna(data_string) or data_string == "":
-        return ""
+    parts = _split_parts(data_string)
+    if not parts:
+        return ''
 
-    parts = str(data_string).split('//')
-
-    # First priority: Look for structured location data in any part
     for part in parts:
-        part = part.strip()
-        # Check if this part contains structured location data (with or without spaces before colons)
-        if ('lokalizacja:' in part.lower() or 'lokalizacja :' in part.lower()) and ('adres:' in part.lower() or 'adres :' in part.lower()):
-            # Extract the structured part - it might be after " - "
-            if ' - ' in part:
-                # Take everything after the last " - " if it contains lokalizacja
-                location_part = part.split(' - ')[-1].strip()
-                if 'lokalizacja:' in location_part.lower() or 'lokalizacja :' in location_part.lower():
-                    part = location_part
+        structured = _parse_structured_part(part)
+        if structured:
+            return _finalise_location(structured)
 
-            # Extract after "lokalizacja:" or "lokalizacja :"
-            if 'lokalizacja:' in part.lower():
-                lokalizacja_pos = part.lower().find('lokalizacja:')
-                lokalizacja_text = part[lokalizacja_pos +
-                                        len('lokalizacja:'):].strip()
-            else:
-                lokalizacja_pos = part.lower().find('lokalizacja :')
-                lokalizacja_text = part[lokalizacja_pos +
-                                        len('lokalizacja :'):].strip()
-
-            # Extract address and city with improved parsing
-            address = ""
-            city = ""
-
-            if 'adres:' in lokalizacja_text.lower() or 'adres :' in lokalizacja_text.lower():
-                if 'adres:' in lokalizacja_text.lower():
-                    adres_start = lokalizacja_text.lower().find('adres:') + len('adres:')
-                else:
-                    adres_start = lokalizacja_text.lower().find('adres :') + len('adres :')
-
-                # Look for explicit "miasto:" first
-                miasto_pos = lokalizacja_text.lower().find('miasto:', adres_start)
-
-                if miasto_pos != -1:
-                    # Standard format: "adres: ... miasto: ... kraj: ..."
-                    address = lokalizacja_text[adres_start:miasto_pos].strip()
-                    miasto_start = miasto_pos + len('miasto:')
-                    kraj_pos = lokalizacja_text.lower().find('kraj:', miasto_start)
-
-                    if kraj_pos != -1:
-                        city = lokalizacja_text[miasto_start:kraj_pos].strip()
-                    else:
-                        city = lokalizacja_text[miasto_start:].strip()
-                else:
-                    # Alternative format: "adres: ul. name : city kraj: ..."
-                    # Look for "kraj:" to find where city ends
-                    kraj_pos = lokalizacja_text.lower().find('kraj:', adres_start)
-
-                    if kraj_pos != -1:
-                        # Extract everything between "adres:" and "kraj:"
-                        full_address = lokalizacja_text[adres_start:kraj_pos].strip(
-                        )
-
-                        # Try to split by last colon to separate address from city
-                        colon_parts = full_address.split(':')
-                        if len(colon_parts) >= 2:
-                            # Last part after colon is likely the city
-                            city = colon_parts[-1].strip()
-                            # Everything before last colon is the address
-                            address = ':'.join(colon_parts[:-1]).strip()
-                        else:
-                            # No additional colon found, treat as address only
-                            address = full_address
-                    else:
-                        # No "kraj:" found, treat everything as address
-                        address = lokalizacja_text[adres_start:].strip()
-
-            # Clean up and combine address and city
-            if address and city:
-                location = f"{address}, {city}"
-            elif address:
-                location = address
-            elif city:
-                location = city
-            else:
-                # If structured parsing failed, try to extract just the useful part
-                location = lokalizacja_text.strip()
-
-            # Always clean the location before returning
-            location = clean_location_text(location)
-            return normalize_polish_names(location) if location else ""
-    # Second priority: Look for location after " - " (but only for non-structured data)
     for part in parts:
-        part = part.strip()
-        if ' - ' in part and 'lokalizacja:' not in part.lower() and 'lokalizacja :' not in part.lower():
-            potential_location = part.split(' - ')[-1].strip()
-            if potential_location and potential_location.lower() not in ['nan', 'null']:
-                cleaned_location = clean_location_text(potential_location)
-                return normalize_polish_names(cleaned_location)
+        dash_location = _extract_dash_part(part)
+        if dash_location:
+            return _finalise_location(dash_location)
 
-    # Third priority: Look for address patterns
     for part in parts:
-        part = part.strip()
-        if part and part.lower() not in ['nan', 'null', '']:
-            # Check for address indicators or patterns
-            if (any(keyword in part.lower() for keyword in ['ul.', 'al.', 'pl.', 'os.', 'centrum'])
-                or re.search(r'\w+\s+\w+\s+\d+', part)
-                    or (re.search(r'\d+', part) and len(part) > 8)):
-                cleaned_part = clean_location_text(part)
-                return normalize_polish_names(cleaned_part)
+        if _looks_like_address(part):
+            return _finalise_location(part)
 
-    # Fourth priority: Any meaningful text
-    exclude_terms = ['nan', 'null', 'zakup w terminalu', 'pc game purchase',
-                     'grocery store', 'groceries', 'store', 'shop', 'market']
     for part in parts:
-        part = part.strip()
-        if part and part.lower() not in exclude_terms and len(part) > 3:
-            cleaned_part = clean_location_text(part)
-            return normalize_polish_names(cleaned_part)
+        lowered = part.lower()
+        if lowered not in _EXCLUDE_TERMS and len(part) > 3:
+            return _finalise_location(part)
 
-    return ""
+    return ''
 
 
-def create_google_maps_link(location):
-    """Create Google Maps search link for location"""
+def create_google_maps_link(location: str | None) -> str:
+    """Return a Google Maps search URL when the text resembles an address."""
     if not location:
-        return ""
+        return ''
 
-    # Clean up the location string
-    location = location.strip()
-    if not location:
-        return ""
+    trimmed = location.strip()
+    if not trimmed:
+        return ''
 
-    # Check if the location contains actual address information
-    # Only create links for locations that have:
-    # - Street indicators (ul., al., pl., os.)
-    # - Numbers (suggesting address)
-    # - City names (common Polish cities)
-    # - Commas (suggesting structured address like "ul. name, city")
-    location_lower = location.lower()
+    lowered = trimmed.lower()
+    has_street_indicator = any(
+        token in lowered for token in _MAPS_STREET_TOKENS)
+    has_comma = ',' in trimmed
+    has_number = bool(_DIGIT_RE.search(trimmed))
+    has_city = any(city in lowered for city in _MAPS_CITY_KEYWORDS)
 
-    has_street_indicator = any(indicator in location_lower for indicator in [
-                               'ul.', 'al.', 'pl.', 'os.', 'aleja', 'ulica', 'plac', 'osiedle'])
-    has_comma = ',' in location
-    has_number = re.search(r'\d+', location)
-    has_city_keywords = any(city in location_lower for city in [
-                            'warszawa', 'kraków', 'łódź', 'wrocław', 'poznań', 'gdańsk', 'szczecin', 'bydgoszcz', 'lublin', 'katowice'])
+    if not (has_street_indicator or (has_comma and (has_number or has_city))):
+        return ''
 
-    # Only generate link if location looks like a real address
-    if not (has_street_indicator or (has_comma and (has_number or has_city_keywords))):
-        return ""
+    for prefix in _PREFIXES_TO_REMOVE:
+        if lowered.startswith(prefix):
+            trimmed = trimmed[len(prefix):].strip()
+            lowered = trimmed.lower()
 
-    # Remove any leftover prefixes that shouldn't be in Google Maps links
-    prefixes_to_remove = [
-        'lokalizacja:',
-        'lokalizacja :',
-        'adres:',
-        'adres :',
-        'miasto:',
-        'miasto :',
-        'kraj:',
-        'kraj :'
+    trimmed = _MAPS_SUFFIX_RE.sub(r', \1', trimmed)
+    trimmed = _COLON_SPACING_RE.sub(', ', trimmed)
+    trimmed = _MULTIPLE_SPACE_RE.sub(' ', trimmed)
+    trimmed = _DOUBLE_COMMA_RE.sub(',', trimmed)
+    trimmed = trimmed.strip(' ,')
+
+    if not trimmed:
+        return ''
+
+    encoded = urllib.parse.quote(trimmed)
+    return f"https://www.google.com/maps/search/{encoded}"
+
+
+def _split_parts(data_string: str | float | None) -> list[str]:
+    return [
+        part.strip()
+        for part in str(data_string).split('//')
+        if part and part.strip()
     ]
 
-    for prefix in prefixes_to_remove:
-        if location_lower.startswith(prefix):
-            location = location[len(prefix):].strip()
-            location_lower = location.lower()
 
-    # Additional cleanup for Google Maps - remove internal prefixes and format nicely
-    # Replace patterns like ": warszawa kraj : polska" with ", warszawa"
-    location = re.sub(r'\s*:\s*([^:]+?)\s+kraj\s*:\s*\w+$', r', \1', location)
-    # Clean up any remaining colons and multiple spaces
-    location = re.sub(r'\s*:\s*', ', ', location)
-    location = re.sub(r'\s+', ' ', location)
-    location = re.sub(r',\s*,', ',', location)
-    location = location.strip(' ,')
+def _parse_structured_part(part: str) -> str | None:
+    lowered = part.lower()
+    if 'lokalizacja' not in lowered or 'adres' not in lowered:
+        return None
 
-    # URL encode the location for Google Maps
-    encoded_location = urllib.parse.quote(location)
-    return f"https://www.google.com/maps/search/{encoded_location}"
-# This module is now integrated into the main data processing pipeline
-# The functions above are imported and used in data_core.py
+    candidate = part.split(' - ')[-1].strip()
+    candidate_lower = candidate.lower()
+    working = candidate if 'lokalizacja' in candidate_lower else part
+
+    split_payload = re.split(r'(?i)lokalizacja\s*:\s*', working, maxsplit=1)
+    if len(split_payload) != 2:
+        return None
+
+    return _extract_address_payload(split_payload[1])
+
+
+def _extract_address_payload(payload: str) -> str | None:
+    match = _STRUCTURED_ADDRESS_RE.search(payload)
+    if match:
+        address = (match.group('address') or '').strip(' ,')
+        city = (match.group('city') or '').strip(' ,')
+        if address and city:
+            return f'{address}, {city}'
+        return address or city or None
+
+    without_country = re.split(
+        r'(?i)kraj\s*:\s*', payload, maxsplit=1)[0].strip(' ,')
+    if not without_country:
+        return None
+
+    if ':' in without_country:
+        address, _, city = without_country.rpartition(':')
+        address = address.strip(' ,')
+        city = city.strip(' ,')
+        if address and city:
+            return f'{address}, {city}'
+
+    return without_country
+
+
+def _extract_dash_part(part: str) -> str | None:
+    if ' - ' not in part:
+        return None
+
+    lowered = part.lower()
+    if 'lokalizacja' in lowered:
+        return None
+
+    candidate = part.split(' - ')[-1].strip()
+    if candidate and candidate.lower() not in _EXCLUDE_TERMS:
+        return candidate
+    return None
+
+
+def _looks_like_address(part: str) -> bool:
+    lowered = part.lower()
+    if lowered in _EXCLUDE_TERMS:
+        return False
+
+    if any(keyword in lowered for keyword in _ADDRESS_INDICATORS):
+        return True
+
+    if _THREE_TOKEN_NUMBER_RE.search(part):
+        return True
+
+    return bool(_DIGIT_RE.search(part) and len(part) > 8)
+
+
+def _finalise_location(part: str) -> str:
+    cleaned = clean_location_text(part)
+    return normalize_polish_names(cleaned)
