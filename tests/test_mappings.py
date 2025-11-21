@@ -244,15 +244,11 @@ class TestCategorySetIntegrity:
 
     def test_all_category_sets_defined(self):
         """Test that all category sets used in mappings are properly defined."""
-        # This test ensures no category set is None or empty when it shouldn't be
-        category_sets = [
-            FOOD, GREENFOOD, TRANSPORTATION, CAR, LEASING, FUEL, REPAIRS,
-            COFFEE, FASTFOOD, GROCERIES, CATERING, ALCOHOL, APARTMENT,
-            BILLS, RENOVATION, CLOTHES, JEWELRY, ENTERTAINMENT, PCGAMES,
-            BIKE, SPORT, PHARMACY, COSMETICS, TRAVEL, BOOKS, ANIMALS,
-            INSURANCE, SUBSCRIPTIONS, INVESTMENTS, SELF_DEVELOPMENT,
-            ELECTRONIC, SHOPPING, MISC
-        ]
+        import data_processing.category as category_module
+
+        # Dynamically build category list from all_category
+        category_sets = [getattr(category_module, cat_name)
+                         for cat_name in all_category]
 
         for category_set in category_sets:
             assert category_set is not None
@@ -262,18 +258,14 @@ class TestCategorySetIntegrity:
 
     def test_no_duplicate_keywords_across_categories(self):
         """Test that keywords are not duplicated across different categories."""
+        import data_processing.category as category_module
+
         all_keywords = set()
         duplicates = set()
 
-        category_sets = [
-            ("FOOD", FOOD), ("GREENFOOD",
-                             GREENFOOD), ("TRANSPORTATION", TRANSPORTATION),
-            ("CAR", CAR), ("FUEL", FUEL), ("COFFEE",
-                                           COFFEE), ("FASTFOOD", FASTFOOD),
-            ("GROCERIES", GROCERIES), ("ALCOHOL", ALCOHOL), ("CLOTHES", CLOTHES),
-            ("ENTERTAINMENT", ENTERTAINMENT), ("SUBSCRIPTIONS", SUBSCRIPTIONS),
-            ("ELECTRONIC", ELECTRONIC), ("SHOPPING", SHOPPING), ("MISC", MISC)
-        ]
+        # Dynamically build category list from all_category
+        category_sets = [(cat_name, getattr(category_module, cat_name))
+                         for cat_name in all_category]
 
         for category_name, category_set in category_sets:
             for keyword in category_set:
@@ -295,49 +287,16 @@ class TestCategorySetIntegrity:
         This test ensures that no keyword exists in multiple categories, which could lead to
         unpredictable categorization results depending on the order of category checks.
         """
+        import data_processing.category as category_module
+
         # Dictionary to track which category each keyword belongs to
         keyword_to_category = {}
         # Dictionary to track keywords that appear in multiple categories
         duplicate_keywords = {}
 
-        # All category sets with their names
-        all_categories = [
-            ("FOOD", FOOD),
-            ("GREENFOOD", GREENFOOD),
-            ("TRANSPORTATION", TRANSPORTATION),
-            ("CAR", CAR),
-            ("LEASING", LEASING),
-            ("FUEL", FUEL),
-            ("REPAIRS", REPAIRS),
-            ("COFFEE", COFFEE),
-            ("FASTFOOD", FASTFOOD),
-            ("GROCERIES", GROCERIES),
-            ("CATERING", CATERING),
-            ("ALCOHOL", ALCOHOL),
-            ("APARTMENT", APARTMENT),
-            ("BILLS", BILLS),
-            ("RENOVATION", RENOVATION),
-            ("CLOTHES", CLOTHES),
-            ("JEWELRY", JEWELRY),
-            ("ENTERTAINMENT", ENTERTAINMENT),
-            ("PCGAMES", PCGAMES),
-            ("BIKE", BIKE),
-            ("SPORT", SPORT),
-            ("PHARMACY", PHARMACY),
-            ("COSMETICS", COSMETICS),
-            ("TRAVEL", TRAVEL),
-            ("BOOKS", BOOKS),
-            ("ANIMALS", ANIMALS),
-            ("INSURANCE", INSURANCE),
-            ("SUBSCRIPTIONS", SUBSCRIPTIONS),
-            ("INVESTMENTS", INVESTMENTS),
-            ("SELF_DEVELOPMENT", SELF_DEVELOPMENT),
-            ("ELECTRONIC", ELECTRONIC),
-            ("SELF_CARE", SELF_CARE),
-            ("KIDS", KIDS),
-            ("SHOPPING", SHOPPING),
-            ("MISC", MISC),
-        ]
+        # Dynamically build category list from all_category
+        all_categories = [(cat_name, getattr(category_module, cat_name))
+                          for cat_name in all_category]
 
         # Check each keyword in each category
         for category_name, category_set in all_categories:
