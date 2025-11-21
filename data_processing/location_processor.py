@@ -7,6 +7,8 @@ import urllib.parse
 
 import pandas as pd
 
+# Metadata prefixes commonly found in raw transaction strings that should be removed
+# during cleanup to isolate the actual address text.
 _PREFIXES_TO_REMOVE: tuple[str, ...] = (
     'miasto :',
     'miasto:',
@@ -16,6 +18,8 @@ _PREFIXES_TO_REMOVE: tuple[str, ...] = (
     'lokalizacja:',
 )
 
+# Mapping of common Polish names without diacritics to their proper Unicode forms.
+# Used for normalizing addresses that may have been entered without proper characters.
 _POLISH_REPLACEMENTS: dict[str, str] = {
     # Cities
     'lodz': 'łódź',
@@ -53,6 +57,8 @@ _POLISH_REPLACEMENTS: dict[str, str] = {
     'sw ': 'św. ',
 }
 
+# Keywords that strongly suggest a text fragment contains an address.
+# Includes Polish, Spanish, and Italian street/location markers for international support.
 _ADDRESS_INDICATORS: tuple[str, ...] = (
     'ul.',
     'al.',
@@ -71,6 +77,8 @@ _ADDRESS_INDICATORS: tuple[str, ...] = (
     'strada',
 )
 
+# Extended set of street indicators used specifically for validating Google Maps links.
+# More comprehensive than _ADDRESS_INDICATORS to reduce false positives in URL generation.
 _MAPS_STREET_TOKENS: tuple[str, ...] = (
     'ul.', 'al.', 'pl.', 'os.', 'aleja', 'ulica', 'plac', 'osiedle',
     'street', 'st.', 'avenue', 'ave.', 'road', 'rd.', 'boulevard', 'blvd.',
@@ -78,6 +86,8 @@ _MAPS_STREET_TOKENS: tuple[str, ...] = (
     'via', 'viale', 'piazza', 'corso', 'strada',
 )
 
+# Major city names used to validate whether a location string is geocodable.
+# Combined with other heuristics to determine if a Google Maps link should be generated.
 _MAPS_CITY_KEYWORDS: tuple[str, ...] = (
     # Polish cities
     'warszawa', 'kraków', 'łódź', 'wrocław', 'poznań', 'gdańsk', 'szczecin',
@@ -94,6 +104,8 @@ _MAPS_CITY_KEYWORDS: tuple[str, ...] = (
     'trieste', 'brescia', 'parma', 'modena',
 )
 
+# Generic transaction descriptions that should not be treated as locations.
+# These terms are filtered out during extraction to avoid false positives.
 _EXCLUDE_TERMS: set[str] = {
     'nan',
     'null',
@@ -106,41 +118,65 @@ _EXCLUDE_TERMS: set[str] = {
     'market',
 }
 
+# Compiled regex patterns for efficient text processing and address extraction.
+# Remove "kraj: ..." segments
 _COUNTRY_FIELD_RE = re.compile(r'\s*kraj\s*:\s*[^,]*', re.IGNORECASE)
-_COLON_SPACING_RE = re.compile(r'\s*:\s*')
-_MULTIPLE_SPACE_RE = re.compile(r'\s+')
-_DOUBLE_COMMA_RE = re.compile(r',\s*,')
-_THREE_TOKEN_NUMBER_RE = re.compile(r'\w+\s+\w+\s+\d+')
-_DIGIT_RE = re.compile(r'\d+')
+_COLON_SPACING_RE = re.compile(r'\s*:\s*')  # Normalize spacing around colons
+_MULTIPLE_SPACE_RE = re.compile(r'\s+')  # Collapse multiple spaces
+_DOUBLE_COMMA_RE = re.compile(r',\s*,')  # Remove duplicate commas
+_THREE_TOKEN_NUMBER_RE = re.compile(
+    r'\w+\s+\w+\s+\d+')  # Pattern like "street name 123"
+_DIGIT_RE = re.compile(r'\d+')  # Any numeric sequence
 _STRUCTURED_ADDRESS_RE = re.compile(
     r'adres\s*:\s*(?P<address>.*?)\s*(?:miasto\s*:\s*(?P<city>.*?))?(?:kraj\s*:\s*.*)?$',
     re.IGNORECASE,
-)
+)  # Parse "adres: ... miasto: ... kraj: ..." format
 _MAPS_SUFFIX_RE = re.compile(
+    # Clean trailing country info
     r'\s*:\s*([^:]+?)\s+kraj\s*:\s*\w+$', re.IGNORECASE)
 
 
 def clean_location_text(location: str | None) -> str:
-    """Strip boilerplate markers and standardise separators."""
+    """Strip boilerplate markers and standardise separators.
+
+    Args:
+        location: Raw location string potentially containing metadata prefixes.
+
+    Returns:
+        Cleaned location string with normalized spacing and punctuation.
+    """
     if not location:
         return ""
 
+    # Remove country information
     cleaned = _COUNTRY_FIELD_RE.sub('', location)
+
+    # Strip metadata prefixes like "miasto:", "adres:"
     for prefix in _PREFIXES_TO_REMOVE:
         cleaned = cleaned.replace(prefix, ' ')
 
+    # Standardize formatting
+    # Colons → commas with spacing
     cleaned = _COLON_SPACING_RE.sub(', ', cleaned)
-    cleaned = _MULTIPLE_SPACE_RE.sub(' ', cleaned)
-    cleaned = _DOUBLE_COMMA_RE.sub(',', cleaned)
+    cleaned = _MULTIPLE_SPACE_RE.sub(' ', cleaned)  # Collapse whitespace
+    cleaned = _DOUBLE_COMMA_RE.sub(',', cleaned)    # Remove duplicate commas
     return cleaned.strip(' ,')
 
 
 def normalize_polish_names(location: str | None) -> str:
-    """Restore missing Polish diacritics for common tokens."""
+    """Restore missing Polish diacritics for common tokens.
+
+    Args:
+        location: Location string potentially containing names without proper diacritics.
+
+    Returns:
+        Location string with Polish characters properly restored.
+    """
     if not location:
         return ""
 
     normalised = location
+    # Replace each ASCII variant with its proper Unicode form using word boundaries
     for incorrect, correct in _POLISH_REPLACEMENTS.items():
         pattern = r'\b' + re.escape(incorrect) + r'\b'
         normalised = re.sub(pattern, correct, normalised, flags=re.IGNORECASE)
@@ -148,7 +184,20 @@ def normalize_polish_names(location: str | None) -> str:
 
 
 def extract_location_from_data(data_string: str | float | None) -> str:
-    """Derive the most reliable location fragment from raw transaction data."""
+    """Derive the most reliable location fragment from raw transaction data.
+
+    Uses a priority-based extraction strategy:
+    1. Structured metadata blocks (lokalizacja: adres: ... miasto: ...)
+    2. Dash-separated patterns (DESC - ADDRESS)
+    3. Address-like heuristics (street indicators, numbers)
+    4. Any remaining meaningful text
+
+    Args:
+        data_string: Raw transaction data potentially containing location info.
+
+    Returns:
+        Cleaned and normalized location string, or empty string if none found.
+    """
     if data_string is None or data_string == '' or pd.isna(data_string):
         return ''
 
@@ -156,20 +205,24 @@ def extract_location_from_data(data_string: str | float | None) -> str:
     if not parts:
         return ''
 
+    # Priority 1: Structured location blocks
     for part in parts:
         structured = _parse_structured_part(part)
         if structured:
             return _finalise_location(structured)
 
+    # Priority 2: Dash-separated fallback
     for part in parts:
         dash_location = _extract_dash_part(part)
         if dash_location:
             return _finalise_location(dash_location)
 
+    # Priority 3: Address-like patterns
     for part in parts:
         if _looks_like_address(part):
             return _finalise_location(part)
 
+    # Priority 4: Any non-generic text
     for part in parts:
         lowered = part.lower()
         if lowered not in _EXCLUDE_TERMS and len(part) > 3:
@@ -179,7 +232,17 @@ def extract_location_from_data(data_string: str | float | None) -> str:
 
 
 def create_google_maps_link(location: str | None) -> str:
-    """Return a Google Maps search URL when the text resembles an address."""
+    """Return a Google Maps search URL when the text resembles an address.
+
+    Only generates links for strings that pass validation heuristics to avoid
+    creating useless map searches for generic transaction descriptions.
+
+    Args:
+        location: Location string to potentially convert to a Maps URL.
+
+    Returns:
+        Encoded Google Maps search URL, or empty string if location is invalid.
+    """
     if not location:
         return ''
 
@@ -188,29 +251,34 @@ def create_google_maps_link(location: str | None) -> str:
         return ''
 
     lowered = trimmed.lower()
+    # Validate the location contains address-like features
     has_street_indicator = any(
         token in lowered for token in _MAPS_STREET_TOKENS)
     has_comma = ',' in trimmed
     has_number = bool(_DIGIT_RE.search(trimmed))
     has_city = any(city in lowered for city in _MAPS_CITY_KEYWORDS)
 
+    # Require either street indicator OR (comma + number/city)
     if not (has_street_indicator or (has_comma and (has_number or has_city))):
         return ''
 
+    # Remove any leftover metadata prefixes
     for prefix in _PREFIXES_TO_REMOVE:
         if lowered.startswith(prefix):
             trimmed = trimmed[len(prefix):].strip()
             lowered = trimmed.lower()
 
-    trimmed = _MAPS_SUFFIX_RE.sub(r', \1', trimmed)
-    trimmed = _COLON_SPACING_RE.sub(', ', trimmed)
-    trimmed = _MULTIPLE_SPACE_RE.sub(' ', trimmed)
-    trimmed = _DOUBLE_COMMA_RE.sub(',', trimmed)
+    # Final cleanup pass
+    trimmed = _MAPS_SUFFIX_RE.sub(r', \1', trimmed)  # Clean "kraj:" suffixes
+    trimmed = _COLON_SPACING_RE.sub(', ', trimmed)   # Normalize colons
+    trimmed = _MULTIPLE_SPACE_RE.sub(' ', trimmed)   # Collapse spaces
+    trimmed = _DOUBLE_COMMA_RE.sub(',', trimmed)     # Remove duplicate commas
     trimmed = trimmed.strip(' ,')
 
     if not trimmed:
         return ''
 
+    # URL-encode and construct Maps search link
     encoded = urllib.parse.quote(trimmed)
     return f"https://www.google.com/maps/search/{encoded}"
 
