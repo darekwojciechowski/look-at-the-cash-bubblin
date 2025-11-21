@@ -1,3 +1,5 @@
+"""Utilities for extracting and normalising location data from raw strings."""
+
 from __future__ import annotations
 
 import re
@@ -214,6 +216,7 @@ def create_google_maps_link(location: str | None) -> str:
 
 
 def _split_parts(data_string: str | float | None) -> list[str]:
+    """Split raw transaction text by '//' and trim whitespace."""
     return [
         part.strip()
         for part in str(data_string).split('//')
@@ -222,6 +225,7 @@ def _split_parts(data_string: str | float | None) -> list[str]:
 
 
 def _parse_structured_part(part: str) -> str | None:
+    """Handle fragments that expose 'lokalizacja' metadata blocks."""
     lowered = part.lower()
     if 'lokalizacja' not in lowered or 'adres' not in lowered:
         return None
@@ -238,6 +242,7 @@ def _parse_structured_part(part: str) -> str | None:
 
 
 def _extract_address_payload(payload: str) -> str | None:
+    """Extract "adres", "miasto" chunks from the structured payload."""
     match = _STRUCTURED_ADDRESS_RE.search(payload)
     if match:
         address = (match.group('address') or '').strip(' ,')
@@ -262,6 +267,7 @@ def _extract_address_payload(payload: str) -> str | None:
 
 
 def _extract_dash_part(part: str) -> str | None:
+    """Fallback for patterns like 'something - ADDRESS'."""
     if ' - ' not in part:
         return None
 
@@ -276,6 +282,7 @@ def _extract_dash_part(part: str) -> str | None:
 
 
 def _looks_like_address(part: str) -> bool:
+    """Decide whether the text resembles an address using heuristics."""
     lowered = part.lower()
     if lowered in _EXCLUDE_TERMS:
         return False
@@ -290,5 +297,6 @@ def _looks_like_address(part: str) -> bool:
 
 
 def _finalise_location(part: str) -> str:
+    """Run the standard cleaning pipeline for a raw location candidate."""
     cleaned = clean_location_text(part)
     return normalize_polish_names(cleaned)
