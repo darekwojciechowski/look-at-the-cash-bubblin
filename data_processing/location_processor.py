@@ -51,7 +51,23 @@ _POLISH_REPLACEMENTS: dict[str, str] = {
     'sw ': 'św. ',
 }
 
-_ADDRESS_INDICATORS: tuple[str, ...] = ('ul.', 'al.', 'pl.', 'os.', 'centrum')
+_ADDRESS_INDICATORS: tuple[str, ...] = (
+    'ul.',
+    'al.',
+    'pl.',
+    'os.',
+    'centrum',
+    'calle',
+    'avenida',
+    'avda.',
+    'paseo',
+    'plaza',
+    'via',
+    'viale',
+    'piazza',
+    'corso',
+    'strada',
+)
 
 _MAPS_STREET_TOKENS: tuple[str, ...] = (
     'ul.', 'al.', 'pl.', 'os.', 'aleja', 'ulica', 'plac', 'osiedle',
