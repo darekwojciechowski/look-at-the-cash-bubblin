@@ -11,7 +11,7 @@ from data_processing.category import (
     BILLS, RENOVATION, CLOTHES, JEWELRY, ENTERTAINMENT, PCGAMES,
     BIKE, SPORT, PHARMACY, COSMETICS, TRAVEL, BOOKS, ANIMALS,
     INSURANCE, SUBSCRIPTIONS, INVESTMENTS, SELF_DEVELOPMENT,
-    ELECTRONIC, SHOPPING, MISC, SELF_CARE, KIDS
+    ELECTRONIC, SHOPPING, MISC, SELF_CARE, KIDS, all_category
 )
 
 
@@ -362,3 +362,30 @@ class TestCategorySetIntegrity:
 
         # If we reach here, all keywords are unique across categories
         assert len(keyword_to_category) > 0, "No keywords found in any category"
+
+    def test_all_category_list_completeness(self):
+        """Test that all_category list contains all category names defined in the module."""
+        import data_processing.category as category_module
+
+        # Dynamically extract all category variable names from the module
+        # Look for uppercase variables that are sets (excluding all_category itself)
+        defined_category_variables = [
+            name for name in dir(category_module)
+            if name.isupper()
+            and name != 'ALL_CATEGORY'
+            and not name.startswith('_')
+            and isinstance(getattr(category_module, name), set)
+        ]
+
+        # Check that all_category contains all defined categories
+        missing_categories = [
+            cat for cat in defined_category_variables if cat not in all_category]
+        extra_categories = [
+            cat for cat in all_category if cat not in defined_category_variables]
+
+        assert not missing_categories, \
+            f"Categories missing from all_category list: {missing_categories}"
+        assert not extra_categories, \
+            f"Extra categories in all_category list not defined as sets: {extra_categories}"
+        assert len(all_category) == len(defined_category_variables), \
+            f"Expected {len(defined_category_variables)} categories but found {len(all_category)}"
