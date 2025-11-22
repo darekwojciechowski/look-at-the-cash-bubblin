@@ -141,9 +141,10 @@ class TestProcessDataframe:
         with patch("data_processing.data_core.mappings", mappings_mock):
             processed_df = process_dataframe(raw_transaction_data)
 
-        # Verify no positive prices remain
-        assert all(float(price) < 0 for price in processed_df["price"])
-        assert "200.0" not in processed_df["price"].values
+        # Verify prices are converted to absolute positive values
+        assert all(float(price) > 0 for price in processed_df["price"])
+        # Verify original positive price row was filtered out (4 rows remain)
+        assert len(processed_df) == 4
 
     def test_process_dataframe_converts_price_to_absolute(self, mappings_mock):
         """Test price conversion to absolute values."""

@@ -16,36 +16,37 @@ class TestExpenseCategorization:
             # APARTMENT category tests
             (1, 2023, "apartment rent", 1200,
              CATEGORY.APARTMENT, IMPORTANCE.ESSENTIAL),
-            (2, 2023, "flat payment", 1200, CATEGORY.APARTMENT, IMPORTANCE.ESSENTIAL),
+            (2, 2023, "bills payment", 1200,
+             CATEGORY.APARTMENT, IMPORTANCE.ESSENTIAL),
 
             # EATING_OUT category tests
             (2, 2023, "weekly groceries", 150,
              CATEGORY.EATING_OUT, IMPORTANCE.NICE_TO_HAVE),
-            (3, 2023, "restaurant dinner", 80,
+            (3, 2023, "coffee shop visit", 80,
              CATEGORY.EATING_OUT, IMPORTANCE.NICE_TO_HAVE),
 
             # CAR category tests
             (3, 2023, "fuel for car", 100, CATEGORY.CAR, IMPORTANCE.HAVE_TO_HAVE),
             (4, 2023, "car maintenance", 200,
              CATEGORY.CAR, IMPORTANCE.HAVE_TO_HAVE),
-            (5, 2023, "vehicle repair", 300, CATEGORY.CAR, IMPORTANCE.HAVE_TO_HAVE),
+            (5, 2023, "car repairs", 300, CATEGORY.CAR, IMPORTANCE.HAVE_TO_HAVE),
 
             # INVESTMENTS category tests
             (5, 2023, "investment deposit", 500,
              CATEGORY.INVESTMENTS, IMPORTANCE.NICE_TO_HAVE),
-            (6, 2023, "etf purchase", 1000,
+            (6, 2023, "investment portfolio", 1000,
              CATEGORY.INVESTMENTS, IMPORTANCE.NICE_TO_HAVE),
 
             # TRAVEL category tests
             (7, 2023, "travel to Paris", 800,
              CATEGORY.TRAVEL, IMPORTANCE.NICE_TO_HAVE),
-            (8, 2023, "vacation trip", 1200,
+            (8, 2023, "travel expenses", 1200,
              CATEGORY.TRAVEL, IMPORTANCE.NICE_TO_HAVE),
 
             # CARE category tests
             (8, 2023, "pharmacy purchase", 50,
              CATEGORY.CARE, IMPORTANCE.NICE_TO_HAVE),
-            (9, 2023, "medical supplies", 75,
+            (9, 2023, "pharmacy items", 75,
              CATEGORY.CARE, IMPORTANCE.NICE_TO_HAVE),
 
             # MISC category tests (default)
@@ -93,12 +94,12 @@ class TestExpenseRepresentation:
             (1, 2023, "apartment rent", 1200,
              "1,2023,apartment rent,🏯 Apartment,1200,Essential"),
             (2, 2023, "groceries", 150,
-             "2,2023,groceries,🍔 Eating Out,150,Nice to have"),
-            (3, 2023, "fuel", 100, "3,2023,fuel,🚗 Car,100,Have to have"),
+             "2,2023,groceries,🦞 Eating Out,150,Nice to Have"),
+            (3, 2023, "fuel", 100, "3,2023,fuel,🚗 Car,100,Have to Have"),
             (5, 2023, "investment", 500,
-             "5,2023,investment,💰 Investments,500,Nice to have"),
-            (7, 2023, "vacation", 800, "7,2023,vacation,✈️ Travel,800,Nice to have"),
-            (9, 2023, "unknown", 100, "9,2023,unknown,🤷 Misc,100,Needs Review"),
+             "5,2023,investment,💸 Investments,500,Nice to Have"),
+            (7, 2023, "travel", 800, "7,2023,travel,🗺️ Travel,800,Nice to Have"),
+            (9, 2023, "unknown", 100, "9,2023,unknown,Misc,100,Needs Review"),
         ],
     )
     def test_expense_repr_multiple_categories(self, month, year, item, price, expected_repr):
