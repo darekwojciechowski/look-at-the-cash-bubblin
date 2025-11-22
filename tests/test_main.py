@@ -1,69 +1,170 @@
+"""
+Tests for main module.
+Ensures proper workflow integration and data pipeline execution.
+"""
+
 import pytest
-from unittest.mock import patch, MagicMock
+import pandas as pd
+from unittest.mock import patch, call
 from main import main
 
 
-@patch("main.setup_logging")
-@patch("main.read_transaction_csv")
-@patch("main.ipko_import")
-@patch("main.process_dataframe")
-@patch("main.export_misc_transactions")
-@patch("main.pd.DataFrame.to_csv")
-def test_main_workflow(mock_to_csv, mock_export_misc, mock_process_df, mock_ipko_import, mock_read_csv, mock_setup_logging):
-    """
-    Tests the main function workflow to ensure:
-    - Logging is set up correctly.
-    - Transactions are read from the correct CSV file.
-    - The DataFrame is processed as expected.
-    - Miscellaneous transactions are exported correctly.
-    - The processed DataFrame is exported to a CSV file with the correct structure.
-    """
-    # Create proper DataFrame mocks instead of MagicMock
-    import pandas as pd
-
-    raw_df = pd.DataFrame({
-        "data": ["test1", "test2"],
-        "price": [100, 200],
+@pytest.fixture
+def sample_raw_dataframe():
+    """Fixture providing realistic raw transaction data."""
+    return pd.DataFrame({
+        "data": ["orlen fuel station", "starbucks coffee"],
+        "price": ["-100.0", "-15.0"],
         "month": [1, 1],
         "year": [2023, 2023]
     })
 
-    processed_df = pd.DataFrame({
+
+@pytest.fixture
+def sample_processed_dataframe():
+    """Fixture providing expected processed transaction data."""
+    return pd.DataFrame({
         "month": [1, 1],
         "year": [2023, 2023],
-        "price": [100, 200],
-        "category": ["Food", "Transport"],
-        "data": ["test1", "test2"]
+        "price": [100.0, 15.0],
+        "category": ["FUEL", "COFFEE"],
+        "data": ["orlen fuel station", "starbucks coffee"]
     })
 
-    # Mock the behavior of the imported functions
-    mock_read_csv.return_value = raw_df
-    # ipko_import returns the same format we need
-    mock_ipko_import.return_value = raw_df
-    mock_process_df.return_value = processed_df
 
-    # Run the main function
-    main()
+class TestMainWorkflow:
+    """Test suite for main workflow integration."""
 
-    # Verify that setup_logging was called
-    mock_setup_logging.assert_called_once()
+    @patch("main.setup_logging")
+    @patch("main.read_transaction_csv")
+    @patch("main.ipko_import")
+    @patch("main.process_dataframe")
+    @patch("main.export_misc_transactions")
+    @patch("main.pd.DataFrame.to_csv")
+    def test_main_workflow_integration(
+        self,
+        mock_to_csv,
+        mock_export_misc,
+        mock_process_df,
+        mock_ipko_import,
+        mock_read_csv,
+        mock_setup_logging,
+        sample_raw_dataframe,
+        sample_processed_dataframe
+    ):
+        """
+        Integration test verifying complete main workflow.
 
-    # Verify that read_transaction_csv was called with the correct arguments
-    mock_read_csv.assert_called_once_with('data/demo_ipko.csv', 'cp1250')
+        Ensures:
+        - Correct function call order
+        - Proper data flow between functions
+        - Expected CSV output format
+        - All pipeline components are invoked
+        """
+        # Arrange
+        mock_read_csv.return_value = sample_raw_dataframe
+        mock_ipko_import.return_value = sample_raw_dataframe
+        mock_process_df.return_value = sample_processed_dataframe
 
-    # Verify that ipko_import was called with the DataFrame returned by read_transaction_csv
-    mock_ipko_import.assert_called_once_with(raw_df)
+        # Act
+        main()
 
-    # Verify that process_dataframe was called with the DataFrame returned by ipko_import
-    mock_process_df.assert_called_once_with(raw_df)
+        # Assert - verify call order and arguments
+        mock_setup_logging.assert_called_once()
+        mock_read_csv.assert_called_once_with('data/demo_ipko.csv', 'cp1250')
 
-    # Verify that export_misc_transactions was called with the processed DataFrame
-    mock_export_misc.assert_called_once_with(processed_df)
+        # Verify data flows correctly through pipeline
+        pd.testing.assert_frame_equal(
+            mock_ipko_import.call_args[0][0],
+            sample_raw_dataframe
+        )
 
-    # Verify that the processed DataFrame was exported to CSV
-    mock_to_csv.assert_called_once_with(
-        'data/processed_transactions.csv',
-        columns=['month', 'year', 'category', 'price'],
-        index=False,
-        encoding='utf-8-sig'
-    )
+        pd.testing.assert_frame_equal(
+            mock_process_df.call_args[0][0],
+            sample_raw_dataframe
+        )
+
+        mock_export_misc.assert_called_once()
+        pd.testing.assert_frame_equal(
+            mock_export_misc.call_args[0][0],
+            sample_processed_dataframe
+        )
+
+        # Verify CSV export with correct parameters
+        mock_to_csv.assert_called_once_with(
+            'data/processed_transactions.csv',
+            columns=['month', 'year', 'category', 'price'],
+            index=False,
+            encoding='utf-8-sig'
+        )
+
+    @patch("main.setup_logging")
+    @patch("main.read_transaction_csv")
+    @patch("main.ipko_import")
+    @patch("main.process_dataframe")
+    @patch("main.export_misc_transactions")
+    @patch("main.pd.DataFrame.to_csv")
+    def test_main_workflow_with_empty_dataframe(
+        self,
+        mock_to_csv,
+        mock_export_misc,
+        mock_process_df,
+        mock_ipko_import,
+        mock_read_csv,
+        mock_setup_logging
+    ):
+        """Test main workflow with empty DataFrame."""
+        # Arrange
+        empty_df = pd.DataFrame(columns=["data", "price", "month", "year"])
+        mock_read_csv.return_value = empty_df
+        mock_ipko_import.return_value = empty_df
+        mock_process_df.return_value = empty_df
+
+        # Act
+        main()
+
+        # Assert - workflow should complete without errors
+        mock_setup_logging.assert_called_once()
+        mock_export_misc.assert_called_once()
+        mock_to_csv.assert_called_once()
+
+    @patch("main.setup_logging")
+    @patch("main.read_transaction_csv")
+    def test_main_handles_read_csv_failure(
+        self,
+        mock_read_csv,
+        mock_setup_logging
+    ):
+        """Test main workflow when CSV reading fails."""
+        # Arrange
+        mock_read_csv.side_effect = FileNotFoundError("File not found")
+
+        # Act & Assert
+        with pytest.raises(FileNotFoundError):
+            main()
+
+        mock_setup_logging.assert_called_once()
+
+    @patch("main.setup_logging")
+    @patch("main.read_transaction_csv")
+    @patch("main.ipko_import")
+    @patch("main.process_dataframe")
+    def test_main_handles_processing_failure(
+        self,
+        mock_process_df,
+        mock_ipko_import,
+        mock_read_csv,
+        mock_setup_logging,
+        sample_raw_dataframe
+    ):
+        """Test main workflow when data processing fails."""
+        # Arrange
+        mock_read_csv.return_value = sample_raw_dataframe
+        mock_ipko_import.return_value = sample_raw_dataframe
+        mock_process_df.side_effect = KeyError("Invalid column")
+
+        # Act & Assert
+        with pytest.raises(KeyError):
+            main()
+
+        mock_setup_logging.assert_called_once()

@@ -1,14 +1,18 @@
-from data_processing.data_core import clean_date, process_dataframe
-from unittest.mock import patch
-import pandas as pd
+"""
+Tests for data_processing.data_core module.
+Comprehensive testing of data cleaning and processing functionality.
+"""
+
 import pytest
-import sys
-import os
+import pandas as pd
+import numpy as np
+from unittest.mock import patch
+from data_processing.data_core import clean_date, process_dataframe
 
 
 @pytest.fixture
-def sample_dataframe():
-    """Fixture to provide a sample DataFrame for testing."""
+def raw_transaction_data():
+    """Fixture with realistic raw transaction descriptions."""
     return pd.DataFrame({
         "data": [
             "purchase in terminal - mobile code",
@@ -24,63 +28,201 @@ def sample_dataframe():
 
 
 @pytest.fixture
+def expected_cleaned_data():
+    """Expected output after cleaning transaction descriptions."""
+    return pd.DataFrame({
+        "data": [
+            "terminal purchase",
+            "web payment",
+            "Orlen gas station",
+            "Starbucks coffee shop",
+            "Biedronka - Piotrkowska 157a"
+        ],
+        "price": ["-50.0", "-20.0", "-100.0", "-15.0", "200.0"],
+        "month": [1, 1, 1, 1, 1],
+        "year": [2023, 2023, 2023, 2023, 2023]
+    })
+
+
+@pytest.fixture
 def mappings_mock():
-    """Fixture to provide a mock mappings dictionary."""
+    """Fixture providing mock category mappings."""
     return {
-        "terminal purchase": "Shopping",
-        "web payment": "Online Payment",
-        "Orlen gas station": "Fuel",
-        "Starbucks coffee shop": "Coffee",
-        "Biedronka - Piotrkowska 157a": "Groceries"
+        "terminal purchase": "SHOPPING",
+        "web payment": "ONLINE_PAYMENT",
+        "Orlen gas station": "FUEL",
+        "Starbucks coffee shop": "COFFEE",
+        "Biedronka - Piotrkowska 157a": "GROCERIES"
     }
 
 
-def test_clean_date(sample_dataframe):
-    """Test the clean_date function."""
-    cleaned_df = clean_date(sample_dataframe)
-    assert cleaned_df["data"].iloc[0] == "terminal purchase"
-    assert cleaned_df["data"].iloc[1] == "web payment"
-    assert cleaned_df["data"].iloc[2] == "Orlen gas station"
-    assert cleaned_df["data"].iloc[3] == "Starbucks coffee shop"
-    assert cleaned_df["data"].iloc[4] == "Biedronka - Piotrkowska 157a"
+class TestCleanDate:
+    """Test suite for transaction description cleaning."""
+
+    def test_clean_date_all_replacements(self, raw_transaction_data, expected_cleaned_data):
+        """Verify all replacement patterns work correctly."""
+        result = clean_date(raw_transaction_data)
+
+        pd.testing.assert_frame_equal(
+            result,
+            expected_cleaned_data,
+            check_dtype=False
+        )
+
+    @pytest.mark.parametrize("input_text,expected_output", [
+        ("purchase in terminal - mobile code", "terminal purchase"),
+        ("web payment - mobile code", "web payment"),
+        ("orlen", "Orlen gas station"),
+        ("starbucks", "Starbucks coffee shop"),
+        ("piotrkowska 157a", "Biedronka - Piotrkowska 157a"),
+    ])
+    def test_clean_date_individual_replacements(self, input_text, expected_output):
+        """Test individual replacement patterns."""
+        df = pd.DataFrame({
+            "data": [input_text],
+            "price": ["-10.0"],
+            "month": [1],
+            "year": [2023]
+        })
+
+        result = clean_date(df)
+        assert result["data"].iloc[0] == expected_output
+
+    def test_clean_date_preserves_other_columns(self, raw_transaction_data):
+        """Ensure clean_date doesn't modify non-data columns."""
+        result = clean_date(raw_transaction_data)
+
+        pd.testing.assert_series_equal(
+            result["price"],
+            raw_transaction_data["price"],
+            check_dtype=False
+        )
+        pd.testing.assert_series_equal(
+            result["month"],
+            raw_transaction_data["month"],
+            check_dtype=False
+        )
+        pd.testing.assert_series_equal(
+            result["year"],
+            raw_transaction_data["year"],
+            check_dtype=False
+        )
+
+    def test_clean_date_with_empty_dataframe(self):
+        """Test clean_date with empty DataFrame."""
+        empty_df = pd.DataFrame(columns=["data", "price", "month", "year"])
+        result = clean_date(empty_df)
+
+        assert result.empty
+        assert list(result.columns) == ["data", "price", "month", "year"]
 
 
-def test_process_dataframe(sample_dataframe, mappings_mock):
-    """Test the process_dataframe function."""
-    # Patch the mappings dictionary
-    with patch("data_processing.data_core.mappings", mappings_mock):
-        processed_df = process_dataframe(sample_dataframe)
+class TestProcessDataframe:
+    """Test suite for DataFrame processing and categorization."""
 
-    # Debug: Print the processed DataFrame for inspection
-    print(processed_df)
+    def test_process_dataframe_complete_workflow(self, raw_transaction_data, mappings_mock):
+        """Test complete processing workflow with mock mappings."""
+        with patch("data_processing.data_core.mappings", mappings_mock):
+            processed_df = process_dataframe(raw_transaction_data)
 
-    # Verify the processed DataFrame
-    # Expect 4 rows after filtering out the positive price row
-    assert len(processed_df) == 4
-    assert processed_df["category"].iloc[0] == "Shopping"
-    assert processed_df["category"].iloc[1] == "Online Payment"
-    assert processed_df["category"].iloc[2] == "Fuel"
-    assert processed_df["category"].iloc[3] == "Coffee"
+        # Verify 4 rows after filtering out positive price
+        assert len(processed_df) == 4
 
-    # Verify that positive prices are removed
-    assert "200.0" not in processed_df["price"].values
+        # Verify categories assigned correctly
+        expected_categories = ["SHOPPING", "ONLINE_PAYMENT", "FUEL", "COFFEE"]
+        assert processed_df["category"].tolist() == expected_categories
 
-    # Verify column order
-    expected_columns = ["month", "year", "price", "category", "data"]
-    assert list(processed_df.columns) == expected_columns
+        # Verify column order
+        expected_columns = ["month", "year", "price", "category", "data"]
+        assert list(processed_df.columns) == expected_columns
 
+    def test_process_dataframe_filters_positive_prices(self, raw_transaction_data, mappings_mock):
+        """Verify positive price transactions are filtered out."""
+        with patch("data_processing.data_core.mappings", mappings_mock):
+            processed_df = process_dataframe(raw_transaction_data)
 
-@patch("logging.error")
-def test_process_dataframe_ipko_import_failure(mock_logging_error, sample_dataframe):
-    """Test process_dataframe when there's a processing error."""
-    # Create an invalid DataFrame that will cause an error during processing
-    invalid_df = pd.DataFrame({
-        "invalid_column": ["test"],
-        "price": ["invalid_price"],
-        "month": [1],
-        "year": [2023]
-    })
+        # Verify no positive prices remain
+        assert all(float(price) < 0 for price in processed_df["price"])
+        assert "200.0" not in processed_df["price"].values
 
-    # Verify that the exception is raised
-    with pytest.raises(KeyError):
-        process_dataframe(invalid_df)
+    def test_process_dataframe_converts_price_to_absolute(self, mappings_mock):
+        """Test price conversion to absolute values."""
+        df = pd.DataFrame({
+            "data": ["terminal purchase"],
+            "price": ["-50.0"],
+            "month": [1],
+            "year": [2023]
+        })
+
+        with patch("data_processing.data_core.mappings", mappings_mock):
+            result = process_dataframe(df)
+
+        assert float(result["price"].iloc[0]) == 50.0
+
+    def test_process_dataframe_column_order(self, raw_transaction_data, mappings_mock):
+        """Verify column order in processed DataFrame."""
+        with patch("data_processing.data_core.mappings", mappings_mock):
+            result = process_dataframe(raw_transaction_data)
+
+        expected_columns = ["month", "year", "price", "category", "data"]
+        assert list(result.columns) == expected_columns
+
+    def test_process_dataframe_with_empty_dataframe(self, mappings_mock):
+        """Test process_dataframe with empty DataFrame."""
+        empty_df = pd.DataFrame(columns=["data", "price", "month", "year"])
+
+        with patch("data_processing.data_core.mappings", mappings_mock):
+            result = process_dataframe(empty_df)
+
+        assert result.empty
+        expected_columns = ["month", "year", "price", "category", "data"]
+        assert list(result.columns) == expected_columns
+
+    @patch("logging.error")
+    def test_process_dataframe_with_invalid_columns(self, mock_logging_error):
+        """Test process_dataframe when required columns are missing."""
+        invalid_df = pd.DataFrame({
+            "invalid_column": ["test"],
+            "wrong_price": ["invalid_price"],
+            "month": [1],
+            "year": [2023]
+        })
+
+        with pytest.raises(KeyError):
+            process_dataframe(invalid_df)
+
+    def test_process_dataframe_handles_mixed_price_formats(self, mappings_mock):
+        """Test processing with various price formats."""
+        df = pd.DataFrame({
+            "data": ["terminal purchase", "web payment"],
+            "price": ["-50", "-20.50"],
+            "month": [1, 1],
+            "year": [2023, 2023]
+        })
+
+        with patch("data_processing.data_core.mappings", mappings_mock):
+            result = process_dataframe(df)
+
+        assert len(result) == 2
+        assert float(result["price"].iloc[0]) == 50.0
+        assert float(result["price"].iloc[1]) == 20.50
+
+    @pytest.mark.parametrize("price_value", [
+        "-100.0",
+        "-0.01",
+        "-999.99",
+    ])
+    def test_process_dataframe_with_various_negative_prices(self, price_value, mappings_mock):
+        """Test processing with various negative price values."""
+        df = pd.DataFrame({
+            "data": ["terminal purchase"],
+            "price": [price_value],
+            "month": [1],
+            "year": [2023]
+        })
+
+        with patch("data_processing.data_core.mappings", mappings_mock):
+            result = process_dataframe(df)
+
+        assert len(result) == 1
+        assert float(result["price"].iloc[0]) == abs(float(price_value))
