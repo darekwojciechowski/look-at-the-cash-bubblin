@@ -43,6 +43,23 @@ def export_misc_transactions(df: pd.DataFrame):
     logging.info("Exported unassigned (MISC) transactions to CSV.")
 
 
+def export_cleaned_data(df: pd.DataFrame, output_file: str = 'data/processed_transactions.csv'):
+    """
+    Export cleaned transaction data to CSV file.
+
+    Args:
+    df (pd.DataFrame): DataFrame containing processed transactions.
+    output_file (str): Path to the output CSV file.
+    """
+    df.to_csv(
+        output_file,
+        columns=['month', 'year', 'category', 'price'],
+        index=False,
+        encoding='utf-8-sig',
+    )
+    logging.info(f"Exported cleaned data to {output_file}")
+
+
 def export_unassigned_transactions_to_csv(df: pd.DataFrame):
     """
     Export transactions with 'MISC' in the category to a CSV file with location processing.
