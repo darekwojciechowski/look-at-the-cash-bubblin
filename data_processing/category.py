@@ -20,7 +20,7 @@ TRANSPORTATION = {
 }
 
 CAR = {
-    "audi", "bmw", "citroen", "dacia", "fiat", "ford", "hyundai", "kia", "opel", "honda", "skoda", "toyota",
+    "bmw", "citroen", "dacia", "fiat", "ford", "hyundai", "kia", "opel", "honda", "skoda", "toyota",
     "renault", "nissan", "volvo", "volkswagen", "suzuki", "mazda", "mercedes", "ferrari", "peugeot",
     "romeo", "jaguar", "lamborghini", "aston", "bentley", "mclaren", "bugatti", "jeep", "corvette", "lexus",
     "subaru", "lancia", "cadillac", "koenigsegg", "maserati"
@@ -73,7 +73,7 @@ RENOVATION = {
 CLOTHES = {
     "clothes", "reserved", "ccc", "cloppenburg", "zalando", "eobuwie", "adidas", "zara", "sizeer",
     "maxx", "distance", "ecco", "kazar", "ryłko", "wittchen", "vistula", "wolczanka", "calvin", "guess",
-    "puma", "balance", "hilfiger", "fila", "levis", "levi", "zara", "marc", "wrangler", "4f", "bershka", "converse",
+    "puma", "balance", "hilfiger", "fila", "levis", "wrangler", "4f", "bershka", "converse",
     "cropp", "espirit", "h&m", "cooper", "medicine", "ochnik", "pierre", "big star", "nike"
 }
 
@@ -91,7 +91,7 @@ PCGAMES = {
 }
 
 BIKE = {
-    "bike", "loca", "rondo", "bianchi", "scott", "cannondale", "trek", "ghost", "merida", "felt", "orbea",
+    "loca", "rondo", "bianchi", "scott", "cannondale", "trek", "ghost", "merida", "felt", "orbea",
     "canyon", "superior", "kross", "b'twin", "specialized", "romet", "kross", "kellys", "giant", "mondraker",
     "bikesalon", "gravel", "cyklomania", "centrumrowerowe",
 }
@@ -116,7 +116,7 @@ BOOKS = {
 }
 
 ANIMALS = {
-    "animals", "karma", "weterynarz", "vet", "dog"
+    "animals", "karma", "weterynarz", "dog"
 }
 
 INSURANCE = {
@@ -129,7 +129,7 @@ SUBSCRIPTIONS = {
 }
 
 INVESTMENTS = {
-    "investments", "etf", "tfi", "bossa", "xtb", "etoro", "plus500", "brokers", "firstrade", "trading212",
+    "investments", "tfi", "bossa", "xtb", "etoro", "plus500", "brokers", "firstrade", "trading212",
     "exante", "degiro"
 }
 
