@@ -5,6 +5,7 @@ Comprehensive testing of Expense class categorization and representation.
 
 import pytest
 from data_processing.data_loader import Expense, CATEGORY, IMPORTANCE
+from data_processing.category import all_category
 
 
 class TestExpenseCategorization:
@@ -216,3 +217,55 @@ class TestCategoryAndImportanceEnums:
         assert hasattr(IMPORTANCE, 'HAVE_TO_HAVE')
         assert hasattr(IMPORTANCE, 'NICE_TO_HAVE')
         assert hasattr(IMPORTANCE, 'NEEDS_REVIEW')
+
+
+class TestAllCategoriesCoverage:
+    """Test suite to verify all categories from category.py are handled in _determine_category_and_importance."""
+
+    def test_all_categories_from_category_py_are_covered(self):
+        """
+        Test that all categories defined in category.py are handled 
+        in the _determine_category_and_importance method.
+
+        This test creates an Expense with each category name and verifies
+        that it doesn't fall into the MISC category (unless it's MISC itself).
+        """
+        # Categories that should be explicitly handled (dynamically loaded from category.py)
+        categories_to_test = [cat.lower()
+                              for cat in all_category if cat != "MISC"]
+
+        uncovered_categories = []
+
+        for category_name in categories_to_test:
+            # Create an expense with the category name
+            expense = Expense(1, 2023, category_name, 100)
+
+            # If the expense is categorized as MISC, it means this category
+            # is not explicitly handled in _determine_category_and_importance
+            if expense.category == CATEGORY.MISC:
+                uncovered_categories.append(category_name)
+
+        # Assert that all categories are covered
+        assert len(uncovered_categories) == 0, (
+            f"The following categories from category.py are not covered "
+            f"in _determine_category_and_importance: {uncovered_categories}"
+        )
+
+    @pytest.mark.parametrize(
+        "category_name",
+        [cat.lower() for cat in all_category if cat != "MISC"]
+    )
+    def test_individual_category_is_covered(self, category_name):
+        """
+        Test that each individual category from category.py is properly handled.
+
+        This parameterized test verifies each category individually to provide
+        more granular feedback if a specific category is not covered.
+        """
+        expense = Expense(1, 2023, category_name, 100)
+
+        # The expense should not be categorized as MISC (except for MISC itself)
+        assert expense.category != CATEGORY.MISC, (
+            f"Category '{category_name}' is not handled in _determine_category_and_importance "
+            f"and falls back to MISC"
+        )

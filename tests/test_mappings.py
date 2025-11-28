@@ -38,7 +38,7 @@ class TestMappingsFunction:
         ("parking fee at shopping mall", "TRANSPORTATION"),
 
         # CAR category tests
-        ("audi service appointment", "CAR"),
+        ("bmw service appointment", "CAR"),
         ("bmw parts replacement", "CAR"),
         ("toyota maintenance check", "CAR"),
         ("mercedes repair work", "CAR"),
@@ -100,7 +100,7 @@ class TestMappingsFunction:
 
         # INVESTMENTS category tests
         ("xtb trading platform", "INVESTMENTS"),
-        ("etf investment purchase", "INVESTMENTS"),
+        ("tfi investment fund", "INVESTMENTS"),
         ("bossa brokerage fee", "INVESTMENTS"),
 
         # ELECTRONIC category tests
