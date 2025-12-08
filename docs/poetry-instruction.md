@@ -16,54 +16,60 @@ Alternatively, if you're on **Windows**, you can use:
 pip install poetry
 ```
 
-## Step 2: Initialize a Poetry Project
+## Step 2: Navigate to Project Directory
 
-
-Navigate to your project directory, which should be the `base location` for your project:
-
-```bash
-cd Streamlit-Dividend-Dashboard
-```
-
-Initialize a new Poetry project:
+Navigate to your project directory:
 
 ```bash
-poetry init
+cd look-at-the-cash-bubblin
 ```
 
-Follow the prompts to set up your project. You can specify the package name, version, description, author, license, and dependencies.
+## Step 3: Install Project Dependencies
 
-## Step 3: Add Dependencies
-
-You can add dependencies to your project using Poetry. For example, to add `pandas`, `matplotlib`, you can run:
+Install all dependencies defined in `pyproject.toml`:
 
 ```bash
-poetry add pandas matplotlib numpy
+poetry install
 ```
 
-## Step 4: Activate the Virtual Environment
+This will create a virtual environment and install:
+- **Core dependencies**: `pandas`, `numpy`
+- **Dev dependencies**: `pytest`, `pytest-cov`, `black`, `isort`, `flake8`, `mypy`
 
-Poetry automatically creates a virtual environment for your project. To activate it, use:
+## Step 4: Work with the Virtual Environment
 
+You can work with Poetry in two ways:
+
+Run commands with `poetry run`:
 ```bash
-poetry env activate
+poetry run python main.py
+poetry run pytest
 ```
+
 
 ## Step 5: Run Your Project
 
-With the virtual environment activated, you can run your Python scripts as usual. For example:
+Process your transaction data:
 
 ```bash
-python main.py
+poetry run python main.py
+```
+
+## Step 6: Run Tests
+
+Execute the test suite:
+
+```bash
+poetry run pytest
 ```
 
 ## Additional Poetry Commands
 
 Here are some other useful Poetry commands:
 
-- **Install all dependencies**: `poetry install`
+- **Add a new dependency**: `poetry add package-name`
+- **Add a dev dependency**: `poetry add --group dev package-name`
 - **Update dependencies**: `poetry update`
-- **Add development dependencies**: `poetry add --dev pytest`
 - **List all dependencies**: `poetry show`
-- **Build your package**: `poetry build`
-- **Remove a dependency**: `poetry remove requests`
+- **Remove a dependency**: `poetry remove package-name`
+- **Check for outdated packages**: `poetry show --outdated`
