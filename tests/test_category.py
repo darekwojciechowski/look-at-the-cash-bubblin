@@ -271,7 +271,7 @@ class TestCategoryKeywordUniqueness:
             ]
             for kw, cats in duplicated_sensitive.items():
                 error_lines.append(f"  • '{kw}' in: {', '.join(cats)}")
-
+                    
             pytest.fail("\n".join(error_lines))
 
     def test_all_categories_exist_in_all_category_list(self):
