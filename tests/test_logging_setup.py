@@ -3,10 +3,7 @@ Tests for config.logging_setup module.
 Ensures proper logging configuration and error handling.
 """
 
-import pytest
 import logging
-import tempfile
-import os
 from unittest.mock import patch, MagicMock, mock_open
 from config.logging_setup import setup_logging
 

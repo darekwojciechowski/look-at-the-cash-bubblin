@@ -86,7 +86,7 @@ def read_transaction_csv(file_path, encoding):
                     f"Successfully loaded CSV file: {file_path} with encoding: {enc}")
                 return df
             except (UnicodeDecodeError, UnicodeError):
-                logging.warning(f"Failed to read with encoding: {enc}")
+                logging.debug(f"Failed to read with encoding: {enc}")
                 continue
             except FileNotFoundError as e:
                 # Explicit log message expected by tests and users

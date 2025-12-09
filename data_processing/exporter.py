@@ -149,10 +149,15 @@ def export_final_date_for_google_spreadsheet(data: list):
 
     # Print the DataFrame to the console (only once)
     logging.info("Printing the final DataFrame for Google Sheets:")
-    print(df.to_string())
+    try:
+        print(df.to_string())
+    except UnicodeEncodeError:
+        # Fallback for Windows console that can't handle emoji
+        print(df.to_string().encode('utf-8', errors='replace').decode('utf-8'))
 
     logging.info(f"Exported data for Google Sheets to '{output_file}'.")
 
 
-data = export_final_data()
-export_final_date_for_google_spreadsheet(export_final_data())
+if __name__ == "__main__":
+    data = export_final_data()
+    export_final_date_for_google_spreadsheet(data)
