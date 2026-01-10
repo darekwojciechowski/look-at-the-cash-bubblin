@@ -1,3 +1,4 @@
+from pathlib import Path
 from loguru import logger
 import sys
 
@@ -18,7 +19,7 @@ def setup_logging() -> None:
 
         # Add file handler with detailed format (no colors for file)
         logger.add(
-            'app.log',
+            Path('app.log'),
             format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {function}:{line} - {message}",
             level="INFO",
             mode='w',

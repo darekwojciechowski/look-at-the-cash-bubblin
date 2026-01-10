@@ -5,6 +5,7 @@ Comprehensive testing of data export functionality to various formats.
 
 import pytest
 import pandas as pd
+from pathlib import Path
 from unittest.mock import patch, mock_open, MagicMock, call
 from data_processing.exporter import (
     export_for_google_sheets,
@@ -56,7 +57,7 @@ class TestExportForGoogleSheets:
 
         mock_print.assert_called_once()
         mock_to_csv.assert_called_once_with(
-            "for_google_spreadsheet.csv", index=False)
+            Path("for_google_spreadsheet.csv"), index=False)
 
     @patch("pandas.DataFrame.to_csv")
     def test_export_for_google_sheets_empty_dataframe(self, mock_to_csv):
@@ -68,7 +69,7 @@ class TestExportForGoogleSheets:
             export_for_google_sheets(empty_df)
 
         mock_to_csv.assert_called_once_with(
-            "for_google_spreadsheet.csv", index=False)
+            Path("for_google_spreadsheet.csv"), index=False)
 
 
 class TestExportMiscTransactions:
@@ -80,7 +81,7 @@ class TestExportMiscTransactions:
         export_misc_transactions(sample_dataframe)
 
         mock_to_csv.assert_called_once_with(
-            "unassigned_transactions.csv",
+            Path("unassigned_transactions.csv"),
             index=False,
             encoding='utf-8-sig'
         )
@@ -128,7 +129,7 @@ class TestExportUnassignedTransactions:
         export_unassigned_transactions_to_csv(sample_dataframe)
 
         mock_to_csv.assert_called_once_with(
-            "unassigned_transactions.csv",
+            Path("unassigned_transactions.csv"),
             index=False,
             encoding='utf-8-sig'
         )
@@ -186,7 +187,7 @@ class TestExportFinalDateForGoogleSpreadsheet:
 
         mock_print.assert_called_once()
         mock_to_csv.assert_called_once_with(
-            "for_google_spreadsheet.csv",
+            Path("for_google_spreadsheet.csv"),
             sep="\t",
             index=False
         )

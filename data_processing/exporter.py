@@ -1,3 +1,4 @@
+from pathlib import Path
 from loguru import logger
 import csv
 import pandas as pd
@@ -5,7 +6,7 @@ from data_processing.data_loader import Expense
 from data_processing.location_processor import extract_location_from_data, create_google_maps_link
 
 # Constants
-CSV_OUT_FILE: str = 'data/processed_transactions.csv'
+CSV_OUT_FILE: Path = Path('data/processed_transactions.csv')
 
 
 def export_for_google_sheets(processed_df: pd.DataFrame) -> None:
@@ -25,7 +26,7 @@ def export_for_google_sheets(processed_df: pd.DataFrame) -> None:
     print(google_sheets_df.to_string())
 
     # Export the DataFrame to a CSV file
-    output_file = 'for_google_spreadsheet.csv'
+    output_file = Path('for_google_spreadsheet.csv')
     # Let pandas use default encoding in tests; main export uses utf-8-sig
     google_sheets_df.to_csv(output_file, index=False)
     logger.info(f"Exported data for Google Sheets to '{output_file}'.")
@@ -43,13 +44,13 @@ def export_misc_transactions(df: pd.DataFrame) -> None:
     logger.info("[EXPORT] Unassigned (MISC) transactions exported")
 
 
-def export_cleaned_data(df: pd.DataFrame, output_file: str = 'data/processed_transactions.csv') -> None:
+def export_cleaned_data(df: pd.DataFrame, output_file: Path | str = Path('data/processed_transactions.csv')) -> None:
     """
     Export cleaned transaction data to CSV file.
 
     Args:
     df (pd.DataFrame): DataFrame containing processed transactions.
-    output_file (str): Path to the output CSV file.
+    output_file (Path | str): Path to the output CSV file.
     """
     df.to_csv(
         output_file,
@@ -74,7 +75,7 @@ def export_unassigned_transactions_to_csv(df: pd.DataFrame) -> None:
     df_copy['google_maps_link'] = df_copy['extracted_location'].apply(
         create_google_maps_link)
 
-    output_file = 'unassigned_transactions.csv'
+    output_file = Path('unassigned_transactions.csv')
     # Keep BOM for Windows Excel when exporting unassigned transactions
     df_copy.to_csv(output_file, index=False, encoding='utf-8-sig')
     logger.info(
@@ -143,7 +144,7 @@ def export_final_date_for_google_spreadsheet(data: list) -> None:
     df['Amount'] = df['Amount'].str.replace('.', ',')
 
     # Export the DataFrame to a CSV file with tab-separated values
-    output_file = 'for_google_spreadsheet.csv'
+    output_file = Path('for_google_spreadsheet.csv')
     # Keep default encoding here to satisfy tests asserting only sep/index
     df.to_csv(output_file, sep='\t', index=False)
 

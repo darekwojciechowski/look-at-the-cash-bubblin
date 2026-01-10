@@ -1,3 +1,4 @@
+from pathlib import Path
 from loguru import logger
 import pandas as pd
 
@@ -50,12 +51,12 @@ def ipko_import(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def read_transaction_csv(file_path: str, encoding: str) -> pd.DataFrame:
+def read_transaction_csv(file_path: str | Path, encoding: str) -> pd.DataFrame:
     """
     Read the transaction CSV file into a DataFrame with smart encoding handling.
 
     Parameters:
-    file_path (str): Path to the CSV file.
+    file_path (str | Path): Path to the CSV file.
     encoding (str): Primary encoding to try (if sensible).
 
     Returns:

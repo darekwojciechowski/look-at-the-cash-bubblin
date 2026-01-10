@@ -5,6 +5,7 @@ Ensures proper workflow integration and data pipeline execution.
 
 import pytest
 import pandas as pd
+from pathlib import Path
 from unittest.mock import patch, call
 from main import main
 
@@ -35,20 +36,20 @@ def sample_processed_dataframe():
 class TestMainWorkflow:
     """Test suite for main workflow integration."""
 
-    @patch("main.setup_logging")
-    @patch("main.read_transaction_csv")
-    @patch("main.ipko_import")
-    @patch("main.process_dataframe")
+    @patch("main.export_cleaned_data")
     @patch("main.export_misc_transactions")
-    @patch("main.pd.DataFrame.to_csv")
+    @patch("main.process_dataframe")
+    @patch("main.ipko_import")
+    @patch("main.read_transaction_csv")
+    @patch("main.setup_logging")
     def test_main_workflow_integration(
         self,
-        mock_to_csv,
-        mock_export_misc,
-        mock_process_df,
-        mock_ipko_import,
-        mock_read_csv,
         mock_setup_logging,
+        mock_read_csv,
+        mock_ipko_import,
+        mock_process_df,
+        mock_export_misc,
+        mock_export_cleaned,
         sample_raw_dataframe,
         sample_processed_dataframe
     ):
@@ -71,7 +72,8 @@ class TestMainWorkflow:
 
         # Assert - verify call order and arguments
         mock_setup_logging.assert_called_once()
-        mock_read_csv.assert_called_once_with('data/demo_ipko.csv', 'cp1250')
+        mock_read_csv.assert_called_once_with(
+            Path('data/demo_ipko.csv'), 'cp1250')
 
         # Verify data flows correctly through pipeline
         pd.testing.assert_frame_equal(
@@ -90,28 +92,26 @@ class TestMainWorkflow:
             sample_processed_dataframe
         )
 
-        # Verify CSV export with correct parameters
-        mock_to_csv.assert_called_once_with(
-            'data/processed_transactions.csv',
-            columns=['month', 'year', 'category', 'price'],
-            index=False,
-            encoding='utf-8-sig'
+        # Verify export_cleaned_data called with correct parameters
+        mock_export_cleaned.assert_called_once_with(
+            sample_processed_dataframe,
+            Path('data/processed_transactions.csv')
         )
 
-    @patch("main.setup_logging")
-    @patch("main.read_transaction_csv")
-    @patch("main.ipko_import")
-    @patch("main.process_dataframe")
+    @patch("main.export_cleaned_data")
     @patch("main.export_misc_transactions")
-    @patch("main.pd.DataFrame.to_csv")
+    @patch("main.process_dataframe")
+    @patch("main.ipko_import")
+    @patch("main.read_transaction_csv")
+    @patch("main.setup_logging")
     def test_main_workflow_with_empty_dataframe(
         self,
-        mock_to_csv,
-        mock_export_misc,
-        mock_process_df,
-        mock_ipko_import,
+        mock_setup_logging,
         mock_read_csv,
-        mock_setup_logging
+        mock_ipko_import,
+        mock_process_df,
+        mock_export_misc,
+        mock_export_cleaned
     ):
         """Test main workflow with empty DataFrame."""
         # Arrange
@@ -126,7 +126,7 @@ class TestMainWorkflow:
         # Assert - workflow should complete without errors
         mock_setup_logging.assert_called_once()
         mock_export_misc.assert_called_once()
-        mock_to_csv.assert_called_once()
+        mock_export_cleaned.assert_called_once()
 
     @patch("main.setup_logging")
     @patch("main.read_transaction_csv")

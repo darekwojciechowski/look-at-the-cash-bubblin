@@ -4,6 +4,7 @@ Ensures module-level code executes without errors.
 """
 
 import pytest
+from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 
@@ -25,7 +26,8 @@ class TestExporterModuleImport:
 
         # Check that the module has the expected attributes
         assert hasattr(data_processing.exporter, 'CSV_OUT_FILE')
-        assert data_processing.exporter.CSV_OUT_FILE == 'data/processed_transactions.csv'
+        assert data_processing.exporter.CSV_OUT_FILE == Path(
+            'data/processed_transactions.csv')
 
     def test_module_has_expected_functions(self):
         """Test that the module exports expected functions."""
