@@ -71,7 +71,7 @@ def test_read_transaction_csv(mock_read_csv, mock_file):
 
 
 @patch("pandas.read_csv")
-@patch("logging.error")
+@patch("loguru.logger.error")
 def test_read_transaction_csv_file_error(mock_logging_error, mock_read_csv):
     """
     Tests the read_transaction_csv function when file reading fails.
@@ -85,5 +85,5 @@ def test_read_transaction_csv_file_error(mock_logging_error, mock_read_csv):
 
     # Verify that error was logged
     mock_logging_error.assert_called_once_with(
-        "Failed to read CSV file: nonexistent.csv. Error: File not found"
+        "[ERROR] Failed to read CSV file: nonexistent.csv. Error: File not found"
     )

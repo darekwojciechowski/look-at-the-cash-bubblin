@@ -155,5 +155,6 @@ SHOPPING = {
     "shopping", "allegro", "olx", "amazon", "empik"
 }
 
-MISC = set()  # Empty set - this category is used as fallback for unmatched transactions
+# Empty set - this category is used as fallback for unmatched transactions
+MISC: set[str] = set()
 # Keywords can be added here for specific miscellaneous items if needed

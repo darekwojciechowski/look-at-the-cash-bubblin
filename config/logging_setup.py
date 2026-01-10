@@ -1,30 +1,31 @@
-import logging
+from loguru import logger
+import sys
 
 
-def setup_logging():
-    """Configure logging for the script."""
+def setup_logging() -> None:
+    """Configure logging with Loguru - Professional format with colors."""
     try:
-        logger = logging.getLogger()
-        logger.setLevel(logging.INFO)
+        # Remove default handler
+        logger.remove()
 
-        # Clear existing handlers to avoid duplicate logs
-        if logger.hasHandlers():
-            logger.handlers.clear()
+        # Add console handler with professional colorful format
+        logger.add(
+            sys.stderr,
+            format="<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+            level="INFO",
+            colorize=True
+        )
 
-        # StreamHandler for terminal output
-        stream_handler = logging.StreamHandler()
-        stream_handler.setFormatter(logging.Formatter(
-            '%(message)s'))  # Shortened format
-        logger.addHandler(stream_handler)
-
-        # FileHandler for logging to a file
-        file_handler = logging.FileHandler(
-            'app.log', mode='w', encoding='utf-8')
-        file_handler.setFormatter(logging.Formatter(
-            '%(message)s'))  # Shortened format
-        logger.addHandler(file_handler)
+        # Add file handler with detailed format (no colors for file)
+        logger.add(
+            'app.log',
+            format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {function}:{line} - {message}",
+            level="INFO",
+            mode='w',
+            encoding='utf-8'
+        )
 
         # Test log to confirm setup
-        logger.info("Logging setup complete. Test log message.")
+        logger.info("Logging initialized successfully")
     except Exception as e:
         print(f"Error setting up logging: {e}")

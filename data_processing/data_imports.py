@@ -1,8 +1,8 @@
-import logging
+from loguru import logger
 import pandas as pd
 
 
-def ipko_import(df):
+def ipko_import(df: pd.DataFrame) -> pd.DataFrame:
     """
     Process the DataFrame for IPKO transactions (standard format).
 
@@ -50,7 +50,7 @@ def ipko_import(df):
     return df
 
 
-def read_transaction_csv(file_path, encoding):
+def read_transaction_csv(file_path: str, encoding: str) -> pd.DataFrame:
     """
     Read the transaction CSV file into a DataFrame with smart encoding handling.
 
@@ -82,29 +82,29 @@ def read_transaction_csv(file_path, encoding):
         for enc in encodings_to_try:
             try:
                 df = pd.read_csv(file_path, on_bad_lines='skip', encoding=enc)
-                logging.info(
-                    f"Successfully loaded CSV file: {file_path} with encoding: {enc}")
+                logger.info(
+                    f"[SUCCESS] Loaded CSV file: {file_path} with encoding: {enc}")
                 return df
             except (UnicodeDecodeError, UnicodeError):
-                logging.debug(f"Failed to read with encoding: {enc}")
+                logger.debug(f"[ENCODING] Failed with encoding: {enc}")
                 continue
             except FileNotFoundError as e:
                 # Explicit log message expected by tests and users
-                logging.error(
-                    f"Failed to read CSV file: {file_path}. Error: {str(e)}")
+                logger.error(
+                    f"[ERROR] Failed to read CSV file: {file_path}. Error: {str(e)}")
                 raise
             except Exception as e:
                 # If it's clearly encoding-related, try next; otherwise, log and re-raise
                 if 'codec' in str(e).lower() or 'encoding' in str(e).lower():
-                    logging.warning(f"Encoding error with {enc}: {e}")
+                    logger.warning(f"[WARNING] Encoding error with {enc}: {e}")
                     continue
                 else:
-                    logging.error(
-                        f"Failed to read CSV file: {file_path}. Error: {str(e)}")
+                    logger.error(
+                        f"[ERROR] Failed to read CSV file: {file_path}. Error: {str(e)}")
                     raise
     finally:
         # For visibility, log the attempted encodings if we end up failing completely
-        logging.debug(f"Tried encodings in order: {encodings_to_try}")
+        logger.debug(f"Tried encodings in order: {encodings_to_try}")
 
     # If all encodings fail, raise an error
     raise ValueError(

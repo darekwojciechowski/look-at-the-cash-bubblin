@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 import pandas as pd
 from data_processing.data_imports import read_transaction_csv, ipko_import
 from data_processing.data_core import process_dataframe
@@ -6,15 +6,15 @@ from data_processing.exporter import export_misc_transactions, export_cleaned_da
 from config.logging_setup import setup_logging
 
 # Constants
-CSV_INPUT_FILE = 'data/demo_ipko.csv'
-CSV_ENCODING = 'cp1250'
-CSV_OUT_FILE = 'data/processed_transactions.csv'
+CSV_INPUT_FILE: str = 'data/demo_ipko.csv'
+CSV_ENCODING: str = 'cp1250'
+CSV_OUT_FILE: str = 'data/processed_transactions.csv'
 
 
-def main():
+def main() -> None:
     """Main function to orchestrate the CSV import and processing workflow."""
     setup_logging()
-    logging.info("Starting CSV import and processing workflow.")
+    logger.info("[START] CSV import and processing workflow")
 
     # Read and process the CSV file
     df = read_transaction_csv(CSV_INPUT_FILE, CSV_ENCODING)
@@ -22,7 +22,7 @@ def main():
     processed_df = process_dataframe(df)
 
     # Print processed DataFrame to terminal (only once)
-    logging.info("Processed DataFrame preview:")
+    logger.info("[DATA] Processed DataFrame preview:")
 
     # Export Misc transactions for manual review
     export_misc_transactions(processed_df)

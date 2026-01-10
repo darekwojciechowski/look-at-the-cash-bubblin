@@ -33,14 +33,14 @@ class IMPORTANCE(Enum):
 
 
 class Expense:
-    def __init__(self, month, year, item, price):
+    def __init__(self, month: str, year: str, item: str, price: str) -> None:
         self.month = month
         self.year = year
         self.item = item
         self.price = price
         self.category, self.importance = self._determine_category_and_importance()
 
-    def _determine_category_and_importance(self):
+    def _determine_category_and_importance(self) -> tuple[CATEGORY, IMPORTANCE]:
         item = self.item.lower()
         if "apartment" in item or "bills" in item or "renovation" in item:
             return CATEGORY.APARTMENT, IMPORTANCE.ESSENTIAL

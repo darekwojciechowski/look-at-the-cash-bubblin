@@ -1,14 +1,14 @@
-import logging
+from loguru import logger
 import csv
 import pandas as pd
 from data_processing.data_loader import Expense
 from data_processing.location_processor import extract_location_from_data, create_google_maps_link
 
 # Constants
-CSV_OUT_FILE = 'data/processed_transactions.csv'
+CSV_OUT_FILE: str = 'data/processed_transactions.csv'
 
 
-def export_for_google_sheets(processed_df):
+def export_for_google_sheets(processed_df: pd.DataFrame) -> None:
     """
     Export the processed DataFrame for Google Sheets.
 
@@ -20,7 +20,7 @@ def export_for_google_sheets(processed_df):
     # Add any transformations or filtering here if needed
 
     # Print the DataFrame to the console (only once)
-    logging.info("Printing the final DataFrame for Google Sheets:")
+    logger.info("Printing the final DataFrame for Google Sheets:")
     # Ensure this is the only print statement for the DataFrame
     print(google_sheets_df.to_string())
 
@@ -28,10 +28,10 @@ def export_for_google_sheets(processed_df):
     output_file = 'for_google_spreadsheet.csv'
     # Let pandas use default encoding in tests; main export uses utf-8-sig
     google_sheets_df.to_csv(output_file, index=False)
-    logging.info(f"Exported data for Google Sheets to '{output_file}'.")
+    logger.info(f"Exported data for Google Sheets to '{output_file}'.")
 
 
-def export_misc_transactions(df: pd.DataFrame):
+def export_misc_transactions(df: pd.DataFrame) -> None:
     """
     Export transactions with 'MISC' in the category to a CSV for manual review.
 
@@ -40,10 +40,10 @@ def export_misc_transactions(df: pd.DataFrame):
     """
     misc_df = df[df["category"].str.contains("MISC", na=False)]
     export_unassigned_transactions_to_csv(misc_df)
-    logging.info("Exported unassigned (MISC) transactions to CSV.")
+    logger.info("[EXPORT] Unassigned (MISC) transactions exported")
 
 
-def export_cleaned_data(df: pd.DataFrame, output_file: str = 'data/processed_transactions.csv'):
+def export_cleaned_data(df: pd.DataFrame, output_file: str = 'data/processed_transactions.csv') -> None:
     """
     Export cleaned transaction data to CSV file.
 
@@ -57,10 +57,10 @@ def export_cleaned_data(df: pd.DataFrame, output_file: str = 'data/processed_tra
         index=False,
         encoding='utf-8-sig',
     )
-    logging.info(f"Exported cleaned data to {output_file}")
+    logger.info(f"[EXPORT] Cleaned data saved to {output_file}")
 
 
-def export_unassigned_transactions_to_csv(df: pd.DataFrame):
+def export_unassigned_transactions_to_csv(df: pd.DataFrame) -> None:
     """
     Export transactions with 'MISC' in the category to a CSV file with location processing.
 
@@ -77,34 +77,18 @@ def export_unassigned_transactions_to_csv(df: pd.DataFrame):
     output_file = 'unassigned_transactions.csv'
     # Keep BOM for Windows Excel when exporting unassigned transactions
     df_copy.to_csv(output_file, index=False, encoding='utf-8-sig')
-    logging.info(
-        f"Exported unassigned transactions with location data to {output_file}.")
+    logger.info(
+        f"[EXPORT] Unassigned transactions with location data saved to {output_file}")
 
 
-def get_data() -> list:
+def get_data() -> list[Expense]:
     """
     Read data from the CSV file and convert it into a list of Expense objects.
 
     Returns:
     list: A list of Expense objects.
     """
-    expenses = []
-    with open(CSV_OUT_FILE, newline='') as csvfile:
-        reader = csv.reader(csvfile, delimiter=',')
-        next(reader)  # Skip the header row
-        for row in reader:
-            expenses.append(Expense(row[0], row[1]))
-    return expenses
-
-
-def export_final_data() -> list:
-    """
-    Read the CSV file and convert it into a list of Expense objects.
-
-    Returns:
-    list: A list of Expense objects.
-    """
-    expenses = []
+    expenses: list[Expense] = []
     with open(CSV_OUT_FILE, newline='') as csvfile:
         reader = csv.reader(csvfile, delimiter=',')
         next(reader)  # Skip the header row
@@ -113,7 +97,23 @@ def export_final_data() -> list:
     return expenses
 
 
-def export_final_date_for_google_spreadsheet(data: list):
+def export_final_data() -> list[Expense]:
+    """
+    Read the CSV file and convert it into a list of Expense objects.
+
+    Returns:
+    list: A list of Expense objects.
+    """
+    expenses: list[Expense] = []
+    with open(CSV_OUT_FILE, newline='') as csvfile:
+        reader = csv.reader(csvfile, delimiter=',')
+        next(reader)  # Skip the header row
+        for row in reader:
+            expenses.append(Expense(row[0], row[1], row[2], row[3]))
+    return expenses
+
+
+def export_final_date_for_google_spreadsheet(data: list) -> None:
     """
     Process the input data, format it, and export it to a CSV file for Google Sheets.
 
@@ -125,7 +125,7 @@ def export_final_date_for_google_spreadsheet(data: list):
 
     # Check if the DataFrame is empty
     if df.empty:
-        logging.error("The DataFrame is empty. No data to export.")
+        logger.error("The DataFrame is empty. No data to export.")
         return
 
     # Rename the first column to 'data'
@@ -148,14 +148,14 @@ def export_final_date_for_google_spreadsheet(data: list):
     df.to_csv(output_file, sep='\t', index=False)
 
     # Print the DataFrame to the console (only once)
-    logging.info("Printing the final DataFrame for Google Sheets:")
+    logger.info("Printing the final DataFrame for Google Sheets:")
     try:
         print(df.to_string())
     except UnicodeEncodeError:
         # Fallback for Windows console that can't handle emoji
         print(df.to_string().encode('utf-8', errors='replace').decode('utf-8'))
 
-    logging.info(f"Exported data for Google Sheets to '{output_file}'.")
+    logger.info(f"Exported data for Google Sheets to '{output_file}'.")
 
 
 if __name__ == "__main__":

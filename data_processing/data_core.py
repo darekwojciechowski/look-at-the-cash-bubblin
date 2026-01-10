@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 
-def clean_date(df):
+def clean_date(df: pd.DataFrame) -> pd.DataFrame:
     """
     Clean the 'data' column in the DataFrame by replacing specific patterns with shorter or corrected text.
 
@@ -42,7 +42,7 @@ def clean_date(df):
     return df
 
 
-def process_dataframe(df):
+def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
     Process the DataFrame: clean, categorize, and filter transactions.
     Returns the cleaned and categorized DataFrame.

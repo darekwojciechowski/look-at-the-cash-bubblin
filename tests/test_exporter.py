@@ -193,7 +193,7 @@ class TestExportFinalDateForGoogleSpreadsheet:
 
     @patch("builtins.print")
     @patch("pandas.DataFrame.to_csv")
-    @patch("logging.error")
+    @patch("loguru.logger.error")
     def test_export_final_date_for_google_spreadsheet_empty_data(
         self,
         mock_error,
@@ -236,8 +236,7 @@ class TestGetData:
         """
         Test get_data creates Expense objects from CSV.
 
-        Note: This test documents existing behavior where get_data
-        only passes 2 arguments to Expense constructor (a known issue).
+        Fixed: get_data now properly passes all 4 arguments to Expense constructor.
         """
         mock_csv_reader.return_value = iter([
             ["month", "year", "item", "price"],
@@ -251,10 +250,10 @@ class TestGetData:
         expenses = get_data()
 
         assert len(expenses) == 2
-        # Verify Expense constructor calls (documents the bug)
+        # Verify Expense constructor calls with all 4 arguments
         expected_calls = [
-            call("1", "2023"),
-            call("2", "2023"),
+            call("1", "2023", "item1", "100"),
+            call("2", "2023", "item2", "200"),
         ]
         mock_expense.assert_has_calls(expected_calls)
 
