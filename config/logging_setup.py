@@ -9,6 +9,14 @@ def setup_logging() -> None:
         # Remove default handler
         logger.remove()
 
+        # Configure custom colors for levels
+        logger.level("DEBUG", color="<cyan>")
+        logger.level("INFO", color="<white>")
+        logger.level("SUCCESS", color="<green>")
+        logger.level("WARNING", color="<yellow>")
+        logger.level("ERROR", color="<red>")
+        logger.level("CRITICAL", color="<RED><bold>")
+
         # Add console handler with professional colorful format
         logger.add(
             sys.stderr,

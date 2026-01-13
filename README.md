@@ -1,11 +1,11 @@
 # 💰 Look at the cash bubblin
 
-![Python](https://img.shields.io/badge/Python-3.13+-blue?style=flat-square&logo=python&logoColor=white)
-![Pandas](https://img.shields.io/badge/Pandas-2.2.3+-150458?style=flat-square&logo=pandas&logoColor=white)
-![NumPy](https://img.shields.io/badge/NumPy-2.2.0+-013243?style=flat-square&logo=numpy&logoColor=white)
-![Pytest](https://img.shields.io/badge/Pytest-8.3.4+-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
-![Coverage](https://img.shields.io/badge/Coverage-95%25-success?style=flat-square)
-![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
+![Python](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/darekwojciechowski/look-at-the-cash-bubblin/main/pyproject.toml&query=$.tool.poetry.dependencies.python&label=Python&style=flat-square&logo=python&logoColor=white&color=blue)
+![Pandas](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/darekwojciechowski/look-at-the-cash-bubblin/main/pyproject.toml&query=$.tool.poetry.dependencies.pandas&label=Pandas&style=flat-square&logo=pandas&logoColor=white&color=150458)
+![NumPy](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/darekwojciechowski/look-at-the-cash-bubblin/main/pyproject.toml&query=$.tool.poetry.dependencies.numpy&label=NumPy&style=flat-square&logo=numpy&logoColor=white&color=013243)
+![Pytest](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/darekwojciechowski/look-at-the-cash-bubblin/main/pyproject.toml&query=$.tool.poetry.group.dev.dependencies.pytest&label=Pytest&style=flat-square&logo=pytest&logoColor=white&color=0A9EDC)
+![Coverage](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/darekwojciechowski/look-at-the-cash-bubblin/main/coverage.json&query=$.totals.percent_covered&label=Coverage&suffix=%25&style=flat-square&color=orange)
+![License](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/darekwojciechowski/look-at-the-cash-bubblin/main/pyproject.toml&query=$.tool.poetry.license&label=License&style=flat-square&color=green)
 
 ## 🌟 Overview
 
