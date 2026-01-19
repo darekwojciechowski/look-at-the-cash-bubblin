@@ -3,13 +3,14 @@ Security tests for data processing operations.
 Tests for common vulnerabilities and data validation.
 """
 
-import pytest
-import pandas as pd
 from pathlib import Path
 from unittest.mock import patch
 
-from data_processing.data_imports import read_transaction_csv
+import pandas as pd
+import pytest
+
 from data_processing.data_core import process_dataframe
+from data_processing.data_imports import read_transaction_csv
 
 
 @pytest.mark.security
@@ -22,21 +23,16 @@ class TestPathTraversalSecurity:
             "../../../etc/passwd",
             "..\\..\\..\\windows\\system32\\config\\sam",
             "/etc/shadow",
-            "C:\\Windows\\System32\\config\\SAM"
+            "C:\\Windows\\System32\\config\\SAM",
         ]
 
         for malicious_path in malicious_paths:
             with pytest.raises((FileNotFoundError, PermissionError, OSError)):
-                read_transaction_csv(malicious_path, 'utf-8')
+                read_transaction_csv(malicious_path, "utf-8")
 
     def test_export_path_validation(self, test_data_dir: Path) -> None:
         """Test that export paths are validated."""
-        df = pd.DataFrame({
-            "data": ["test"],
-            "price": ["10.0"],
-            "month": [1],
-            "year": [2023]
-        })
+        df = pd.DataFrame({"data": ["test"], "price": ["10.0"], "month": [1], "year": [2023]})
 
         # Attempt to write outside of intended directory
         malicious_path = test_data_dir / ".." / ".." / "malicious.csv"
@@ -45,8 +41,11 @@ class TestPathTraversalSecurity:
         df.to_csv(malicious_path, index=False)
 
         # Verify it doesn't escape the test directory in dangerous way
-        assert not (test_data_dir.parent.parent / "malicious.csv").exists() or \
-            (test_data_dir.parent.parent / "malicious.csv").unlink() or True
+        assert (
+            not (test_data_dir.parent.parent / "malicious.csv").exists()
+            or (test_data_dir.parent.parent / "malicious.csv").unlink()
+            or True
+        )
 
 
 @pytest.mark.security
@@ -59,15 +58,17 @@ class TestInputValidation:
             "'; DROP TABLE transactions; --",
             "1' OR '1'='1",
             "admin'--",
-            "' UNION SELECT * FROM users--"
+            "' UNION SELECT * FROM users--",
         ]
 
-        df = pd.DataFrame({
-            "data": malicious_inputs,
-            "price": ["-10.0"] * len(malicious_inputs),
-            "month": [1] * len(malicious_inputs),
-            "year": [2023] * len(malicious_inputs)
-        })
+        df = pd.DataFrame(
+            {
+                "data": malicious_inputs,
+                "price": ["-10.0"] * len(malicious_inputs),
+                "month": [1] * len(malicious_inputs),
+                "year": [2023] * len(malicious_inputs),
+            }
+        )
 
         # Mock mappings
         with patch("data_processing.data_core.mappings", {}):
@@ -83,15 +84,17 @@ class TestInputValidation:
             "<script>alert('XSS')</script>",
             "<img src=x onerror=alert('XSS')>",
             "javascript:alert('XSS')",
-            "<svg/onload=alert('XSS')>"
+            "<svg/onload=alert('XSS')>",
         ]
 
-        df = pd.DataFrame({
-            "data": xss_payloads,
-            "price": ["-10.0"] * len(xss_payloads),
-            "month": [1] * len(xss_payloads),
-            "year": [2023] * len(xss_payloads)
-        })
+        df = pd.DataFrame(
+            {
+                "data": xss_payloads,
+                "price": ["-10.0"] * len(xss_payloads),
+                "month": [1] * len(xss_payloads),
+                "year": [2023] * len(xss_payloads),
+            }
+        )
 
         with patch("data_processing.data_core.mappings", {}):
             # Data should be preserved as-is (no execution)
@@ -103,12 +106,7 @@ class TestInputValidation:
         # Create very long string
         long_string = "A" * 1_000_000  # 1MB string
 
-        df = pd.DataFrame({
-            "data": [long_string],
-            "price": ["-10.0"],
-            "month": [1],
-            "year": [2023]
-        })
+        df = pd.DataFrame({"data": [long_string], "price": ["-10.0"], "month": [1], "year": [2023]})
 
         with patch("data_processing.data_core.mappings", {}):
             # Should handle without crashing
@@ -117,18 +115,16 @@ class TestInputValidation:
 
     def test_null_byte_injection(self) -> None:
         """Test that null byte injection is handled safely."""
-        null_byte_inputs = [
-            "test\x00malicious",
-            "file.csv\x00.txt",
-            "data\x00\x00\x00"
-        ]
+        null_byte_inputs = ["test\x00malicious", "file.csv\x00.txt", "data\x00\x00\x00"]
 
-        df = pd.DataFrame({
-            "data": null_byte_inputs,
-            "price": ["-10.0"] * len(null_byte_inputs),
-            "month": [1] * len(null_byte_inputs),
-            "year": [2023] * len(null_byte_inputs)
-        })
+        df = pd.DataFrame(
+            {
+                "data": null_byte_inputs,
+                "price": ["-10.0"] * len(null_byte_inputs),
+                "month": [1] * len(null_byte_inputs),
+                "year": [2023] * len(null_byte_inputs),
+            }
+        )
 
         # Should not crash
         assert len(df) == len(null_byte_inputs)
@@ -147,12 +143,14 @@ class TestDataTypeValidation:
             "1e308",  # Very large number
         ]
 
-        df = pd.DataFrame({
-            "data": ["test"] * len(invalid_prices),
-            "price": invalid_prices,
-            "month": [1] * len(invalid_prices),
-            "year": [2023] * len(invalid_prices)
-        })
+        df = pd.DataFrame(
+            {
+                "data": ["test"] * len(invalid_prices),
+                "price": invalid_prices,
+                "month": [1] * len(invalid_prices),
+                "year": [2023] * len(invalid_prices),
+            }
+        )
 
         with patch("data_processing.data_core.mappings", {}):
             # Should handle gracefully (may filter or error)
@@ -166,12 +164,14 @@ class TestDataTypeValidation:
 
     def test_month_year_range_validation(self) -> None:
         """Test that month and year values are validated."""
-        df = pd.DataFrame({
-            "data": ["test", "test2", "test3"],
-            "price": ["-10.0", "-20.0", "-30.0"],
-            "month": [13, -1, 0],  # Invalid months
-            "year": [1800, 3000, -1]  # Unusual years
-        })
+        df = pd.DataFrame(
+            {
+                "data": ["test", "test2", "test3"],
+                "price": ["-10.0", "-20.0", "-30.0"],
+                "month": [13, -1, 0],  # Invalid months
+                "year": [1800, 3000, -1],  # Unusual years
+            }
+        )
 
         with patch("data_processing.data_core.mappings", {}):
             # Should process but data integrity should be considered
@@ -188,17 +188,19 @@ class TestEncodingAndCharacterSet:
         unicode_strings = [
             "𝕳𝖊𝖑𝖑𝖔",  # Mathematical alphanumeric symbols
             "���",  # Invalid UTF-8 sequences
-            "\u200B\u200C\u200D",  # Zero-width characters
+            "\u200b\u200c\u200d",  # Zero-width characters
             "右から左へ",  # Right-to-left text
             "emoji 🔥💰📊",  # Emojis
         ]
 
-        df = pd.DataFrame({
-            "data": unicode_strings,
-            "price": ["-10.0"] * len(unicode_strings),
-            "month": [1] * len(unicode_strings),
-            "year": [2023] * len(unicode_strings)
-        })
+        df = pd.DataFrame(
+            {
+                "data": unicode_strings,
+                "price": ["-10.0"] * len(unicode_strings),
+                "month": [1] * len(unicode_strings),
+                "year": [2023] * len(unicode_strings),
+            }
+        )
 
         with patch("data_processing.data_core.mappings", {}):
             # Should handle unicode safely
@@ -209,7 +211,7 @@ class TestEncodingAndCharacterSet:
         """Test CSV reading with various encodings."""
         test_data = "data,price,month,year\ntest,-10.0,1,2023"
 
-        encodings_to_test = ['utf-8', 'cp1250', 'latin1']
+        encodings_to_test = ["utf-8", "cp1250", "latin1"]
 
         for encoding in encodings_to_test:
             csv_file = test_data_dir / f"test_{encoding}.csv"
@@ -229,13 +231,13 @@ class TestResourceExhaustion:
         # Create moderately large file (not huge to keep tests fast)
         large_csv = test_data_dir / "large.csv"
 
-        with open(large_csv, 'w', encoding='utf-8') as f:
+        with open(large_csv, "w", encoding="utf-8") as f:
             f.write("data,price,month,year\n")
             for i in range(100000):
                 f.write(f"transaction{i},-{i}.0,1,2023\n")
 
         # Should handle without memory issues
-        df = read_transaction_csv(str(large_csv), 'utf-8')
+        df = read_transaction_csv(str(large_csv), "utf-8")
         assert len(df) == 100000
 
     def test_nested_data_structures_depth(self) -> None:
@@ -243,12 +245,7 @@ class TestResourceExhaustion:
         # Create nested string representation
         nested = "(" * 1000 + "data" + ")" * 1000
 
-        df = pd.DataFrame({
-            "data": [nested],
-            "price": ["-10.0"],
-            "month": [1],
-            "year": [2023]
-        })
+        df = pd.DataFrame({"data": [nested], "price": ["-10.0"], "month": [1], "year": [2023]})
 
         # Should handle without stack overflow
         assert len(df) == 1

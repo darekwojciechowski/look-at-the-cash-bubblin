@@ -6,15 +6,18 @@ Generates random test cases to find edge cases.
 import pytest
 
 try:
-    from hypothesis import given, strategies as st, assume, settings, HealthCheck
-    from hypothesis.extra.pandas import data_frames, column, range_indexes
+    from hypothesis import HealthCheck, given, settings
+    from hypothesis import strategies as st
+    from hypothesis.extra.pandas import column, data_frames, range_indexes
+
     HYPOTHESIS_AVAILABLE = True
 except ImportError:
     HYPOTHESIS_AVAILABLE = False
     pytest.skip("Hypothesis not installed", allow_module_level=True)
 
-import pandas as pd
 from unittest.mock import patch
+
+import pandas as pd
 
 from data_processing.data_core import clean_date, process_dataframe
 
@@ -26,26 +29,31 @@ class TestPropertyBasedDataCore:
 
     @given(
         prices=st.lists(
-            st.floats(min_value=-10000, max_value=-0.01,
-                      allow_nan=False, allow_infinity=False),
+            st.floats(min_value=-10000, max_value=-0.01, allow_nan=False, allow_infinity=False),
             min_size=1,
-            max_size=100
+            max_size=100,
         )
     )
-    @settings(max_examples=50, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture, HealthCheck.filter_too_much])
-    def test_process_dataframe_always_returns_dataframe(
-        self,
-        prices: list[float]
-    ) -> None:
+    @settings(
+        max_examples=50,
+        deadline=None,
+        suppress_health_check=[
+            HealthCheck.function_scoped_fixture,
+            HealthCheck.filter_too_much,
+        ],
+    )
+    def test_process_dataframe_always_returns_dataframe(self, prices: list[float]) -> None:
         """Property: process_dataframe always returns a valid DataFrame."""
         transaction_count = len(prices)
 
-        df = pd.DataFrame({
-            "data": [f"transaction {i}" for i in range(transaction_count)],
-            "price": [str(p) for p in prices],
-            "month": [1] * transaction_count,
-            "year": [2023] * transaction_count
-        })
+        df = pd.DataFrame(
+            {
+                "data": [f"transaction {i}" for i in range(transaction_count)],
+                "price": [str(p) for p in prices],
+                "month": [1] * transaction_count,
+                "year": [2023] * transaction_count,
+            }
+        )
 
         with patch("data_processing.data_core.mappings", {}):
             result = process_dataframe(df)
@@ -60,15 +68,19 @@ class TestPropertyBasedDataCore:
         data=data_frames(
             index=range_indexes(min_size=1, max_size=50),
             columns=[
-                column("data", dtype=str, elements=st.text(
-                    min_size=1, max_size=100)),
-                column("price", dtype=str, elements=st.from_regex(
-                    r"-?\d+\.?\d*", fullmatch=True)),
-                column("month", dtype=int, elements=st.integers(
-                    min_value=1, max_value=12)),
-                column("year", dtype=int, elements=st.integers(
-                    min_value=2000, max_value=2030))
-            ]
+                column("data", dtype=str, elements=st.text(min_size=1, max_size=100)),
+                column(
+                    "price",
+                    dtype=str,
+                    elements=st.from_regex(r"-?\d+\.?\d*", fullmatch=True),
+                ),
+                column("month", dtype=int, elements=st.integers(min_value=1, max_value=12)),
+                column(
+                    "year",
+                    dtype=int,
+                    elements=st.integers(min_value=2000, max_value=2030),
+                ),
+            ],
         )
     )
     @settings(max_examples=20, deadline=None)
@@ -81,24 +93,26 @@ class TestPropertyBasedDataCore:
 
     @given(
         prices=st.lists(
-            st.floats(min_value=-10000, max_value=-0.01,
-                      allow_nan=False, allow_infinity=False),
+            st.floats(min_value=-10000, max_value=-0.01, allow_nan=False, allow_infinity=False),
             min_size=1,
-            max_size=50
+            max_size=50,
         )
     )
-    @settings(max_examples=30, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture])
-    def test_price_conversion_always_positive(
-        self,
-        prices: list[float]
-    ) -> None:
+    @settings(
+        max_examples=30,
+        deadline=None,
+        suppress_health_check=[HealthCheck.function_scoped_fixture],
+    )
+    def test_price_conversion_always_positive(self, prices: list[float]) -> None:
         """Property: All negative prices are converted to positive."""
-        df = pd.DataFrame({
-            "data": [f"test {i}" for i in range(len(prices))],
-            "price": [str(p) for p in prices],
-            "month": [1] * len(prices),
-            "year": [2023] * len(prices)
-        })
+        df = pd.DataFrame(
+            {
+                "data": [f"test {i}" for i in range(len(prices))],
+                "price": [str(p) for p in prices],
+                "month": [1] * len(prices),
+                "year": [2023] * len(prices),
+            }
+        )
 
         with patch("data_processing.data_core.mappings", {}):
             result = process_dataframe(df)
@@ -108,18 +122,16 @@ class TestPropertyBasedDataCore:
             assert float(price) > 0
 
     @given(
-        text=st.text(min_size=1, max_size=200,
-                     alphabet=st.characters(blacklist_categories=['Cs']))
+        text=st.text(
+            min_size=1,
+            max_size=200,
+            alphabet=st.characters(blacklist_categories=["Cs"]),
+        )
     )
     @settings(max_examples=100, deadline=None)
     def test_clean_date_handles_arbitrary_strings(self, text: str) -> None:
         """Property: clean_date handles any valid string input."""
-        df = pd.DataFrame({
-            "data": [text],
-            "price": ["-10.0"],
-            "month": [1],
-            "year": [2023]
-        })
+        df = pd.DataFrame({"data": [text], "price": ["-10.0"], "month": [1], "year": [2023]})
 
         # Should not crash
         result = clean_date(df)
@@ -139,8 +151,8 @@ class TestPropertyBasedInvariants:
                 column("data", dtype=str),
                 column("price", dtype=str),
                 column("month", dtype=int),
-                column("year", dtype=int)
-            ]
+                column("year", dtype=int),
+            ],
         )
     )
     @settings(max_examples=30, deadline=None)
@@ -155,21 +167,22 @@ class TestPropertyBasedInvariants:
 
         pd.testing.assert_frame_equal(first_clean, second_clean)
 
-    @given(
-        count=st.integers(min_value=1, max_value=50)
+    @given(count=st.integers(min_value=1, max_value=50))
+    @settings(
+        max_examples=20,
+        deadline=None,
+        suppress_health_check=[HealthCheck.function_scoped_fixture],
     )
-    @settings(max_examples=20, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture])
-    def test_column_order_consistency(
-        self,
-        count: int
-    ) -> None:
+    def test_column_order_consistency(self, count: int) -> None:
         """Property: Output columns are always in consistent order."""
-        df = pd.DataFrame({
-            "data": [f"test {i}" for i in range(count)],
-            "price": ["-10.0"] * count,
-            "month": [1] * count,
-            "year": [2023] * count
-        })
+        df = pd.DataFrame(
+            {
+                "data": [f"test {i}" for i in range(count)],
+                "price": ["-10.0"] * count,
+                "month": [1] * count,
+                "year": [2023] * count,
+            }
+        )
 
         with patch("data_processing.data_core.mappings", {}):
             result = process_dataframe(df)
@@ -185,21 +198,16 @@ class TestPropertyBasedEdgeCases:
 
     @given(
         month=st.integers(min_value=1, max_value=12),
-        year=st.integers(min_value=1900, max_value=2100)
+        year=st.integers(min_value=1900, max_value=2100),
     )
-    @settings(max_examples=50, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture])
-    def test_date_fields_preserve_values(
-        self,
-        month: int,
-        year: int
-    ) -> None:
+    @settings(
+        max_examples=50,
+        deadline=None,
+        suppress_health_check=[HealthCheck.function_scoped_fixture],
+    )
+    def test_date_fields_preserve_values(self, month: int, year: int) -> None:
         """Property: Month and year values are preserved through processing."""
-        df = pd.DataFrame({
-            "data": ["test"],
-            "price": ["-10.0"],
-            "month": [month],
-            "year": [year]
-        })
+        df = pd.DataFrame({"data": ["test"], "price": ["-10.0"], "month": [month], "year": [year]})
 
         with patch("data_processing.data_core.mappings", {}):
             result = process_dataframe(df)
@@ -208,21 +216,15 @@ class TestPropertyBasedEdgeCases:
             assert result["month"].iloc[0] == month
             assert result["year"].iloc[0] == year
 
-    @given(
-        price_str=st.from_regex(r"-\d+\.\d{2}", fullmatch=True)
+    @given(price_str=st.from_regex(r"-\d+\.\d{2}", fullmatch=True))
+    @settings(
+        max_examples=100,
+        deadline=None,
+        suppress_health_check=[HealthCheck.function_scoped_fixture],
     )
-    @settings(max_examples=100, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture])
-    def test_price_format_handling(
-        self,
-        price_str: str
-    ) -> None:
+    def test_price_format_handling(self, price_str: str) -> None:
         """Property: Various price formats are handled correctly."""
-        df = pd.DataFrame({
-            "data": ["test"],
-            "price": [price_str],
-            "month": [1],
-            "year": [2023]
-        })
+        df = pd.DataFrame({"data": ["test"], "price": [price_str], "month": [1], "year": [2023]})
 
         with patch("data_processing.data_core.mappings", {}):
             result = process_dataframe(df)

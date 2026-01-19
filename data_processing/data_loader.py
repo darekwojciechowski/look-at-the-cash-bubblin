@@ -1,25 +1,21 @@
-import logging
-import csv
 from enum import Enum
-import pandas as pd
-import csv
 
 
 class CATEGORY(Enum):
-    TRANSPORTATION = '🚊 Transportation'
-    CAR = '🚗 Car'
+    TRANSPORTATION = "🚊 Transportation"
+    CAR = "🚗 Car"
     EATING_OUT = "🦞 Eating Out"
     FOOD = "🥦 Food"
     CLOTHES = "👘 Clothes"
-    TRAVEL = '🗺️ Travel'
+    TRAVEL = "🗺️ Travel"
     SHOPPING = "🛒 Shopping"
     APARTMENT = "🏯 Apartment"
     SELF_DEVELOPMENT = "🚀 Self Development"
     ANIMALS = "🐺 Animals"
     ENTERTAINMENT = "🎥 Entertainment"
     INVESTMENTS = "💸 Investments"
-    CARE = '🛀🏾 Care'
-    SELF_DESTRUCTION = '☠ Self Destruction'
+    CARE = "🛀🏾 Care"
+    SELF_DESTRUCTION = "☠ Self Destruction"
     KIDS = "🧸 Kids"
     MISC = "Misc"
 

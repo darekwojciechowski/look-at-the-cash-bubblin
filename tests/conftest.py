@@ -5,11 +5,10 @@ Standardizes test data and reduces duplication across test modules.
 
 from pathlib import Path
 
-import pytest
 import pandas as pd
+import pytest
 
 from data_processing.data_loader import Expense
-
 
 # ============================================================================
 # DataFrame Fixtures - Common test data
@@ -19,75 +18,95 @@ from data_processing.data_loader import Expense
 @pytest.fixture
 def sample_raw_dataframe() -> pd.DataFrame:
     """Fixture providing realistic raw transaction data."""
-    return pd.DataFrame({
-        "data": [
-            "purchase in terminal - mobile code",
-            "web payment - mobile code",
-            "orlen",
-            "starbucks",
-            "piotrkowska 157a"
-        ],
-        "price": ["-50.0", "-20.0", "-100.0", "-15.0", "200.0"],
-        "month": [1, 1, 1, 1, 1],
-        "year": [2023, 2023, 2023, 2023, 2023]
-    })
+    return pd.DataFrame(
+        {
+            "data": [
+                "purchase in terminal - mobile code",
+                "web payment - mobile code",
+                "orlen",
+                "starbucks",
+                "piotrkowska 157a",
+            ],
+            "price": ["-50.0", "-20.0", "-100.0", "-15.0", "200.0"],
+            "month": [1, 1, 1, 1, 1],
+            "year": [2023, 2023, 2023, 2023, 2023],
+        }
+    )
 
 
 @pytest.fixture
 def sample_processed_dataframe() -> pd.DataFrame:
     """Fixture providing expected processed transaction data."""
-    return pd.DataFrame({
-        "month": [1, 1, 2, 2],
-        "year": [2023, 2023, 2023, 2023],
-        "price": [100.0, 200.0, 300.0, 50.0],
-        "category": ["MISC", "FOOD", "MISC", "FUEL"],
-        "data": ["unknown transaction", "biedronka shopping", "misc item", "orlen fuel"]
-    })
+    return pd.DataFrame(
+        {
+            "month": [1, 1, 2, 2],
+            "year": [2023, 2023, 2023, 2023],
+            "price": [100.0, 200.0, 300.0, 50.0],
+            "category": ["MISC", "FOOD", "MISC", "FUEL"],
+            "data": [
+                "unknown transaction",
+                "biedronka shopping",
+                "misc item",
+                "orlen fuel",
+            ],
+        }
+    )
 
 
 @pytest.fixture
 def sample_dataframe_with_categories() -> pd.DataFrame:
     """Provides realistic transaction DataFrame with categories."""
-    return pd.DataFrame({
-        "category": ["MISC", "FOOD", "MISC", "FUEL"],
-        "price": [100.0, 200.0, 300.0, 50.0],
-        "month": [1, 1, 2, 2],
-        "year": [2023, 2023, 2023, 2023],
-        "data": ["unknown transaction", "biedronka shopping", "misc item", "orlen fuel"]
-    })
+    return pd.DataFrame(
+        {
+            "category": ["MISC", "FOOD", "MISC", "FUEL"],
+            "price": [100.0, 200.0, 300.0, 50.0],
+            "month": [1, 1, 2, 2],
+            "year": [2023, 2023, 2023, 2023],
+            "data": [
+                "unknown transaction",
+                "biedronka shopping",
+                "misc item",
+                "orlen fuel",
+            ],
+        }
+    )
 
 
 @pytest.fixture
 def sample_ipko_dataframe() -> pd.DataFrame:
     """Provides a sample DataFrame for testing the ipko_import function."""
-    return pd.DataFrame({
-        0: ["2023-01-01", "2023-01-02"],
-        1: ["PLN", "PLN"],
-        2: ["transfer", "payment"],
-        3: ["-100.0", "-50.0"],
-        4: ["PLN", "PLN"],
-        5: ["description1", "description2"],
-        6: ["extra1", "extra2"],
-        7: ["data1", "data2"],
-        8: ["extra3", "extra4"]
-    })
+    return pd.DataFrame(
+        {
+            0: ["2023-01-01", "2023-01-02"],
+            1: ["PLN", "PLN"],
+            2: ["transfer", "payment"],
+            3: ["-100.0", "-50.0"],
+            4: ["PLN", "PLN"],
+            5: ["description1", "description2"],
+            6: ["extra1", "extra2"],
+            7: ["data1", "data2"],
+            8: ["extra3", "extra4"],
+        }
+    )
 
 
 @pytest.fixture
 def expected_cleaned_data() -> pd.DataFrame:
     """Expected output after cleaning transaction descriptions."""
-    return pd.DataFrame({
-        "data": [
-            "terminal purchase",
-            "web payment",
-            "Orlen gas station",
-            "Starbucks coffee shop",
-            "Biedronka - Piotrkowska 157a"
-        ],
-        "price": ["-50.0", "-20.0", "-100.0", "-15.0", "200.0"],
-        "month": [1, 1, 1, 1, 1],
-        "year": [2023, 2023, 2023, 2023, 2023]
-    })
+    return pd.DataFrame(
+        {
+            "data": [
+                "terminal purchase",
+                "web payment",
+                "Orlen gas station",
+                "Starbucks coffee shop",
+                "Biedronka - Piotrkowska 157a",
+            ],
+            "price": ["-50.0", "-20.0", "-100.0", "-15.0", "200.0"],
+            "month": [1, 1, 1, 1, 1],
+            "year": [2023, 2023, 2023, 2023, 2023],
+        }
+    )
 
 
 # ============================================================================
@@ -153,7 +172,7 @@ def mappings_mock() -> dict[str, str]:
         "web payment": "ONLINE_PAYMENT",
         "Orlen gas station": "FUEL",
         "Starbucks coffee shop": "COFFEE",
-        "Biedronka - Piotrkowska 157a": "GROCERIES"
+        "Biedronka - Piotrkowska 157a": "GROCERIES",
     }
 
 
@@ -189,7 +208,7 @@ def sample_csv_file(test_data_dir: Path) -> Path:
 orlen,-100.0,1,2023
 biedronka,-50.0,1,2023
 """
-    csv_path.write_text(csv_content, encoding='utf-8')
+    csv_path.write_text(csv_content, encoding="utf-8")
     return csv_path
 
 
@@ -201,12 +220,8 @@ biedronka,-50.0,1,2023
 def pytest_configure(config: pytest.Config) -> None:
     """Register custom markers."""
     config.addinivalue_line("markers", "unit: mark test as a unit test")
-    config.addinivalue_line(
-        "markers", "integration: mark test as an integration test")
+    config.addinivalue_line("markers", "integration: mark test as an integration test")
     config.addinivalue_line("markers", "slow: mark test as slow running")
-    config.addinivalue_line(
-        "markers", "security: mark test as security-related")
-    config.addinivalue_line(
-        "markers", "performance: mark test as performance-related")
-    config.addinivalue_line(
-        "markers", "property: mark test as property-based test")
+    config.addinivalue_line("markers", "security: mark test as security-related")
+    config.addinivalue_line("markers", "performance: mark test as performance-related")
+    config.addinivalue_line("markers", "property: mark test as property-based test")

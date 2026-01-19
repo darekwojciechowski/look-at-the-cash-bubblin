@@ -1,6 +1,7 @@
 from pathlib import Path
-from loguru import logger
+
 import pandas as pd
+from loguru import logger
 
 
 def ipko_import(df: pd.DataFrame) -> pd.DataFrame:
@@ -14,38 +15,60 @@ def ipko_import(df: pd.DataFrame) -> pd.DataFrame:
     pandas.DataFrame: The processed DataFrame with cleaned and transformed data.
     """
     # Rename columns for consistency
-    df.rename(columns={
-        df.columns[0]: 'transaction_date',
-        df.columns[1]: 'currency_data',
-        df.columns[2]: 'transaction_type',
-        df.columns[3]: 'price',
-        df.columns[4]: 'currency',
-        df.columns[5]: 'transaction_description',
-        df.columns[6]: 'unnamed_6',
-        df.columns[7]: 'data',
-        df.columns[8]: 'unnamed_8'
-    }, inplace=True)
+    df.rename(
+        columns={
+            df.columns[0]: "transaction_date",
+            df.columns[1]: "currency_data",
+            df.columns[2]: "transaction_type",
+            df.columns[3]: "price",
+            df.columns[4]: "currency",
+            df.columns[5]: "transaction_description",
+            df.columns[6]: "unnamed_6",
+            df.columns[7]: "data",
+            df.columns[8]: "unnamed_8",
+        },
+        inplace=True,
+    )
 
     # Convert 'transaction_date' to datetime format
-    df['transaction_date'] = pd.to_datetime(df['transaction_date'])
+    df["transaction_date"] = pd.to_datetime(df["transaction_date"])
 
     # Extract month and year from 'transaction_date'
-    df['month'] = df['transaction_date'].dt.month
-    df['year'] = df['transaction_date'].dt.year
+    df["month"] = df["transaction_date"].dt.month
+    df["year"] = df["transaction_date"].dt.year
 
     # Convert specified columns to lowercase safely
-    columns_to_lower = ['data', 'transaction_type',
-                        'transaction_description', 'unnamed_6', 'unnamed_8']
+    columns_to_lower = [
+        "data",
+        "transaction_type",
+        "transaction_description",
+        "unnamed_6",
+        "unnamed_8",
+    ]
     for col in columns_to_lower:
         df[col] = df[col].astype(str).str.lower()
 
     # Combine multiple columns into a single 'data' column
-    df['data'] = df[['transaction_type', 'transaction_description',
-                     'unnamed_6', 'unnamed_8', 'data']].apply('//'.join, axis=1)
+    df["data"] = df[
+        [
+            "transaction_type",
+            "transaction_description",
+            "unnamed_6",
+            "unnamed_8",
+            "data",
+        ]
+    ].apply("//".join, axis=1)
 
     # Drop unnecessary columns
-    columns_to_drop = ['transaction_date', 'currency_data', 'currency',
-                       'transaction_type', 'unnamed_6', 'unnamed_8', 'transaction_description']
+    columns_to_drop = [
+        "transaction_date",
+        "currency_data",
+        "currency",
+        "transaction_type",
+        "unnamed_6",
+        "unnamed_8",
+        "transaction_description",
+    ]
     df.drop(columns=columns_to_drop, inplace=True)
 
     return df
@@ -63,18 +86,17 @@ def read_transaction_csv(file_path: str | Path, encoding: str) -> pd.DataFrame:
     pandas.DataFrame: The loaded DataFrame with properly decoded text.
     """
     # Prefer encodings that are commonly used for Polish text first.
-    preferred_pl_encodings = ['utf-8', 'utf-8-sig', 'cp1250', 'iso-8859-2']
+    preferred_pl_encodings = ["utf-8", "utf-8-sig", "cp1250", "iso-8859-2"]
     # keep latin1 last as it rarely fails but can mojibake
-    secondary_encodings = ['cp1252', 'iso-8859-1']
+    secondary_encodings = ["cp1252", "iso-8859-1"]
 
     # If caller passes latin-1/iso-8859-1, deprioritize it to avoid silent mojibake.
-    enc_lower = (encoding or '').replace('_', '-').lower()
-    is_latin1 = enc_lower in {'iso-8859-1', 'latin1', 'latin-1', 'iso_8859_1'}
+    enc_lower = (encoding or "").replace("_", "-").lower()
+    is_latin1 = enc_lower in {"iso-8859-1", "latin1", "latin-1", "iso_8859_1"}
 
     if encoding and not is_latin1:
         # Respect caller-provided encoding by trying it first
-        encodings_to_try = [
-            encoding] + [e for e in preferred_pl_encodings + secondary_encodings if e != encoding]
+        encodings_to_try = [encoding] + [e for e in preferred_pl_encodings + secondary_encodings if e != encoding]
     else:
         # Use a safe default order for Polish data
         encodings_to_try = preferred_pl_encodings + secondary_encodings
@@ -82,31 +104,27 @@ def read_transaction_csv(file_path: str | Path, encoding: str) -> pd.DataFrame:
     try:
         for enc in encodings_to_try:
             try:
-                df = pd.read_csv(file_path, on_bad_lines='skip', encoding=enc)
-                logger.info(
-                    f"[SUCCESS] Loaded CSV file: {file_path} with encoding: {enc}")
+                df = pd.read_csv(file_path, on_bad_lines="skip", encoding=enc)
+                logger.info(f"[SUCCESS] Loaded CSV file: {file_path} with encoding: {enc}")
                 return df
             except (UnicodeDecodeError, UnicodeError):
                 logger.debug(f"[ENCODING] Failed with encoding: {enc}")
                 continue
             except FileNotFoundError as e:
                 # Explicit log message expected by tests and users
-                logger.error(
-                    f"[ERROR] Failed to read CSV file: {file_path}. Error: {str(e)}")
+                logger.error(f"[ERROR] Failed to read CSV file: {file_path}. Error: {str(e)}")
                 raise
             except Exception as e:
                 # If it's clearly encoding-related, try next; otherwise, log and re-raise
-                if 'codec' in str(e).lower() or 'encoding' in str(e).lower():
+                if "codec" in str(e).lower() or "encoding" in str(e).lower():
                     logger.warning(f"[WARNING] Encoding error with {enc}: {e}")
                     continue
                 else:
-                    logger.error(
-                        f"[ERROR] Failed to read CSV file: {file_path}. Error: {str(e)}")
+                    logger.error(f"[ERROR] Failed to read CSV file: {file_path}. Error: {str(e)}")
                     raise
     finally:
         # For visibility, log the attempted encodings if we end up failing completely
         logger.debug(f"Tried encodings in order: {encodings_to_try}")
 
     # If all encodings fail, raise an error
-    raise ValueError(
-        f"Could not read {file_path} with any of the tried encodings: {encodings_to_try}")
+    raise ValueError(f"Could not read {file_path} with any of the tried encodings: {encodings_to_try}")

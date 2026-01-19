@@ -3,34 +3,40 @@ Tests for main module.
 Ensures proper workflow integration and data pipeline execution.
 """
 
-import pytest
-import pandas as pd
 from pathlib import Path
-from unittest.mock import patch, call
+from unittest.mock import patch
+
+import pandas as pd
+import pytest
+
 from main import main
 
 
 @pytest.fixture
 def sample_raw_dataframe():
     """Fixture providing realistic raw transaction data."""
-    return pd.DataFrame({
-        "data": ["orlen fuel station", "starbucks coffee"],
-        "price": ["-100.0", "-15.0"],
-        "month": [1, 1],
-        "year": [2023, 2023]
-    })
+    return pd.DataFrame(
+        {
+            "data": ["orlen fuel station", "starbucks coffee"],
+            "price": ["-100.0", "-15.0"],
+            "month": [1, 1],
+            "year": [2023, 2023],
+        }
+    )
 
 
 @pytest.fixture
 def sample_processed_dataframe():
     """Fixture providing expected processed transaction data."""
-    return pd.DataFrame({
-        "month": [1, 1],
-        "year": [2023, 2023],
-        "price": [100.0, 15.0],
-        "category": ["FUEL", "COFFEE"],
-        "data": ["orlen fuel station", "starbucks coffee"]
-    })
+    return pd.DataFrame(
+        {
+            "month": [1, 1],
+            "year": [2023, 2023],
+            "price": [100.0, 15.0],
+            "category": ["FUEL", "COFFEE"],
+            "data": ["orlen fuel station", "starbucks coffee"],
+        }
+    )
 
 
 class TestMainWorkflow:
@@ -51,7 +57,7 @@ class TestMainWorkflow:
         mock_export_misc,
         mock_export_cleaned,
         sample_raw_dataframe,
-        sample_processed_dataframe
+        sample_processed_dataframe,
     ):
         """
         Integration test verifying complete main workflow.
@@ -72,31 +78,18 @@ class TestMainWorkflow:
 
         # Assert - verify call order and arguments
         mock_setup_logging.assert_called_once()
-        mock_read_csv.assert_called_once_with(
-            Path('data/demo_ipko.csv'), 'cp1250')
+        mock_read_csv.assert_called_once_with(Path("data/demo_ipko.csv"), "cp1250")
 
         # Verify data flows correctly through pipeline
-        pd.testing.assert_frame_equal(
-            mock_ipko_import.call_args[0][0],
-            sample_raw_dataframe
-        )
+        pd.testing.assert_frame_equal(mock_ipko_import.call_args[0][0], sample_raw_dataframe)
 
-        pd.testing.assert_frame_equal(
-            mock_process_df.call_args[0][0],
-            sample_raw_dataframe
-        )
+        pd.testing.assert_frame_equal(mock_process_df.call_args[0][0], sample_raw_dataframe)
 
         mock_export_misc.assert_called_once()
-        pd.testing.assert_frame_equal(
-            mock_export_misc.call_args[0][0],
-            sample_processed_dataframe
-        )
+        pd.testing.assert_frame_equal(mock_export_misc.call_args[0][0], sample_processed_dataframe)
 
         # Verify export_cleaned_data called with correct parameters
-        mock_export_cleaned.assert_called_once_with(
-            sample_processed_dataframe,
-            Path('data/processed_transactions.csv')
-        )
+        mock_export_cleaned.assert_called_once_with(sample_processed_dataframe, Path("data/processed_transactions.csv"))
 
     @patch("main.export_cleaned_data")
     @patch("main.export_misc_transactions")
@@ -111,7 +104,7 @@ class TestMainWorkflow:
         mock_ipko_import,
         mock_process_df,
         mock_export_misc,
-        mock_export_cleaned
+        mock_export_cleaned,
     ):
         """Test main workflow with empty DataFrame."""
         # Arrange
@@ -130,11 +123,7 @@ class TestMainWorkflow:
 
     @patch("main.setup_logging")
     @patch("main.read_transaction_csv")
-    def test_main_handles_read_csv_failure(
-        self,
-        mock_read_csv,
-        mock_setup_logging
-    ):
+    def test_main_handles_read_csv_failure(self, mock_read_csv, mock_setup_logging):
         """Test main workflow when CSV reading fails."""
         # Arrange
         mock_read_csv.side_effect = FileNotFoundError("File not found")
@@ -155,7 +144,7 @@ class TestMainWorkflow:
         mock_ipko_import,
         mock_read_csv,
         mock_setup_logging,
-        sample_raw_dataframe
+        sample_raw_dataframe,
     ):
         """Test main workflow when data processing fails."""
         # Arrange

@@ -23,8 +23,7 @@ def mappings(data: str) -> str:
         >>> mappings("unknown transaction")
         'MISC'
     """
-    categories = {cat_name: getattr(category, cat_name)
-                  for cat_name in category.all_category}
+    categories = {cat_name: getattr(category, cat_name) for cat_name in category.all_category}
 
     for cat_name, keywords in categories.items():
         if any(keyword in data.lower() for keyword in keywords):

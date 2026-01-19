@@ -3,9 +3,9 @@ Tests for data_processing.exporter module import.
 Ensures module-level code executes without errors.
 """
 
-import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+
+import pytest
 
 
 class TestExporterModuleImport:
@@ -14,7 +14,8 @@ class TestExporterModuleImport:
     def test_module_imports_successfully(self):
         """Test that the exporter module can be imported without errors."""
         try:
-            import data_processing.exporter
+            import data_processing.exporter  # noqa: F401
+
             # If we get here, import was successful
             assert True
         except ImportError as e:
@@ -25,21 +26,20 @@ class TestExporterModuleImport:
         import data_processing.exporter
 
         # Check that the module has the expected attributes
-        assert hasattr(data_processing.exporter, 'CSV_OUT_FILE')
-        assert data_processing.exporter.CSV_OUT_FILE == Path(
-            'data/processed_transactions.csv')
+        assert hasattr(data_processing.exporter, "CSV_OUT_FILE")
+        assert Path("data/processed_transactions.csv") == data_processing.exporter.CSV_OUT_FILE
 
     def test_module_has_expected_functions(self):
         """Test that the module exports expected functions."""
         import data_processing.exporter
 
         expected_functions = [
-            'export_for_google_sheets',
-            'export_misc_transactions',
-            'export_unassigned_transactions_to_csv',
-            'export_final_data',
-            'export_final_date_for_google_spreadsheet',
-            'get_data'
+            "export_for_google_sheets",
+            "export_misc_transactions",
+            "export_unassigned_transactions_to_csv",
+            "export_final_data",
+            "export_final_date_for_google_spreadsheet",
+            "get_data",
         ]
 
         for func_name in expected_functions:

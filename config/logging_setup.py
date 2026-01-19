@@ -1,6 +1,7 @@
-from pathlib import Path
-from loguru import logger
 import sys
+from pathlib import Path
+
+from loguru import logger
 
 
 def setup_logging() -> None:
@@ -18,20 +19,24 @@ def setup_logging() -> None:
         logger.level("CRITICAL", color="<RED><bold>")
 
         # Add console handler with professional colorful format
+        log_format = (
+            "<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | "
+            "<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
+        )
         logger.add(
             sys.stderr,
-            format="<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+            format=log_format,
             level="INFO",
-            colorize=True
+            colorize=True,
         )
 
         # Add file handler with detailed format (no colors for file)
         logger.add(
-            Path('app.log'),
+            Path("app.log"),
             format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {function}:{line} - {message}",
             level="INFO",
-            mode='w',
-            encoding='utf-8'
+            mode="w",
+            encoding="utf-8",
         )
 
         # Test log to confirm setup

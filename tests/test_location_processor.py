@@ -1,10 +1,12 @@
-import pytest
 import urllib.parse
+
+import pytest
+
 from data_processing.location_processor import (
     clean_location_text,
-    normalize_polish_names,
-    extract_location_from_data,
     create_google_maps_link,
+    extract_location_from_data,
+    normalize_polish_names,
 )
 
 
@@ -116,6 +118,7 @@ def test_extract_location_from_data_dash_separator(dash_separated_data):
 def test_extract_location_from_data_handles_nan():
     """Test that extract_location_from_data returns empty for NaN/None."""
     import numpy as np
+
     assert extract_location_from_data(None) == ""
     assert extract_location_from_data("") == ""
     assert extract_location_from_data(np.nan) == ""

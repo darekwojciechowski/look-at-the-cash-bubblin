@@ -64,5 +64,3 @@ This project maintains high code quality through comprehensive testing practices
 ## 🤔 Why I Built This
 
 We all want a clearer picture of our finances. I created this project to simplify that process. By automatically categorizing your bank transactions, it gives you effortless insights into your spending habits. This means you can stop guessing, start seeing patterns, and make better choices that improve your financial health.
-
-

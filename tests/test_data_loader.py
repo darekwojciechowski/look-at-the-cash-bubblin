@@ -4,8 +4,9 @@ Comprehensive testing of Expense class categorization and representation.
 """
 
 import pytest
-from data_processing.data_loader import Expense, CATEGORY, IMPORTANCE
+
 from data_processing.category import all_category
+from data_processing.data_loader import CATEGORY, IMPORTANCE, Expense
 
 
 class TestExpenseCategorization:
@@ -15,58 +16,67 @@ class TestExpenseCategorization:
         "month,year,item,price,expected_category,expected_importance",
         [
             # APARTMENT category tests
-            (1, 2023, "apartment rent", 1200,
-             CATEGORY.APARTMENT, IMPORTANCE.ESSENTIAL),
-            (2, 2023, "bills payment", 1200,
-             CATEGORY.APARTMENT, IMPORTANCE.ESSENTIAL),
-
+            (1, 2023, "apartment rent", 1200, CATEGORY.APARTMENT, IMPORTANCE.ESSENTIAL),
+            (2, 2023, "bills payment", 1200, CATEGORY.APARTMENT, IMPORTANCE.ESSENTIAL),
             # EATING_OUT category tests
-            (2, 2023, "weekly groceries", 150,
-             CATEGORY.EATING_OUT, IMPORTANCE.NICE_TO_HAVE),
-            (3, 2023, "coffee shop visit", 80,
-             CATEGORY.EATING_OUT, IMPORTANCE.NICE_TO_HAVE),
-
+            (
+                2,
+                2023,
+                "weekly groceries",
+                150,
+                CATEGORY.EATING_OUT,
+                IMPORTANCE.NICE_TO_HAVE,
+            ),
+            (
+                3,
+                2023,
+                "coffee shop visit",
+                80,
+                CATEGORY.EATING_OUT,
+                IMPORTANCE.NICE_TO_HAVE,
+            ),
             # CAR category tests
             (3, 2023, "fuel for car", 100, CATEGORY.CAR, IMPORTANCE.HAVE_TO_HAVE),
-            (4, 2023, "car maintenance", 200,
-             CATEGORY.CAR, IMPORTANCE.HAVE_TO_HAVE),
+            (4, 2023, "car maintenance", 200, CATEGORY.CAR, IMPORTANCE.HAVE_TO_HAVE),
             (5, 2023, "car repairs", 300, CATEGORY.CAR, IMPORTANCE.HAVE_TO_HAVE),
-
             # INVESTMENTS category tests
-            (5, 2023, "investment deposit", 500,
-             CATEGORY.INVESTMENTS, IMPORTANCE.NICE_TO_HAVE),
-            (6, 2023, "investment portfolio", 1000,
-             CATEGORY.INVESTMENTS, IMPORTANCE.NICE_TO_HAVE),
-
+            (
+                5,
+                2023,
+                "investment deposit",
+                500,
+                CATEGORY.INVESTMENTS,
+                IMPORTANCE.NICE_TO_HAVE,
+            ),
+            (
+                6,
+                2023,
+                "investment portfolio",
+                1000,
+                CATEGORY.INVESTMENTS,
+                IMPORTANCE.NICE_TO_HAVE,
+            ),
             # TRAVEL category tests
-            (7, 2023, "travel to Paris", 800,
-             CATEGORY.TRAVEL, IMPORTANCE.NICE_TO_HAVE),
-            (8, 2023, "travel expenses", 1200,
-             CATEGORY.TRAVEL, IMPORTANCE.NICE_TO_HAVE),
-
+            (7, 2023, "travel to Paris", 800, CATEGORY.TRAVEL, IMPORTANCE.NICE_TO_HAVE),
+            (
+                8,
+                2023,
+                "travel expenses",
+                1200,
+                CATEGORY.TRAVEL,
+                IMPORTANCE.NICE_TO_HAVE,
+            ),
             # CARE category tests
-            (8, 2023, "pharmacy purchase", 50,
-             CATEGORY.CARE, IMPORTANCE.NICE_TO_HAVE),
-            (9, 2023, "pharmacy items", 75,
-             CATEGORY.CARE, IMPORTANCE.NICE_TO_HAVE),
-
+            (8, 2023, "pharmacy purchase", 50, CATEGORY.CARE, IMPORTANCE.NICE_TO_HAVE),
+            (9, 2023, "pharmacy items", 75, CATEGORY.CARE, IMPORTANCE.NICE_TO_HAVE),
             # MISC category tests (default)
-            (9, 2023, "unknown expense", 100,
-             CATEGORY.MISC, IMPORTANCE.NEEDS_REVIEW),
-            (10, 2023, "random purchase", 50,
-             CATEGORY.MISC, IMPORTANCE.NEEDS_REVIEW),
-            (11, 2023, "unidentified item", 30,
-             CATEGORY.MISC, IMPORTANCE.NEEDS_REVIEW),
+            (9, 2023, "unknown expense", 100, CATEGORY.MISC, IMPORTANCE.NEEDS_REVIEW),
+            (10, 2023, "random purchase", 50, CATEGORY.MISC, IMPORTANCE.NEEDS_REVIEW),
+            (11, 2023, "unidentified item", 30, CATEGORY.MISC, IMPORTANCE.NEEDS_REVIEW),
         ],
     )
     def test_expense_category_and_importance_assignment(
-        self,
-        month,
-        year,
-        item,
-        price,
-        expected_category,
-        expected_importance
+        self, month, year, item, price, expected_category, expected_importance
     ):
         """
         Test correct category and importance assignment for various expense types.
@@ -92,13 +102,28 @@ class TestExpenseRepresentation:
     @pytest.mark.parametrize(
         "month,year,item,price,expected_repr",
         [
-            (1, 2023, "apartment rent", 1200,
-             "1,2023,apartment rent,🏯 Apartment,1200,Essential"),
-            (2, 2023, "groceries", 150,
-             "2,2023,groceries,🦞 Eating Out,150,Nice to Have"),
+            (
+                1,
+                2023,
+                "apartment rent",
+                1200,
+                "1,2023,apartment rent,🏯 Apartment,1200,Essential",
+            ),
+            (
+                2,
+                2023,
+                "groceries",
+                150,
+                "2,2023,groceries,🦞 Eating Out,150,Nice to Have",
+            ),
             (3, 2023, "fuel", 100, "3,2023,fuel,🚗 Car,100,Have to Have"),
-            (5, 2023, "investment", 500,
-             "5,2023,investment,💸 Investments,500,Nice to Have"),
+            (
+                5,
+                2023,
+                "investment",
+                500,
+                "5,2023,investment,💸 Investments,500,Nice to Have",
+            ),
             (7, 2023, "travel", 800, "7,2023,travel,🗺️ Travel,800,Nice to Have"),
             (9, 2023, "unknown", 100, "9,2023,unknown,Misc,100,Needs Review"),
         ],
@@ -142,14 +167,14 @@ class TestExpenseAttributes:
         """Verify Expense object has category attribute."""
         expense = Expense(1, 2023, "apartment rent", 1200)
 
-        assert hasattr(expense, 'category')
+        assert hasattr(expense, "category")
         assert expense.category is not None
 
     def test_expense_has_importance_attribute(self):
         """Verify Expense object has importance attribute."""
         expense = Expense(1, 2023, "apartment rent", 1200)
 
-        assert hasattr(expense, 'importance')
+        assert hasattr(expense, "importance")
         assert expense.importance is not None
 
 
@@ -203,20 +228,20 @@ class TestCategoryAndImportanceEnums:
 
     def test_category_enum_values_exist(self):
         """Verify all expected CATEGORY enum values exist."""
-        assert hasattr(CATEGORY, 'APARTMENT')
-        assert hasattr(CATEGORY, 'EATING_OUT')
-        assert hasattr(CATEGORY, 'CAR')
-        assert hasattr(CATEGORY, 'INVESTMENTS')
-        assert hasattr(CATEGORY, 'TRAVEL')
-        assert hasattr(CATEGORY, 'CARE')
-        assert hasattr(CATEGORY, 'MISC')
+        assert hasattr(CATEGORY, "APARTMENT")
+        assert hasattr(CATEGORY, "EATING_OUT")
+        assert hasattr(CATEGORY, "CAR")
+        assert hasattr(CATEGORY, "INVESTMENTS")
+        assert hasattr(CATEGORY, "TRAVEL")
+        assert hasattr(CATEGORY, "CARE")
+        assert hasattr(CATEGORY, "MISC")
 
     def test_importance_enum_values_exist(self):
         """Verify all expected IMPORTANCE enum values exist."""
-        assert hasattr(IMPORTANCE, 'ESSENTIAL')
-        assert hasattr(IMPORTANCE, 'HAVE_TO_HAVE')
-        assert hasattr(IMPORTANCE, 'NICE_TO_HAVE')
-        assert hasattr(IMPORTANCE, 'NEEDS_REVIEW')
+        assert hasattr(IMPORTANCE, "ESSENTIAL")
+        assert hasattr(IMPORTANCE, "HAVE_TO_HAVE")
+        assert hasattr(IMPORTANCE, "NICE_TO_HAVE")
+        assert hasattr(IMPORTANCE, "NEEDS_REVIEW")
 
 
 class TestAllCategoriesCoverage:
@@ -224,15 +249,14 @@ class TestAllCategoriesCoverage:
 
     def test_all_categories_from_category_py_are_covered(self):
         """
-        Test that all categories defined in category.py are handled 
+        Test that all categories defined in category.py are handled
         in the _determine_category_and_importance method.
 
         This test creates an Expense with each category name and verifies
         that it doesn't fall into the MISC category (unless it's MISC itself).
         """
         # Categories that should be explicitly handled (dynamically loaded from category.py)
-        categories_to_test = [cat.lower()
-                              for cat in all_category if cat != "MISC"]
+        categories_to_test = [cat.lower() for cat in all_category if cat != "MISC"]
 
         uncovered_categories = []
 
@@ -251,10 +275,7 @@ class TestAllCategoriesCoverage:
             f"in _determine_category_and_importance: {uncovered_categories}"
         )
 
-    @pytest.mark.parametrize(
-        "category_name",
-        [cat.lower() for cat in all_category if cat != "MISC"]
-    )
+    @pytest.mark.parametrize("category_name", [cat.lower() for cat in all_category if cat != "MISC"])
     def test_individual_category_is_covered(self, category_name):
         """
         Test that each individual category from category.py is properly handled.
@@ -266,6 +287,5 @@ class TestAllCategoriesCoverage:
 
         # The expense should not be categorized as MISC (except for MISC itself)
         assert expense.category != CATEGORY.MISC, (
-            f"Category '{category_name}' is not handled in _determine_category_and_importance "
-            f"and falls back to MISC"
+            f"Category '{category_name}' is not handled in _determine_category_and_importance and falls back to MISC"
         )

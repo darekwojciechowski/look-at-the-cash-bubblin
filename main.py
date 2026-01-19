@@ -1,15 +1,16 @@
 from pathlib import Path
+
 from loguru import logger
-import pandas as pd
-from data_processing.data_imports import read_transaction_csv, ipko_import
-from data_processing.data_core import process_dataframe
-from data_processing.exporter import export_misc_transactions, export_cleaned_data
+
 from config.logging_setup import setup_logging
+from data_processing.data_core import process_dataframe
+from data_processing.data_imports import ipko_import, read_transaction_csv
+from data_processing.exporter import export_cleaned_data, export_misc_transactions
 
 # Constants
-CSV_INPUT_FILE: Path = Path('data/demo_ipko.csv')
-CSV_ENCODING: str = 'cp1250'
-CSV_OUT_FILE: Path = Path('data/processed_transactions.csv')
+CSV_INPUT_FILE: Path = Path("data/demo_ipko.csv")
+CSV_ENCODING: str = "cp1250"
+CSV_OUT_FILE: Path = Path("data/processed_transactions.csv")
 
 
 def main() -> None:

@@ -3,31 +3,40 @@ Tests for data_processing.exporter module.
 Comprehensive testing of data export functionality to various formats.
 """
 
-import pytest
-import pandas as pd
 from pathlib import Path
-from unittest.mock import patch, mock_open, MagicMock, call
+from unittest.mock import MagicMock, call, mock_open, patch
+
+import pandas as pd
+import pytest
+
+from data_processing.data_loader import Expense
 from data_processing.exporter import (
+    export_final_data,
+    export_final_date_for_google_spreadsheet,
     export_for_google_sheets,
     export_misc_transactions,
     export_unassigned_transactions_to_csv,
-    export_final_data,
-    export_final_date_for_google_spreadsheet,
     get_data,
 )
-from data_processing.data_loader import Expense
 
 
 @pytest.fixture
 def sample_dataframe():
     """Provides realistic transaction DataFrame for testing."""
-    return pd.DataFrame({
-        "category": ["MISC", "FOOD", "MISC", "FUEL"],
-        "price": [100.0, 200.0, 300.0, 50.0],
-        "month": [1, 1, 2, 2],
-        "year": [2023, 2023, 2023, 2023],
-        "data": ["unknown transaction", "biedronka shopping", "misc item", "orlen fuel"]
-    })
+    return pd.DataFrame(
+        {
+            "category": ["MISC", "FOOD", "MISC", "FUEL"],
+            "price": [100.0, 200.0, 300.0, 50.0],
+            "month": [1, 1, 2, 2],
+            "year": [2023, 2023, 2023, 2023],
+            "data": [
+                "unknown transaction",
+                "biedronka shopping",
+                "misc item",
+                "orlen fuel",
+            ],
+        }
+    )
 
 
 @pytest.fixture
@@ -56,20 +65,17 @@ class TestExportForGoogleSheets:
         export_for_google_sheets(sample_dataframe)
 
         mock_print.assert_called_once()
-        mock_to_csv.assert_called_once_with(
-            Path("for_google_spreadsheet.csv"), index=False)
+        mock_to_csv.assert_called_once_with(Path("for_google_spreadsheet.csv"), index=False)
 
     @patch("pandas.DataFrame.to_csv")
     def test_export_for_google_sheets_empty_dataframe(self, mock_to_csv):
         """Test export with empty DataFrame."""
-        empty_df = pd.DataFrame(
-            columns=["category", "price", "month", "year", "data"])
+        empty_df = pd.DataFrame(columns=["category", "price", "month", "year", "data"])
 
         with patch("builtins.print"):
             export_for_google_sheets(empty_df)
 
-        mock_to_csv.assert_called_once_with(
-            Path("for_google_spreadsheet.csv"), index=False)
+        mock_to_csv.assert_called_once_with(Path("for_google_spreadsheet.csv"), index=False)
 
 
 class TestExportMiscTransactions:
@@ -80,30 +86,25 @@ class TestExportMiscTransactions:
         """Test that only MISC category transactions are exported."""
         export_misc_transactions(sample_dataframe)
 
-        mock_to_csv.assert_called_once_with(
-            Path("unassigned_transactions.csv"),
-            index=False,
-            encoding='utf-8-sig'
-        )
+        mock_to_csv.assert_called_once_with(Path("unassigned_transactions.csv"), index=False, encoding="utf-8-sig")
 
         # Verify only MISC rows are selected
         misc_df = sample_dataframe[sample_dataframe["category"] == "MISC"]
         assert len(misc_df) == 2
-        pd.testing.assert_frame_equal(
-            misc_df,
-            sample_dataframe[sample_dataframe["category"] == "MISC"]
-        )
+        pd.testing.assert_frame_equal(misc_df, sample_dataframe[sample_dataframe["category"] == "MISC"])
 
     @patch("pandas.DataFrame.to_csv")
     def test_export_misc_transactions_no_misc_category(self, mock_to_csv):
         """Test export when no MISC transactions exist."""
-        df = pd.DataFrame({
-            "category": ["FOOD", "FUEL"],
-            "price": [100.0, 50.0],
-            "month": [1, 1],
-            "year": [2023, 2023],
-            "data": ["groceries", "fuel"]
-        })
+        df = pd.DataFrame(
+            {
+                "category": ["FOOD", "FUEL"],
+                "price": [100.0, 50.0],
+                "month": [1, 1],
+                "year": [2023, 2023],
+                "data": ["groceries", "fuel"],
+            }
+        )
 
         export_misc_transactions(df)
 
@@ -112,8 +113,7 @@ class TestExportMiscTransactions:
     @patch("pandas.DataFrame.to_csv")
     def test_export_misc_transactions_empty_dataframe(self, mock_to_csv):
         """Test export with empty DataFrame."""
-        empty_df = pd.DataFrame(
-            columns=["category", "price", "month", "year", "data"])
+        empty_df = pd.DataFrame(columns=["category", "price", "month", "year", "data"])
 
         export_misc_transactions(empty_df)
 
@@ -128,11 +128,7 @@ class TestExportUnassignedTransactions:
         """Test basic export of unassigned transactions."""
         export_unassigned_transactions_to_csv(sample_dataframe)
 
-        mock_to_csv.assert_called_once_with(
-            Path("unassigned_transactions.csv"),
-            index=False,
-            encoding='utf-8-sig'
-        )
+        mock_to_csv.assert_called_once_with(Path("unassigned_transactions.csv"), index=False, encoding="utf-8-sig")
 
 
 class TestExportFinalData:
@@ -142,11 +138,13 @@ class TestExportFinalData:
     @patch("csv.reader")
     def test_export_final_data_success(self, mock_csv_reader, mock_file, csv_data_mock):
         """Test successful parsing of final data from CSV."""
-        mock_csv_reader.return_value = iter([
-            ["month", "year", "item", "price"],
-            ["1", "2023", "item1", "100"],
-            ["2", "2023", "item2", "200"],
-        ])
+        mock_csv_reader.return_value = iter(
+            [
+                ["month", "year", "item", "price"],
+                ["1", "2023", "item1", "100"],
+                ["2", "2023", "item2", "200"],
+            ]
+        )
 
         expenses = export_final_data()
 
@@ -162,9 +160,11 @@ class TestExportFinalData:
     @patch("csv.reader")
     def test_export_final_data_empty_csv(self, mock_csv_reader, mock_file):
         """Test parsing empty CSV file."""
-        mock_csv_reader.return_value = iter([
-            ["month", "year", "item", "price"],
-        ])
+        mock_csv_reader.return_value = iter(
+            [
+                ["month", "year", "item", "price"],
+            ]
+        )
 
         expenses = export_final_data()
 
@@ -176,48 +176,28 @@ class TestExportFinalDateForGoogleSpreadsheet:
 
     @patch("builtins.print")
     @patch("pandas.DataFrame.to_csv")
-    def test_export_final_date_for_google_spreadsheet_success(
-        self,
-        mock_to_csv,
-        mock_print,
-        sample_expenses
-    ):
+    def test_export_final_date_for_google_spreadsheet_success(self, mock_to_csv, mock_print, sample_expenses):
         """Test successful export to Google Spreadsheet format."""
         export_final_date_for_google_spreadsheet(sample_expenses)
 
         mock_print.assert_called_once()
-        mock_to_csv.assert_called_once_with(
-            Path("for_google_spreadsheet.csv"),
-            sep="\t",
-            index=False
-        )
+        mock_to_csv.assert_called_once_with(Path("for_google_spreadsheet.csv"), sep="\t", index=False)
 
     @patch("builtins.print")
     @patch("pandas.DataFrame.to_csv")
     @patch("loguru.logger.error")
-    def test_export_final_date_for_google_spreadsheet_empty_data(
-        self,
-        mock_error,
-        mock_to_csv,
-        mock_print
-    ):
+    def test_export_final_date_for_google_spreadsheet_empty_data(self, mock_error, mock_to_csv, mock_print):
         """Test export with empty data list."""
         empty_data = []
         export_final_date_for_google_spreadsheet(empty_data)
 
-        mock_error.assert_called_once_with(
-            "The DataFrame is empty. No data to export."
-        )
+        mock_error.assert_called_once_with("The DataFrame is empty. No data to export.")
         mock_to_csv.assert_not_called()
         mock_print.assert_not_called()
 
     @patch("builtins.print")
     @patch("pandas.DataFrame.to_csv")
-    def test_export_final_date_for_google_spreadsheet_single_expense(
-        self,
-        mock_to_csv,
-        mock_print
-    ):
+    def test_export_final_date_for_google_spreadsheet_single_expense(self, mock_to_csv, mock_print):
         """Test export with single expense."""
         single_expense = [Expense(1, 2023, "test item", 100)]
 
@@ -239,11 +219,13 @@ class TestGetData:
 
         Fixed: get_data now properly passes all 4 arguments to Expense constructor.
         """
-        mock_csv_reader.return_value = iter([
-            ["month", "year", "item", "price"],
-            ["1", "2023", "item1", "100"],
-            ["2", "2023", "item2", "200"],
-        ])
+        mock_csv_reader.return_value = iter(
+            [
+                ["month", "year", "item", "price"],
+                ["1", "2023", "item1", "100"],
+                ["2", "2023", "item2", "200"],
+            ]
+        )
 
         mock_expense_instance = MagicMock()
         mock_expense.return_value = mock_expense_instance
@@ -263,9 +245,11 @@ class TestGetData:
     @patch("data_processing.exporter.Expense")
     def test_get_data_empty_csv(self, mock_expense, mock_csv_reader, mock_file):
         """Test get_data with empty CSV file."""
-        mock_csv_reader.return_value = iter([
-            ["month", "year", "item", "price"],
-        ])
+        mock_csv_reader.return_value = iter(
+            [
+                ["month", "year", "item", "price"],
+            ]
+        )
 
         mock_expense_instance = MagicMock()
         mock_expense.return_value = mock_expense_instance

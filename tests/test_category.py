@@ -3,9 +3,11 @@ Tests for data_processing.category module.
 Validates category keywords to prevent false matches.
 """
 
-import pytest
-from data_processing import category
 from collections import defaultdict
+
+import pytest
+
+from data_processing import category
 
 
 class TestCategoryKeywordUniqueness:
@@ -25,7 +27,7 @@ class TestCategoryKeywordUniqueness:
         category_sets = []
         for attr_name in dir(category):
             # Skip private attributes, all_category list, and non-uppercase attributes
-            if attr_name.startswith('_') or attr_name == 'all_category' or not attr_name.isupper():
+            if attr_name.startswith("_") or attr_name == "all_category" or not attr_name.isupper():
                 continue
 
             attr_value = getattr(category, attr_name)
@@ -40,8 +42,7 @@ class TestCategoryKeywordUniqueness:
                 all_keywords.append((category_name, keyword.lower()))
 
         # Find short keywords (1-4 characters)
-        short_keywords = [(cat, kw)
-                          for cat, kw in all_keywords if 1 <= len(kw) <= 4]
+        short_keywords = [(cat, kw) for cat, kw in all_keywords if 1 <= len(kw) <= 4]
 
         # Check each short keyword against all other keywords
         problematic_matches = []
@@ -54,12 +55,14 @@ class TestCategoryKeywordUniqueness:
 
                 # Check if short keyword is a substring of another keyword
                 if short_kw in other_kw:
-                    problematic_matches.append({
-                        'short_keyword': short_kw,
-                        'short_category': short_cat,
-                        'found_in': other_kw,
-                        'found_in_category': other_cat
-                    })
+                    problematic_matches.append(
+                        {
+                            "short_keyword": short_kw,
+                            "short_category": short_cat,
+                            "found_in": other_kw,
+                            "found_in_category": other_cat,
+                        }
+                    )
 
         # If there are problematic matches, create a detailed error message
         if problematic_matches:
@@ -83,7 +86,7 @@ class TestCategoryKeywordUniqueness:
         # Dynamically get all category sets from the module
         categories = {}
         for attr_name in dir(category):
-            if attr_name.startswith('_') or attr_name == 'all_category' or not attr_name.isupper():
+            if attr_name.startswith("_") or attr_name == "all_category" or not attr_name.isupper():
                 continue
 
             attr_value = getattr(category, attr_name)
@@ -97,22 +100,17 @@ class TestCategoryKeywordUniqueness:
                 keyword_map[keyword.lower()].append(category_name)
 
         # Find all keywords that appear in more than one category
-        duplicates = {
-            keyword: cats
-            for keyword, cats in keyword_map.items()
-            if len(cats) > 1
-        }
+        duplicates = {keyword: cats for keyword, cats in keyword_map.items() if len(cats) > 1}
 
         # Build detailed error message if duplicates found
         if duplicates:
             error_lines = [
                 f"\n❌ Found {len(duplicates)} duplicate keyword(s) across different categories:",
-                ""
+                "",
             ]
 
             for keyword, cats in sorted(duplicates.items()):
-                error_lines.append(
-                    f"  • '{keyword}' appears in: {', '.join(cats)}")
+                error_lines.append(f"  • '{keyword}' appears in: {', '.join(cats)}")
 
             error_message = "\n".join(error_lines)
             pytest.fail(error_message)
@@ -127,7 +125,7 @@ class TestCategoryKeywordUniqueness:
         # Dynamically get all category sets from the module
         categories = {}
         for attr_name in dir(category):
-            if attr_name.startswith('_') or attr_name == 'all_category' or not attr_name.isupper():
+            if attr_name.startswith("_") or attr_name == "all_category" or not attr_name.isupper():
                 continue
 
             attr_value = getattr(category, attr_name)
@@ -135,14 +133,9 @@ class TestCategoryKeywordUniqueness:
                 categories[attr_name] = attr_value
 
         # MISC is intentionally empty as fallback category
-        empty_categories = [
-            name for name, keywords in categories.items()
-            if len(keywords) == 0 and name != 'MISC'
-        ]
+        empty_categories = [name for name, keywords in categories.items() if len(keywords) == 0 and name != "MISC"]
 
-        assert not empty_categories, (
-            f"Found empty categories: {', '.join(empty_categories)}"
-        )
+        assert not empty_categories, f"Found empty categories: {', '.join(empty_categories)}"
 
     def test_no_empty_string_keywords(self):
         """
@@ -153,7 +146,7 @@ class TestCategoryKeywordUniqueness:
         # Dynamically get all category sets from the module
         categories = {}
         for attr_name in dir(category):
-            if attr_name.startswith('_') or attr_name == 'all_category' or not attr_name.isupper():
+            if attr_name.startswith("_") or attr_name == "all_category" or not attr_name.isupper():
                 continue
 
             attr_value = getattr(category, attr_name)
@@ -167,8 +160,7 @@ class TestCategoryKeywordUniqueness:
                 categories_with_empty.append(category_name)
 
         assert not categories_with_empty, (
-            f"Categories with empty/whitespace-only keywords: "
-            f"{', '.join(categories_with_empty)}"
+            f"Categories with empty/whitespace-only keywords: {', '.join(categories_with_empty)}"
         )
 
     def test_category_count(self):
@@ -180,7 +172,7 @@ class TestCategoryKeywordUniqueness:
         # Dynamically get all category sets from the module
         categories = {}
         for attr_name in dir(category):
-            if attr_name.startswith('_') or attr_name == 'all_category' or not attr_name.isupper():
+            if attr_name.startswith("_") or attr_name == "all_category" or not attr_name.isupper():
                 continue
 
             attr_value = getattr(category, attr_name)
@@ -206,13 +198,12 @@ class TestCategoryKeywordUniqueness:
         """
         import string
 
-        allowed_chars = set(string.ascii_letters + string.digits +
-                            " '.,-_()&łąćęńóśźżŁĄĆĘŃÓŚŹŻ/ñóéíá:;öü")
+        allowed_chars = set(string.ascii_letters + string.digits + " '.,-_()&łąćęńóśźżŁĄĆĘŃÓŚŹŻ/ñóéíá:;öü")
 
         # Dynamically get all category sets from the module
         categories = {}
         for attr_name in dir(category):
-            if attr_name.startswith('_') or attr_name == 'all_category' or not attr_name.isupper():
+            if attr_name.startswith("_") or attr_name == "all_category" or not attr_name.isupper():
                 continue
 
             attr_value = getattr(category, attr_name)
@@ -228,8 +219,7 @@ class TestCategoryKeywordUniqueness:
 
         # This is a warning test - we allow some special characters
         if invalid_keywords:
-            print(
-                f"\n⚠️  Warning: Found {len(invalid_keywords)} keywords with special characters")
+            print(f"\n⚠️  Warning: Found {len(invalid_keywords)} keywords with special characters")
             for cat, kw in invalid_keywords[:5]:  # Show first 5
                 print(f"    {cat}: '{kw}'")
 
@@ -241,14 +231,22 @@ class TestCategoryKeywordUniqueness:
         """
         # Common words that should probably only appear once
         sensitive_keywords = [
-            'bike', 'sport', 'restaurant', 'pizza', 'hotel',
-            'food', 'car', 'travel', 'kawa', 'coffee'
+            "bike",
+            "sport",
+            "restaurant",
+            "pizza",
+            "hotel",
+            "food",
+            "car",
+            "travel",
+            "kawa",
+            "coffee",
         ]
 
         keyword_locations = defaultdict(list)
 
         for attr_name in dir(category):
-            if attr_name.startswith('_') or attr_name == 'all_category' or not attr_name.isupper():
+            if attr_name.startswith("_") or attr_name == "all_category" or not attr_name.isupper():
                 continue
 
             attr_value = getattr(category, attr_name)
@@ -259,19 +257,14 @@ class TestCategoryKeywordUniqueness:
 
         # Check our sensitive keywords
         duplicated_sensitive = {
-            kw: cats for kw in sensitive_keywords
-            for cats in [keyword_locations.get(kw.lower(), [])]
-            if len(cats) > 1
+            kw: cats for kw in sensitive_keywords for cats in [keyword_locations.get(kw.lower(), [])] if len(cats) > 1
         }
 
         if duplicated_sensitive:
-            error_lines = [
-                "\n⚠️  Sensitive keywords found in multiple categories:",
-                ""
-            ]
+            error_lines = ["\n⚠️  Sensitive keywords found in multiple categories:", ""]
             for kw, cats in duplicated_sensitive.items():
                 error_lines.append(f"  • '{kw}' in: {', '.join(cats)}")
-                    
+
             pytest.fail("\n".join(error_lines))
 
     def test_all_categories_exist_in_all_category_list(self):
@@ -283,7 +276,7 @@ class TestCategoryKeywordUniqueness:
         # Get all category sets from the module
         defined_categories = set()
         for attr_name in dir(category):
-            if attr_name.startswith('_') or attr_name == 'all_category' or not attr_name.isupper():
+            if attr_name.startswith("_") or attr_name == "all_category" or not attr_name.isupper():
                 continue
 
             attr_value = getattr(category, attr_name)
@@ -312,4 +305,4 @@ class TestCategoryKeywordUniqueness:
             )
 
         if error_messages:
-            pytest.fail(''.join(error_messages))
+            pytest.fail("".join(error_messages))
