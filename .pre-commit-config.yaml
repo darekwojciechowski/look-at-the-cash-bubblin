@@ -37,9 +37,12 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
+        exclude: ^coverage\.json$
       - id: end-of-file-fixer
+        exclude: ^coverage\.json$
       - id: check-yaml
       - id: check-json
+        exclude: ^coverage\.json$
       - id: check-toml
       - id: check-added-large-files
         args: [--maxkb=1000]
