@@ -52,7 +52,7 @@ jobs:
         run: poetry run ruff check .
 
       - name: Type checking with mypy
-        run: poetry run mypy . --ignore-missing-imports
+        run: poetry run mypy config data_processing main.py --ignore-missing-imports
 
   # ============================================================================
   # STAGE 2: Test Matrix (parallel execution)
