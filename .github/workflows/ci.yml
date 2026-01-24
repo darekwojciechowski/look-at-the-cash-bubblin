@@ -153,6 +153,7 @@ jobs:
           poetry run pytest tests/ \
             -m "integration" \
             --junitxml=test-results-integration.xml \
+            --no-cov \
             -v
 
       - name: Upload test results
@@ -199,6 +200,7 @@ jobs:
           poetry run pytest tests/ \
             -m "security" \
             --junitxml=test-results-security.xml \
+            --no-cov \
             -v
 
       - name: Upload test results
@@ -245,6 +247,7 @@ jobs:
           poetry run pytest tests/ \
             -m "property" \
             --junitxml=test-results-property.xml \
+            --no-cov \
             -v
 
       - name: Upload test results
@@ -292,6 +295,7 @@ jobs:
             -m "performance or slow" \
             --junitxml=test-results-performance.xml \
             --timeout=120 \
+            --no-cov \
             -v
 
       - name: Upload test results

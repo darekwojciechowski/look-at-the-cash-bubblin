@@ -10,6 +10,7 @@ import pytest
 from data_processing import category
 
 
+@pytest.mark.unit
 class TestCategoryKeywordUniqueness:
     """Test suite for validating category keyword uniqueness and preventing false matches."""
 

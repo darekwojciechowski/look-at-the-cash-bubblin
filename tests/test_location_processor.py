@@ -40,6 +40,7 @@ def polish_names_without_diacritics():
     }
 
 
+@pytest.mark.unit
 def test_clean_location_text_removes_country_field():
     """Test that clean_location_text removes country information."""
     raw = "lokalizacja: adres: ul. Testowa 12 miasto: Poznan kraj: Polska"
@@ -48,6 +49,7 @@ def test_clean_location_text_removes_country_field():
     assert "polska" not in result.lower()
 
 
+@pytest.mark.unit
 def test_clean_location_text_removes_prefixes():
     """Test that clean_location_text strips metadata prefixes."""
     raw = "miasto: Warszawa adres: ul. Nowa 5"
@@ -56,6 +58,7 @@ def test_clean_location_text_removes_prefixes():
     assert "adres:" not in result
 
 
+@pytest.mark.unit
 def test_clean_location_text_normalizes_spacing():
     """Test that clean_location_text standardizes whitespace and commas."""
     raw = "ul.   Testowa  :  12 ,, Warszawa"
@@ -67,6 +70,7 @@ def test_clean_location_text_normalizes_spacing():
     assert "warszawa" in result.lower()
 
 
+@pytest.mark.unit
 def test_clean_location_text_handles_empty_input():
     """Test that clean_location_text returns empty string for None/empty."""
     assert clean_location_text(None) == ""

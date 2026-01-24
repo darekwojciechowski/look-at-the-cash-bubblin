@@ -53,6 +53,7 @@ def csv_data_mock():
     return "month,year,item,price\n1,2023,item1,100\n2,2023,item2,200\n"
 
 
+@pytest.mark.unit
 class TestExportForGoogleSheets:
     """Test suite for Google Sheets export functionality."""
 
@@ -76,6 +77,7 @@ class TestExportForGoogleSheets:
         mock_to_csv.assert_called_once_with(Path("for_google_spreadsheet.csv"), index=False)
 
 
+@pytest.mark.unit
 class TestExportMiscTransactions:
     """Test suite for MISC category transaction export."""
 
@@ -118,6 +120,7 @@ class TestExportMiscTransactions:
         mock_to_csv.assert_called_once()
 
 
+@pytest.mark.unit
 class TestExportUnassignedTransactions:
     """Test suite for unassigned transactions export."""
 
@@ -129,6 +132,7 @@ class TestExportUnassignedTransactions:
         mock_to_csv.assert_called_once_with(Path("unassigned_transactions.csv"), index=False, encoding="utf-8-sig")
 
 
+@pytest.mark.unit
 class TestExportFinalData:
     """Test suite for final data export operations."""
 
@@ -169,6 +173,7 @@ class TestExportFinalData:
         assert len(expenses) == 0
 
 
+@pytest.mark.unit
 class TestGetData:
     """Test suite for get_data function."""
 

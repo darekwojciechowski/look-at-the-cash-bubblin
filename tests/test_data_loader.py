@@ -9,6 +9,7 @@ from data_processing.category import all_category
 from data_processing.data_loader import CATEGORY, IMPORTANCE, Expense
 
 
+@pytest.mark.unit
 class TestExpenseCategorization:
     """Test suite for Expense category assignment logic."""
 
@@ -90,6 +91,7 @@ class TestExpenseCategorization:
         assert expense.importance == expected_importance
 
 
+@pytest.mark.unit
 class TestExpenseRepresentation:
     """Test suite for Expense string representation."""
 
@@ -151,6 +153,7 @@ class TestExpenseRepresentation:
         assert parts[1] == "2023"
 
 
+@pytest.mark.unit
 class TestExpenseAttributes:
     """Test suite for Expense object attributes."""
 
@@ -178,6 +181,7 @@ class TestExpenseAttributes:
         assert expense.importance is not None
 
 
+@pytest.mark.unit
 class TestExpenseEdgeCases:
     """Test suite for edge cases and boundary conditions."""
 
@@ -223,6 +227,7 @@ class TestExpenseEdgeCases:
         assert expense.category == CATEGORY.APARTMENT
 
 
+@pytest.mark.unit
 class TestCategoryAndImportanceEnums:
     """Test suite for CATEGORY and IMPORTANCE enum values."""
 
@@ -244,6 +249,7 @@ class TestCategoryAndImportanceEnums:
         assert hasattr(IMPORTANCE, "NEEDS_REVIEW")
 
 
+@pytest.mark.unit
 class TestAllCategoriesCoverage:
     """Test suite to verify all categories from category.py are handled in _determine_category_and_importance."""
 

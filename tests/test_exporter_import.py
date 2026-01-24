@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 
+@pytest.mark.unit
 class TestExporterModuleImport:
     """Test suite for exporter module import and module-level code."""
 

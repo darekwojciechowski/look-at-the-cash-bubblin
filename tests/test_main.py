@@ -39,6 +39,7 @@ def sample_processed_dataframe():
     )
 
 
+@pytest.mark.unit
 class TestMainWorkflow:
     """Test suite for main workflow integration."""
 

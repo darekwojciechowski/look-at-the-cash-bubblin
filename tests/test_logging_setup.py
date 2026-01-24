@@ -5,11 +5,13 @@ Ensures proper logging configuration and error handling with Loguru.
 
 from unittest.mock import mock_open, patch
 
+import pytest
 from loguru import logger
 
 from config.logging_setup import setup_logging
 
 
+@pytest.mark.unit
 class TestSetupLogging:
     """Test suite for setup_logging function."""
 

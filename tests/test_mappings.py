@@ -16,6 +16,7 @@ from data_processing.category import (
 from data_processing.mappings import mappings
 
 
+@pytest.mark.unit
 class TestMappingsFunction:
     """Test suite for the mappings function."""
 
@@ -229,6 +230,7 @@ class TestMappingsFunction:
             assert result == expected
 
 
+@pytest.mark.unit
 class TestCategorySetIntegrity:
     """Test suite to verify category set definitions are complete."""
 
