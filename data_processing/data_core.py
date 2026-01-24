@@ -67,7 +67,4 @@ def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     # Drop rows with NaN in 'price'
     df = df[df["price"] != "nan"].reset_index(drop=True)
 
-    # Remove unwanted markers from category
-    df["category"] = df["category"].astype(str).str.replace("🔖🔖🔖", "")
-
     return df

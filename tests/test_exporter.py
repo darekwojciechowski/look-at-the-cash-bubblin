@@ -11,8 +11,6 @@ import pytest
 
 from data_processing.data_loader import Expense
 from data_processing.exporter import (
-    export_final_data,
-    export_final_date_for_google_spreadsheet,
     export_for_google_sheets,
     export_misc_transactions,
     export_unassigned_transactions_to_csv,
@@ -136,7 +134,7 @@ class TestExportFinalData:
 
     @patch("builtins.open", new_callable=mock_open)
     @patch("csv.reader")
-    def test_export_final_data_success(self, mock_csv_reader, mock_file, csv_data_mock):
+    def test_get_data_success(self, mock_csv_reader, mock_file, csv_data_mock):
         """Test successful parsing of final data from CSV."""
         mock_csv_reader.return_value = iter(
             [
@@ -146,7 +144,7 @@ class TestExportFinalData:
             ]
         )
 
-        expenses = export_final_data()
+        expenses = get_data()
 
         assert len(expenses) == 2
         assert expenses[0].month == "1"
@@ -158,7 +156,7 @@ class TestExportFinalData:
 
     @patch("builtins.open", new_callable=mock_open)
     @patch("csv.reader")
-    def test_export_final_data_empty_csv(self, mock_csv_reader, mock_file):
+    def test_get_data_empty_csv(self, mock_csv_reader, mock_file):
         """Test parsing empty CSV file."""
         mock_csv_reader.return_value = iter(
             [
@@ -166,45 +164,9 @@ class TestExportFinalData:
             ]
         )
 
-        expenses = export_final_data()
+        expenses = get_data()
 
         assert len(expenses) == 0
-
-
-class TestExportFinalDateForGoogleSpreadsheet:
-    """Test suite for Google Spreadsheet final data export."""
-
-    @patch("builtins.print")
-    @patch("pandas.DataFrame.to_csv")
-    def test_export_final_date_for_google_spreadsheet_success(self, mock_to_csv, mock_print, sample_expenses):
-        """Test successful export to Google Spreadsheet format."""
-        export_final_date_for_google_spreadsheet(sample_expenses)
-
-        mock_print.assert_called_once()
-        mock_to_csv.assert_called_once_with(Path("for_google_spreadsheet.csv"), sep="\t", index=False)
-
-    @patch("builtins.print")
-    @patch("pandas.DataFrame.to_csv")
-    @patch("loguru.logger.error")
-    def test_export_final_date_for_google_spreadsheet_empty_data(self, mock_error, mock_to_csv, mock_print):
-        """Test export with empty data list."""
-        empty_data = []
-        export_final_date_for_google_spreadsheet(empty_data)
-
-        mock_error.assert_called_once_with("The DataFrame is empty. No data to export.")
-        mock_to_csv.assert_not_called()
-        mock_print.assert_not_called()
-
-    @patch("builtins.print")
-    @patch("pandas.DataFrame.to_csv")
-    def test_export_final_date_for_google_spreadsheet_single_expense(self, mock_to_csv, mock_print):
-        """Test export with single expense."""
-        single_expense = [Expense(1, 2023, "test item", 100)]
-
-        export_final_date_for_google_spreadsheet(single_expense)
-
-        mock_print.assert_called_once()
-        mock_to_csv.assert_called_once()
 
 
 class TestGetData:

@@ -1,5 +1,6 @@
 # 💰 Look at the cash bubblin
 
+[![CI Pipeline](https://github.com/darekwojciechowski/look-at-the-cash-bubblin/workflows/CI%20Pipeline/badge.svg)](https://github.com/darekwojciechowski/look-at-the-cash-bubblin/actions)
 ![Python](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/darekwojciechowski/look-at-the-cash-bubblin/main/pyproject.toml&query=$.tool.poetry.dependencies.python&label=Python&style=flat-square&logo=python&logoColor=white&color=blue)
 ![Pandas](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/darekwojciechowski/look-at-the-cash-bubblin/main/pyproject.toml&query=$.tool.poetry.dependencies.pandas&label=Pandas&style=flat-square&logo=pandas&logoColor=white&color=150458)
 ![NumPy](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/darekwojciechowski/look-at-the-cash-bubblin/main/pyproject.toml&query=$.tool.poetry.dependencies.numpy&label=NumPy&style=flat-square&logo=numpy&logoColor=white&color=013243)
@@ -25,10 +26,10 @@
 - **Location Processing**: Integrates with Google Maps for transaction location data.
 
 ## 🛠️ Tech Stack
-- **Language**: `Python`
-- **Libraries**: `pandas`, `logging`
-- **Tools**: `CSV processing`, `Google Sheets integration`, `Google Maps links generation`
-- **Testing**: `pytest`
+- **Language**: Python 3.13
+- **Libraries**: pandas, numpy, loguru
+- **Testing**: pytest, hypothesis, mypy
+- **Tools**: ruff, pre-commit
 
 ## 🏦 Supported Banks
 - **PKO**: Fully supported for importing and categorizing transactions.
@@ -46,11 +47,21 @@ The system follows a three-layer architecture:
 - **Data Output**: Exports to Google Sheets format, identifies unassigned transactions, and creates location links
 
 ## 🧪 Testing & Quality Assurance
-This project maintains high code quality through comprehensive testing practices:
+This project maintains high code quality through comprehensive testing practices and automated CI/CD:
+
+### Testing Framework
 - **Unit Tests**: Full test coverage using `pytest` for all core modules
-- **Test-Driven Development**: Ensures reliability and maintainability
-- **Automated Testing**: CI/CD-ready test suite for continuous validation
-- **Code Coverage**: Tracked with detailed coverage reports
+- **Integration Tests**: End-to-end workflow validation
+- **Security Tests**: Input validation and vulnerability testing
+- **Performance Tests**: Benchmarking critical operations
+- **Property-Based Tests**: Randomized testing with Hypothesis
+
+### Continuous Integration
+- **GitHub Actions CI/CD Pipeline**: Automated testing on every push and pull request
+- **Multi-Stage Pipeline**:
+  - **Stage 1**: Code quality gates (Ruff formatting, linting, mypy type checking)
+  - **Stage 2**: Parallel test execution (unit, integration, security, performance tests)
+  - **Stage 3**: Coverage reporting and artifact archival
 
 ## 🚀 How to Use
 1. Place your transaction CSV file in the `data/` directory.

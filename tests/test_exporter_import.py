@@ -37,8 +37,6 @@ class TestExporterModuleImport:
             "export_for_google_sheets",
             "export_misc_transactions",
             "export_unassigned_transactions_to_csv",
-            "export_final_data",
-            "export_final_date_for_google_spreadsheet",
             "get_data",
         ]
 

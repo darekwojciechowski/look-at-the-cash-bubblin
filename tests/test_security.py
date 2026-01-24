@@ -70,13 +70,16 @@ class TestInputValidation:
             }
         )
 
-        # Mock mappings
-        with patch("data_processing.data_core.mappings", {}):
-            # Process should handle these safely - empty mappings result in 'nan' category
+        # Mock mappings to return default MISC category for all inputs
+        def mock_mappings(data: str) -> str:
+            return "MISC"
+
+        with patch("data_processing.data_core.mappings", mock_mappings):
+            # Process should handle these safely - returns MISC for unknown inputs
             result = process_dataframe(df)
         assert len(result) == len(malicious_inputs)
-        # With empty mappings, category will be 'nan' (converted from NaN)
-        assert all(cat == "nan" for cat in result["category"])
+        # With mock that returns MISC, category should be MISC
+        assert all(cat == "MISC" for cat in result["category"])
 
     def test_xss_attempts_in_transaction_data(self) -> None:
         """Test that XSS attempts in transaction data are preserved safely."""
