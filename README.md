@@ -5,7 +5,7 @@
 ![Pandas](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/darekwojciechowski/look-at-the-cash-bubblin/main/pyproject.toml&query=$.tool.poetry.dependencies.pandas&label=Pandas&style=flat-square&logo=pandas&logoColor=white&color=150458)
 ![NumPy](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/darekwojciechowski/look-at-the-cash-bubblin/main/pyproject.toml&query=$.tool.poetry.dependencies.numpy&label=NumPy&style=flat-square&logo=numpy&logoColor=white&color=013243)
 ![Pytest](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/darekwojciechowski/look-at-the-cash-bubblin/main/pyproject.toml&query=$.tool.poetry.group.dev.dependencies.pytest&label=Pytest&style=flat-square&logo=pytest&logoColor=white&color=0A9EDC)
-![Coverage](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/darekwojciechowski/look-at-the-cash-bubblin/main/coverage.json&query=$.totals.percent_covered_display&label=Coverage&suffix=%25&style=flat-square&color=orange)
+![Coverage](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/darekwojciechowski/look-at-the-cash-bubblin/main/coverage.json&query=$.totals.percent_covered_display&label=Coverage&suffix=%25&style=flat-square&color=success)
 ![License](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/darekwojciechowski/look-at-the-cash-bubblin/main/pyproject.toml&query=$.tool.poetry.license&label=License&style=flat-square&color=green)
 
 ## 🌟 Overview
