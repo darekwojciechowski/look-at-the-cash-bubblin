@@ -3,7 +3,7 @@ from pathlib import Path
 from loguru import logger
 
 from config.logging_setup import setup_logging
-from data_processing.data_core import process_dataframe
+from data_processing.data_core import log_dataframe_preview, process_dataframe
 from data_processing.data_imports import ipko_import, read_transaction_csv
 from data_processing.exporter import export_cleaned_data, export_misc_transactions
 
@@ -24,7 +24,7 @@ def main() -> None:
     processed_df = process_dataframe(df)
 
     # Print processed DataFrame to terminal (only once)
-    logger.info("[DATA] Processed DataFrame preview:")
+    log_dataframe_preview(processed_df)
 
     # Export Misc transactions for manual review
     export_misc_transactions(processed_df)
