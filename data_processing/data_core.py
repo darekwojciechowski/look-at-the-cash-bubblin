@@ -53,6 +53,9 @@ def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     # Map categories
     df["category"] = df["data"].map(mappings)
 
+    # Remove refund/return entries
+    df = df[df["category"] != "REMOVE_ENTRY"].reset_index(drop=True)
+
     # Remove income (positive prices)
     df["price"] = df["price"].astype(float)
     df.loc[df["price"] > 0, "price"] = np.nan

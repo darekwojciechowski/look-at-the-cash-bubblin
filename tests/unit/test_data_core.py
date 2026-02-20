@@ -188,6 +188,23 @@ class TestProcessDataframe:
         expected_columns = ["month", "year", "price", "category", "data"]
         assert list(result.columns) == expected_columns
 
+    def test_process_dataframe_removes_refund_entries(self, mocker: MockerFixture) -> None:
+        """Verify rows matched as REMOVE_ENTRY (zwrot/refund) are excluded from output."""
+        df = pd.DataFrame(
+            {
+                "data": ["zwrot za zamowienie", "regular purchase", "refund processed"],
+                "price": ["-30.0", "-50.0", "-20.0"],
+                "month": [1, 1, 1],
+                "year": [2023, 2023, 2023],
+            }
+        )
+        result = process_dataframe(df)
+
+        # Only the regular purchase should remain
+        assert len(result) == 1
+        assert result["data"].iloc[0] == "regular purchase"
+        assert "REMOVE_ENTRY" not in result["category"].values
+
     def test_process_dataframe_with_invalid_columns(self, mocker: MockerFixture) -> None:
         """Test process_dataframe when required columns are missing."""
         mocker.patch("logging.error")

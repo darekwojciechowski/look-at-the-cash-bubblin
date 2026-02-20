@@ -7,6 +7,7 @@ See pyproject.toml [tool.ruff.lint.per-file-ignores] for E501 exception.
 """
 
 all_category = [
+    "REMOVE_ENTRY",
     "FOOD", "GREENFOOD", "TRANSPORTATION", "CAR", "LEASING", "FUEL", "REPAIRS", "COFFEE", "FASTFOOD", "GROCERIES",
     "CATERING", "ALCOHOL", "APARTMENT", "BILLS", "RENOVATION", "CLOTHES", "JEWELRY", "ENTERTAINMENT", "PCGAMES",
     "BIKE", "SPORT", "PHARMACY", "COSMETICS", "TRAVEL", "BOOKS", "ANIMALS", "INSURANCE", "SUBSCRIPTIONS",
@@ -14,6 +15,8 @@ all_category = [
 ]
 
 # Categories
+REMOVE_ENTRY: set[str] = {"zwrot", "refund"}
+
 FOOD = {"biedronka", "lidl", "auchan", "kaufland", "aldi", "tesco",
         "dino", "carrefour", "intermarche", "intermarché", "netto"}
 

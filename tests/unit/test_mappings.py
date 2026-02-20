@@ -23,6 +23,11 @@ class TestMappingsFunction:
     @pytest.mark.parametrize(
         "test_data,expected_category",
         [
+            # REMOVE_ENTRY category tests
+            ("zwrot za zamowienie", "REMOVE_ENTRY"),
+            ("refund for order 12345", "REMOVE_ENTRY"),
+            ("ZWROT platnosci", "REMOVE_ENTRY"),
+            ("partial refund processed", "REMOVE_ENTRY"),
             # FOOD category tests
             ("I bought groceries at biedronka", "FOOD"),
             ("Shopping at lidl supermarket", "FOOD"),

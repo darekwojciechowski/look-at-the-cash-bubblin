@@ -262,7 +262,7 @@ class TestAllCategoriesCoverage:
         that it doesn't fall into the MISC category (unless it's MISC itself).
         """
         # Categories that should be explicitly handled (dynamically loaded from category.py)
-        categories_to_test = [cat.lower() for cat in all_category if cat != "MISC"]
+        categories_to_test = [cat.lower() for cat in all_category if cat not in ("MISC", "REMOVE_ENTRY")]
 
         uncovered_categories = []
 
@@ -281,7 +281,9 @@ class TestAllCategoriesCoverage:
             f"in _determine_category_and_importance: {uncovered_categories}"
         )
 
-    @pytest.mark.parametrize("category_name", [cat.lower() for cat in all_category if cat != "MISC"])
+    @pytest.mark.parametrize(
+        "category_name", [cat.lower() for cat in all_category if cat not in ("MISC", "REMOVE_ENTRY")]
+    )
     def test_individual_category_is_covered(self, category_name):
         """
         Test that each individual category from category.py is properly handled.
