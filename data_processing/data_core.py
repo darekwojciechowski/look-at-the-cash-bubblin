@@ -4,7 +4,7 @@ import pandas as pd
 from data_processing.mappings import mappings
 
 
-def clean_date(df: pd.DataFrame) -> pd.DataFrame:
+def clean_descriptions(df: pd.DataFrame) -> pd.DataFrame:
     """
     Clean the 'data' column in the DataFrame by replacing specific patterns with shorter or corrected text.
 
@@ -48,7 +48,7 @@ def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     Returns the cleaned and categorized DataFrame.
     """
     # Clean transaction descriptions
-    df = clean_date(df)
+    df = clean_descriptions(df)
 
     # Map categories
     df["category"] = df["data"].map(mappings)

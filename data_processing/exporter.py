@@ -25,10 +25,8 @@ def export_for_google_sheets(processed_df: pd.DataFrame) -> None:
     google_sheets_df = processed_df.copy()
     # Add any transformations or filtering here if needed
 
-    # Print the DataFrame to the console (only once)
-    logger.info("Printing the final DataFrame for Google Sheets:")
-    # Ensure this is the only print statement for the DataFrame
-    print(google_sheets_df.to_string())
+    # Log the final DataFrame to the console (only once)
+    logger.info("Final DataFrame for Google Sheets:\n{}", google_sheets_df.to_string())
 
     # Export the DataFrame to a CSV file
     output_file = Path("for_google_spreadsheet.csv")
@@ -92,7 +90,7 @@ def get_data() -> list[Expense]:
     list: A list of Expense objects.
     """
     expenses: list[Expense] = []
-    with open(CSV_OUT_FILE, newline="") as csvfile:
+    with open(CSV_OUT_FILE, newline="", encoding="utf-8-sig") as csvfile:
         reader = csv.reader(csvfile, delimiter=",")
         next(reader)  # Skip the header row
         for row in reader:

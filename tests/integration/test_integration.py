@@ -9,7 +9,7 @@ import pandas as pd
 import pytest
 from pytest_mock import MockerFixture
 
-from data_processing.data_core import clean_date, process_dataframe
+from data_processing.data_core import clean_descriptions, process_dataframe
 from data_processing.data_imports import ipko_import, read_transaction_csv
 
 
@@ -27,7 +27,7 @@ class TestEndToEndDataProcessing:
         assert len(df) == 2
 
         # Process data
-        cleaned_df = clean_date(df)
+        cleaned_df = clean_descriptions(df)
         assert "data" in cleaned_df.columns
 
         # Mock mappings for categorization
@@ -55,7 +55,7 @@ class TestEndToEndDataProcessing:
         assert "data" in imported_df.columns
 
         # Process imported data
-        cleaned_df = clean_date(imported_df)
+        cleaned_df = clean_descriptions(imported_df)
         assert len(cleaned_df) == len(imported_df)
 
         # Mock mappings
@@ -136,7 +136,7 @@ class TestLargeDatasetProcessing:
         df = read_transaction_csv(str(input_file), "utf-8")
         assert len(df) == 1000
 
-        cleaned_df = clean_date(df)
+        cleaned_df = clean_descriptions(df)
         assert len(cleaned_df) == 1000
 
         # Mock mappings

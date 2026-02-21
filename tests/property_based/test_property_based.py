@@ -19,7 +19,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from data_processing.data_core import clean_date, process_dataframe
+from data_processing.data_core import clean_descriptions, process_dataframe
 
 
 @pytest.mark.property
@@ -84,9 +84,9 @@ class TestPropertyBasedDataCore:
         )
     )
     @settings(max_examples=20, deadline=None)
-    def test_clean_date_preserves_row_count(self, data: pd.DataFrame) -> None:
-        """Property: clean_date preserves the number of rows."""
-        result = clean_date(data)
+    def test_clean_descriptions_preserves_row_count(self, data: pd.DataFrame) -> None:
+        """Property: clean_descriptions preserves the number of rows."""
+        result = clean_descriptions(data)
 
         assert len(result) == len(data)
         assert list(result.columns) == list(data.columns)
@@ -129,12 +129,12 @@ class TestPropertyBasedDataCore:
         )
     )
     @settings(max_examples=100, deadline=None)
-    def test_clean_date_handles_arbitrary_strings(self, text: str) -> None:
-        """Property: clean_date handles any valid string input."""
+    def test_clean_descriptions_handles_arbitrary_strings(self, text: str) -> None:
+        """Property: clean_descriptions handles any valid string input."""
         df = pd.DataFrame({"data": [text], "price": ["-10.0"], "month": [1], "year": [2023]})
 
         # Should not crash
-        result = clean_date(df)
+        result = clean_descriptions(df)
         assert len(result) == 1
         assert isinstance(result["data"].iloc[0], str)
 
@@ -156,14 +156,14 @@ class TestPropertyBasedInvariants:
         )
     )
     @settings(max_examples=30, deadline=None)
-    def test_clean_date_idempotent(self, df: pd.DataFrame) -> None:
-        """Property: Applying clean_date twice gives same result."""
+    def test_clean_descriptions_idempotent(self, df: pd.DataFrame) -> None:
+        """Property: Applying clean_descriptions twice gives same result."""
         # Handle empty dataframe
         if len(df) == 0:
             return
 
-        first_clean = clean_date(df)
-        second_clean = clean_date(first_clean)
+        first_clean = clean_descriptions(df)
+        second_clean = clean_descriptions(first_clean)
 
         pd.testing.assert_frame_equal(first_clean, second_clean)
 

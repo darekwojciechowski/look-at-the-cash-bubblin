@@ -57,13 +57,13 @@ def csv_data_mock():
 class TestExportForGoogleSheets:
     """Test suite for Google Sheets export functionality."""
 
-    @patch("builtins.print")
+    @patch("data_processing.exporter.logger")
     @patch("pandas.DataFrame.to_csv")
-    def test_export_for_google_sheets_success(self, mock_to_csv, mock_print, sample_dataframe):
+    def test_export_for_google_sheets_success(self, mock_to_csv, mock_logger, sample_dataframe):
         """Test successful export to Google Sheets format."""
         export_for_google_sheets(sample_dataframe)
 
-        mock_print.assert_called_once()
+        mock_logger.info.assert_called()
         mock_to_csv.assert_called_once_with(Path("for_google_spreadsheet.csv"), index=False)
 
     @patch("pandas.DataFrame.to_csv")

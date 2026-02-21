@@ -10,7 +10,7 @@ import pandas as pd
 import pytest
 from pytest_mock import MockerFixture
 
-from data_processing.data_core import clean_date, process_dataframe
+from data_processing.data_core import clean_descriptions, process_dataframe
 from data_processing.data_imports import read_transaction_csv
 
 
@@ -19,8 +19,8 @@ from data_processing.data_imports import read_transaction_csv
 class TestPerformance:
     """Performance tests for critical operations."""
 
-    def test_clean_date_performance_large_dataset(self) -> None:
-        """Test clean_date performance with 10,000 transactions."""
+    def test_clean_descriptions_performance_large_dataset(self) -> None:
+        """Test clean_descriptions performance with 10,000 transactions."""
         # Create large dataset
         large_df = pd.DataFrame(
             {
@@ -36,12 +36,12 @@ class TestPerformance:
 
         # Measure performance
         start_time = time.perf_counter()
-        result = clean_date(large_df)
+        result = clean_descriptions(large_df)
         execution_time = time.perf_counter() - start_time
 
         # Assertions
         assert len(result) == 10000
-        assert execution_time < 5.0, f"clean_date took {execution_time:.2f}s, expected < 5s"
+        assert execution_time < 5.0, f"clean_descriptions took {execution_time:.2f}s, expected < 5s"
 
     def test_process_dataframe_performance(self, mocker: MockerFixture) -> None:
         """Test process_dataframe performance with 10,000 transactions."""
@@ -108,7 +108,7 @@ class TestPerformance:
         initial_size = sys.getsizeof(large_df)
 
         # Process data
-        result = clean_date(large_df)
+        result = clean_descriptions(large_df)
 
         result_size = sys.getsizeof(result)
 
@@ -121,8 +121,8 @@ class TestPerformanceBenchmarks:
     """Benchmark tests for comparing performance."""
 
     @pytest.mark.parametrize("dataset_size", [100, 1000, 5000])
-    def test_clean_date_scaling(self, dataset_size: int) -> None:
-        """Test how clean_date scales with dataset size."""
+    def test_clean_descriptions_scaling(self, dataset_size: int) -> None:
+        """Test how clean_descriptions scales with dataset size."""
         df = pd.DataFrame(
             {
                 "data": [f"purchase in terminal {i}" for i in range(dataset_size)],
@@ -133,7 +133,7 @@ class TestPerformanceBenchmarks:
         )
 
         start_time = time.perf_counter()
-        result = clean_date(df)
+        result = clean_descriptions(df)
         execution_time = time.perf_counter() - start_time
 
         # Performance should scale roughly linearly

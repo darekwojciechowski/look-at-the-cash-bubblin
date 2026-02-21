@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 from pytest_mock import MockerFixture
 
-from data_processing.data_core import clean_date, process_dataframe
+from data_processing.data_core import clean_descriptions, process_dataframe
 
 
 @pytest.fixture
@@ -61,14 +61,14 @@ def mappings_mock() -> dict[str, str]:
 
 
 @pytest.mark.unit
-class TestCleanDate:
+class TestCleanDescriptions:
     """Test suite for transaction description cleaning."""
 
-    def test_clean_date_all_replacements(
+    def test_clean_descriptions_all_replacements(
         self, raw_transaction_data: pd.DataFrame, expected_cleaned_data: pd.DataFrame
     ) -> None:
         """Verify all replacement patterns work correctly."""
-        result = clean_date(raw_transaction_data)
+        result = clean_descriptions(raw_transaction_data)
 
         pd.testing.assert_frame_equal(result, expected_cleaned_data, check_dtype=False)
 
@@ -82,25 +82,25 @@ class TestCleanDate:
             ("piotrkowska 157a", "Biedronka - Piotrkowska 157a"),
         ],
     )
-    def test_clean_date_individual_replacements(self, input_text: str, expected_output: str) -> None:
+    def test_clean_descriptions_individual_replacements(self, input_text: str, expected_output: str) -> None:
         """Test individual replacement patterns."""
         df = pd.DataFrame({"data": [input_text], "price": ["-10.0"], "month": [1], "year": [2023]})
 
-        result = clean_date(df)
+        result = clean_descriptions(df)
         assert result["data"].iloc[0] == expected_output
 
-    def test_clean_date_preserves_other_columns(self, raw_transaction_data: pd.DataFrame) -> None:
-        """Ensure clean_date doesn't modify non-data columns."""
-        result = clean_date(raw_transaction_data)
+    def test_clean_descriptions_preserves_other_columns(self, raw_transaction_data: pd.DataFrame) -> None:
+        """Ensure clean_descriptions doesn't modify non-data columns."""
+        result = clean_descriptions(raw_transaction_data)
 
         pd.testing.assert_series_equal(result["price"], raw_transaction_data["price"], check_dtype=False)
         pd.testing.assert_series_equal(result["month"], raw_transaction_data["month"], check_dtype=False)
         pd.testing.assert_series_equal(result["year"], raw_transaction_data["year"], check_dtype=False)
 
-    def test_clean_date_with_empty_dataframe(self) -> None:
-        """Test clean_date with empty DataFrame."""
+    def test_clean_descriptions_with_empty_dataframe(self) -> None:
+        """Test clean_descriptions with empty DataFrame."""
         empty_df = pd.DataFrame(columns=["data", "price", "month", "year"])
-        result = clean_date(empty_df)
+        result = clean_descriptions(empty_df)
 
         assert result.empty
         assert list(result.columns) == ["data", "price", "month", "year"]
