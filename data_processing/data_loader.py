@@ -1,7 +1,11 @@
+"""Domain model: Expense dataclass plus CATEGORY and IMPORTANCE enumerations."""
+
 from enum import Enum
 
 
 class CATEGORY(Enum):
+    """Display categories used when rendering expenses in reports or spreadsheets."""
+
     TRANSPORTATION = "🚊 Transportation"
     CAR = "🚗 Car"
     EATING_OUT = "🦞 Eating Out"
@@ -21,6 +25,8 @@ class CATEGORY(Enum):
 
 
 class IMPORTANCE(Enum):
+    """Priority scale for classifying whether an expense was necessary."""
+
     SHOULDNT_HAVE = "Shouldn't Have"
     NICE_TO_HAVE = "Nice to Have"
     HAVE_TO_HAVE = "Have to Have"
@@ -29,7 +35,22 @@ class IMPORTANCE(Enum):
 
 
 class Expense:
+    """Single classified transaction read from ``data/processed_transactions.csv``.
+
+    On construction, ``_determine_category_and_importance`` maps the item
+    string to a ``CATEGORY`` and ``IMPORTANCE`` value via keyword matching.
+    """
+
     def __init__(self, month: str, year: str, item: str, price: str) -> None:
+        """Initialize an Expense and resolve its category and importance.
+
+        Args:
+            month: Month number as a string (for example, ``"3"`` for March).
+            year: Four-digit year as a string (for example, ``"2025"``).
+            item: Category label from the processed CSV (for example, ``"FOOD"``),
+                used for keyword-based classification.
+            price: Transaction amount as a string (unsigned, without leading dash).
+        """
         self.month = month
         self.year = year
         self.item = item
@@ -37,6 +58,14 @@ class Expense:
         self.category, self.importance = self._determine_category_and_importance()
 
     def _determine_category_and_importance(self) -> tuple[CATEGORY, IMPORTANCE]:
+        """Map ``self.item`` to a ``CATEGORY`` / ``IMPORTANCE`` pair by keyword.
+
+        Checks lowercase substrings in priority order. Returns
+        ``CATEGORY.MISC`` / ``IMPORTANCE.NEEDS_REVIEW`` when no keyword matches.
+
+        Returns:
+            Two-tuple of ``(CATEGORY, IMPORTANCE)``.
+        """
         item = self.item.lower()
         if "apartment" in item or "bills" in item or "renovation" in item:
             return CATEGORY.APARTMENT, IMPORTANCE.ESSENTIAL
@@ -71,4 +100,8 @@ class Expense:
         return CATEGORY.MISC, IMPORTANCE.NEEDS_REVIEW
 
     def __repr__(self) -> str:
+        """Return a comma-separated string suitable for CSV output.
+
+        Format: ``month,year,item,category_value,price,importance_value``.
+        """
         return f"{self.month},{self.year},{self.item},{self.category.value},{self.price},{self.importance.value}"

@@ -209,6 +209,22 @@ _MAPS_SUFFIX_RE = re.compile(
 )
 
 
+def _normalize_separators(text: str) -> str:
+    """Normalize colons, whitespace, and duplicate commas.
+
+    Args:
+        text: Text to normalize.
+
+    Returns:
+        Text with colons converted to comma-space, collapsed whitespace,
+        and duplicate commas removed. Leading/trailing spaces and commas stripped.
+    """
+    text = _COLON_SPACING_RE.sub(", ", text)
+    text = _MULTIPLE_SPACE_RE.sub(" ", text)
+    text = _DOUBLE_COMMA_RE.sub(",", text)
+    return text.strip(" ,")
+
+
 def clean_location_text(location: str | None) -> str:
     """Strip boilerplate markers and standardise separators.
 
@@ -229,11 +245,7 @@ def clean_location_text(location: str | None) -> str:
         cleaned = cleaned.replace(prefix, " ")
 
     # Standardize formatting
-    # Colons → commas with spacing
-    cleaned = _COLON_SPACING_RE.sub(", ", cleaned)
-    cleaned = _MULTIPLE_SPACE_RE.sub(" ", cleaned)  # Collapse whitespace
-    cleaned = _DOUBLE_COMMA_RE.sub(",", cleaned)  # Remove duplicate commas
-    return cleaned.strip(" ,")
+    return _normalize_separators(cleaned)
 
 
 def normalize_polish_names(location: str | None) -> str:
@@ -342,10 +354,7 @@ def create_google_maps_link(location: str | None) -> str:
 
     # Final cleanup pass
     trimmed = _MAPS_SUFFIX_RE.sub(r", \1", trimmed)  # Clean "kraj:" suffixes
-    trimmed = _COLON_SPACING_RE.sub(", ", trimmed)  # Normalize colons
-    trimmed = _MULTIPLE_SPACE_RE.sub(" ", trimmed)  # Collapse spaces
-    trimmed = _DOUBLE_COMMA_RE.sub(",", trimmed)  # Remove duplicate commas
-    trimmed = trimmed.strip(" ,")
+    trimmed = _normalize_separators(trimmed)
 
     if not trimmed:
         return ""

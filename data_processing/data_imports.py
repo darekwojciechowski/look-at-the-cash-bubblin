@@ -1,3 +1,5 @@
+"""CSV import utilities for PKO BP / IPKO bank exports."""
+
 from pathlib import Path
 
 import pandas as pd
@@ -5,14 +7,18 @@ from loguru import logger
 
 
 def ipko_import(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Process the DataFrame for IPKO transactions (standard format).
+    """Normalize a raw IPKO CSV DataFrame into the standard pipeline format.
 
-    Parameters:
-    df (pandas.DataFrame): The input DataFrame containing transaction data.
+    Renames the nine unnamed columns, extracts month and year from the
+    transaction date, lowercases all text columns, and concatenates them
+    into a single ``data`` column separated by ``//``.
+
+    Args:
+        df: Raw DataFrame loaded from an IPKO CSV export (nine columns,
+            no header).
 
     Returns:
-    pandas.DataFrame: The processed DataFrame with cleaned and transformed data.
+        DataFrame with columns: ``price``, ``data``, ``month``, ``year``.
     """
     # Rename columns for consistency
     df = df.rename(
@@ -74,15 +80,23 @@ def ipko_import(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def read_transaction_csv(file_path: str | Path, encoding: str) -> pd.DataFrame:
-    """
-    Read the transaction CSV file into a DataFrame with smart encoding handling.
+    """Load a transaction CSV file, trying multiple encodings in priority order.
 
-    Parameters:
-    file_path (str | Path): Path to the CSV file.
-    encoding (str): Primary encoding to try (if sensible).
+    Deprioritizes latin-1 variants to avoid silent mojibake on Polish text.
+    Falls back through ``utf-8``, ``utf-8-sig``, ``cp1250``, ``iso-8859-2``,
+    then ``cp1252`` / ``iso-8859-1`` as a last resort.
+
+    Args:
+        file_path: Path to the CSV file.
+        encoding: Preferred encoding to try first. Latin-1 variants are
+            automatically moved to the end of the fallback chain.
 
     Returns:
-    pandas.DataFrame: The loaded DataFrame with properly decoded text.
+        Decoded DataFrame.
+
+    Raises:
+        FileNotFoundError: If ``file_path`` does not exist.
+        ValueError: If the file cannot be decoded with any tried encoding.
     """
     # Prefer encodings that are commonly used for Polish text first.
     preferred_pl_encodings = ["utf-8", "utf-8-sig", "cp1250", "iso-8859-2"]

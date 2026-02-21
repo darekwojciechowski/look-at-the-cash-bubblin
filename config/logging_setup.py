@@ -6,7 +6,12 @@ from loguru import logger
 
 
 def setup_logging() -> None:
-    """Configure logging with Loguru - Professional format with colors."""
+    """Configure loguru handlers for console (stderr) and file output.
+
+    Removes the default loguru handler, sets custom level colors, adds a
+    colorized stderr handler at INFO level, and adds a file handler that
+    overwrites ``app.log`` on each run.
+    """
     try:
         # Remove default handler
         logger.remove()
@@ -19,7 +24,7 @@ def setup_logging() -> None:
         logger.level("ERROR", color="<red>")
         logger.level("CRITICAL", color="<RED><bold>")
 
-        # Add console handler with professional colorful format
+        # Add colorized console handler
         log_format = (
             "<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | "
             "<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
@@ -40,14 +45,21 @@ def setup_logging() -> None:
             encoding="utf-8",
         )
 
-        # Test log to confirm setup
+        # Confirm that logging is active
         logger.info("Logging initialized successfully")
     except Exception as e:
         print(f"Error setting up logging: {e}")
 
 
 def log_dataframe_preview(df: pd.DataFrame) -> None:
-    """Log a full DataFrame preview using loguru, with all columns and rows visible."""
+    """Log the full contents of a DataFrame at INFO level via loguru.
+
+    Temporarily overrides pandas display options so all columns, rows,
+    and cell content are visible in the log output.
+
+    Args:
+        df: DataFrame to log.
+    """
     with pd.option_context(
         "display.max_colwidth",
         None,

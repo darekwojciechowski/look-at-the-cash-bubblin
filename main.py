@@ -1,3 +1,5 @@
+"""Entry point: orchestrates the IPKO CSV import, transformation, and export pipeline."""
+
 from pathlib import Path
 
 from loguru import logger
@@ -14,7 +16,13 @@ CSV_OUT_FILE: Path = Path("data/processed_transactions.csv")
 
 
 def main() -> None:
-    """Main function to orchestrate the CSV import and processing workflow."""
+    """Run the full transaction processing pipeline.
+
+    Reads the IPKO CSV export, normalizes and categorizes transactions,
+    logs a preview, and writes two output files:
+    - ``data/processed_transactions.csv`` — all categorized expenses
+    - ``unassigned_transactions.csv`` — MISC rows with Google Maps links
+    """
     setup_logging()
     logger.info("[START] CSV import and processing workflow")
 
@@ -23,10 +31,10 @@ def main() -> None:
     df = ipko_import(df)
     processed_df = process_dataframe(df)
 
-    # Print processed DataFrame to terminal (only once)
+    # Log a preview of the processed DataFrame
     log_dataframe_preview(processed_df)
 
-    # Export Misc transactions for manual review
+    # Export unassigned (MISC) transactions for manual review
     export_misc_transactions(processed_df)
 
     # Export cleaned data to CSV

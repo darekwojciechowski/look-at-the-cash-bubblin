@@ -1,8 +1,9 @@
-# Test Organization
+# Test organization
 
-This test suite follows pytest best practices with a hierarchical structure for better organization and selective test execution.
+This test suite follows pytest best practices with a hierarchical structure
+for better organization and selective test execution.
 
-## Directory Structure
+## Directory structure
 
 ```
 tests/
@@ -17,7 +18,7 @@ tests/
 │   ├── test_logging_setup.py
 │   ├── test_main.py
 │   └── test_mappings.py
-├── integration/             # Integration tests - component interaction & end-to-end
+├── integration/             # Integration tests - component interaction and end-to-end
 │   ├── test_integration.py
 │   └── test_exporter_import.py
 ├── performance/             # Performance and load testing
@@ -28,16 +29,18 @@ tests/
     └── test_property_based.py
 ```
 
-## Running Tests
+## Running tests
 
 ### All tests
+
 ```bash
 pytest
 ```
 
-### By category (recommended for faster feedback)
+### By category
+
 ```bash
-# Unit tests only (fast - 219 tests)
+# Unit tests only (fast - 224 tests)
 pytest tests/unit
 
 # Integration tests (8 tests)
@@ -53,7 +56,8 @@ pytest tests/security
 pytest tests/property_based
 ```
 
-### By marker (alternative approach)
+### By marker
+
 ```bash
 # Unit tests
 pytest -m unit
@@ -69,43 +73,38 @@ pytest -m security
 ```
 
 ### Specific test file
+
 ```bash
 pytest tests/unit/test_data_core.py
 ```
 
 ### With coverage report
+
 ```bash
 pytest --cov=data_processing --cov-report=html
 ```
 
-## Test Categories
+## Test categories
 
 | Category | Count | Speed | Purpose |
-|----------|-------|-------|---------|
-| **unit** | 219 | Fast | Core logic, individual functions |
-| **integration** | 8 | Medium | End-to-end workflows, file I/O |
-| **performance** | 8 | Slow | Benchmarks, scaling tests |
-| **security** | 12 | Medium | Input validation, injection prevention |
-| **property_based** | 1 | Medium | Generative testing with Hypothesis |
+|---|---|---|---|
+| unit | 224 | Fast | Core logic, individual functions |
+| integration | 8 | Medium | End-to-end workflows, file I/O |
+| performance | 8 | Slow | Benchmarks, scaling tests |
+| security | 12 | Medium | Input validation, injection prevention |
+| property_based | 8 | Medium | Generative testing with Hypothesis |
 
-## Benefits of This Structure
+## Development workflow
 
-✅ **Clear organization** - Test type immediately visible
-✅ **Selective execution** - Run only relevant tests during development
-✅ **Better scalability** - Easy to add new tests to appropriate category
-✅ **Standard practice** - Follows Python/pytest community conventions
-✅ **Faster feedback** - Run unit tests (219) separately from slow tests (8)
-
-## Development Workflow
-
-1. **During development**: Run `pytest tests/unit` for quick feedback
-2. **Before commit**: Run `pytest tests/unit tests/integration`
-3. **CI/CD**: Run all tests with `pytest`
-4. **Performance check**: Run `pytest tests/performance` periodically
+1. **During development**: Run `pytest tests/unit` for quick feedback.
+2. **Before commit**: Run `pytest tests/unit tests/integration`.
+3. **CI/CD**: Run all tests with `pytest`.
+4. **Performance check**: Run `pytest tests/performance` periodically.
 
 ## Configuration
 
 Test configuration is in `pytest.ini` at the project root. Key settings:
+
 - Test discovery: `testpaths = tests`
-- Coverage targets: `--cov-fail-under=90`
+- Coverage target: `--cov-fail-under=90`
 - Markers defined for categorization
