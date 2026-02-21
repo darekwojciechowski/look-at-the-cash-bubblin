@@ -15,7 +15,7 @@ def ipko_import(df: pd.DataFrame) -> pd.DataFrame:
     pandas.DataFrame: The processed DataFrame with cleaned and transformed data.
     """
     # Rename columns for consistency
-    df.rename(
+    df = df.rename(
         columns={
             df.columns[0]: "transaction_date",
             df.columns[1]: "currency_data",
@@ -27,7 +27,6 @@ def ipko_import(df: pd.DataFrame) -> pd.DataFrame:
             df.columns[7]: "data",
             df.columns[8]: "unnamed_8",
         },
-        inplace=True,
     )
 
     # Convert 'transaction_date' to datetime format
@@ -69,7 +68,7 @@ def ipko_import(df: pd.DataFrame) -> pd.DataFrame:
         "unnamed_8",
         "transaction_description",
     ]
-    df.drop(columns=columns_to_drop, inplace=True)
+    df = df.drop(columns=columns_to_drop)
 
     return df
 

@@ -4,6 +4,9 @@ from data_processing import category
 
 DEFAULT_CATEGORY = "MISC"
 
+# Built once at import time — avoids rebuilding on every mappings() call.
+_CATEGORY_MAP: dict[str, set[str]] = {cat_name: getattr(category, cat_name) for cat_name in category.all_category}
+
 
 def mappings(data: str) -> str:
     """
@@ -23,9 +26,7 @@ def mappings(data: str) -> str:
         >>> mappings("unknown transaction")
         'MISC'
     """
-    categories = {cat_name: getattr(category, cat_name) for cat_name in category.all_category}
-
-    for cat_name, keywords in categories.items():
+    for cat_name, keywords in _CATEGORY_MAP.items():
         if any(keyword in data.lower() for keyword in keywords):
             return cat_name
 

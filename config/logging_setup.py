@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 
+import pandas as pd
 from loguru import logger
 
 
@@ -43,3 +44,18 @@ def setup_logging() -> None:
         logger.info("Logging initialized successfully")
     except Exception as e:
         print(f"Error setting up logging: {e}")
+
+
+def log_dataframe_preview(df: pd.DataFrame) -> None:
+    """Log a full DataFrame preview using loguru, with all columns and rows visible."""
+    with pd.option_context(
+        "display.max_colwidth",
+        None,
+        "display.max_columns",
+        None,
+        "display.width",
+        None,
+        "display.max_rows",
+        None,
+    ):
+        logger.info("[DATA] Processed DataFrame preview:\n{}", df.to_string())

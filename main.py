@@ -2,8 +2,8 @@ from pathlib import Path
 
 from loguru import logger
 
-from config.logging_setup import setup_logging
-from data_processing.data_core import log_dataframe_preview, process_dataframe
+from config.logging_setup import log_dataframe_preview, setup_logging
+from data_processing.data_core import process_dataframe
 from data_processing.data_imports import ipko_import, read_transaction_csv
 from data_processing.exporter import export_cleaned_data, export_misc_transactions
 

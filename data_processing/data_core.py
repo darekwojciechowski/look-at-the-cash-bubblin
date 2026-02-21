@@ -71,20 +71,3 @@ def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df = df[df["price"] != "nan"].reset_index(drop=True)
 
     return df
-
-
-def log_dataframe_preview(df: pd.DataFrame) -> None:
-    """Log a full DataFrame preview using loguru, with all columns and rows visible."""
-    from loguru import logger
-
-    with pd.option_context(
-        "display.max_colwidth",
-        None,
-        "display.max_columns",
-        None,
-        "display.width",
-        None,
-        "display.max_rows",
-        None,
-    ):
-        logger.info("[DATA] Processed DataFrame preview:\n{}", df.to_string())
