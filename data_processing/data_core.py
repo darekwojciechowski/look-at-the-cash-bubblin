@@ -1,6 +1,5 @@
 """Core transformation pipeline: description cleaning and transaction categorization."""
 
-import numpy as np
 import pandas as pd
 
 from data_processing.mappings import mappings
@@ -60,9 +59,9 @@ def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     2. Assign a category to each row via ``mappings``.
     3. Drop ``REMOVE_ENTRY`` rows (refunds / reversals).
     4. Drop rows with positive prices (income).
-    5. Strip the leading ``-`` from price strings.
+    5. Convert price to absolute string value via ``abs()``.
     6. Reorder columns to ``[month, year, price, category, data]``.
-    7. Drop rows where price is ``nan``.
+    7. Drop rows where price is NaN (safety net).
 
     Args:
         df: DataFrame produced by ``ipko_import`` with columns
@@ -80,18 +79,18 @@ def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     # Remove refund/return entries
     df = df[df["category"] != "REMOVE_ENTRY"].reset_index(drop=True)
 
-    # Remove income (positive prices)
+    # Remove income (positive prices) — filter directly before string conversion
     df["price"] = df["price"].astype(float)
-    df.loc[df["price"] > 0, "price"] = np.nan
+    df = df[df["price"] <= 0].reset_index(drop=True)
 
-    # Remove '-' from price column and convert to string
-    df["price"] = df["price"].astype(str).str.replace("-", "")
+    # Convert price to absolute string value
+    df["price"] = df["price"].abs().astype(str)
 
     # Reorder columns
     desired_columns = ["month", "year", "price", "category", "data"]
     df = df[desired_columns]
 
-    # Drop rows with NaN in 'price'
-    df = df[df["price"] != "nan"].reset_index(drop=True)
+    # Drop rows where price could not be parsed (safety net)
+    df = df[df["price"].notna()].reset_index(drop=True)
 
     return df

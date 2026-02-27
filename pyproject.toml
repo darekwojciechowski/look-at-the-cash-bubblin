@@ -9,7 +9,7 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
-pandas = "^2.2.3"
+pandas = "^3.0.1"
 numpy = "^2.2.1"
 loguru = "^0.7.3"
 
@@ -21,11 +21,11 @@ pytest-xdist = "^3.6.1"
 pytest-html = "^4.1.1"
 pytest-timeout = "^2.3.1"
 hypothesis = "^6.122.3"
-black = "^25.1.0"
-isort = "^7.0.0"
+black = "^26.1.0"
+isort = "^8.0.0"
 flake8 = "^7.1.1"
 mypy = "^1.14.0"
-ruff = "^0.14.11"
+ruff = "^0.15.4"
 pre-commit = "^4.5.1"
 
 [build-system]
