@@ -112,48 +112,47 @@ class TestMappingsFunction:
         result = mappings(test_data)
         assert result == expected_category
 
-    def test_unknown_transaction_returns_misc(self):
-        """Test that unknown transactions return Misc category."""
-        unknown_transactions = [
+    @pytest.mark.parametrize(
+        "transaction",
+        [
             "completely unknown transaction",
             "random description without keywords",
             "mystery payment xyz123",
             "unknown vendor purchase",
-            "",  # empty string
-            "   ",  # whitespace only
-        ]
+            "",
+            "   ",
+        ],
+    )
+    def test_unknown_transaction_returns_misc(self, transaction: str) -> None:
+        """Test that unknown transactions return Misc category."""
+        assert mappings(transaction) == "MISC"
 
-        for transaction in unknown_transactions:
-            result = mappings(transaction)
-            assert result == "MISC"
-
-    def test_case_insensitive_matching(self):
-        """Test that keyword matching is case-insensitive."""
-        test_cases = [
+    @pytest.mark.parametrize(
+        "transaction,expected",
+        [
             ("BIEDRONKA SHOPPING", "FOOD"),
             ("Starbucks Coffee", "COFFEE"),
-            # Fixed: using exact keyword 'mcdonalds'
             ("mcdonalds Lunch", "FASTFOOD"),
             ("NETFLIX Subscription", "SUBSCRIPTIONS"),
             ("orlen FUEL station", "FUEL"),
-        ]
+        ],
+    )
+    def test_case_insensitive_matching(self, transaction: str, expected: str) -> None:
+        """Test that keyword matching is case-insensitive."""
+        assert mappings(transaction) == expected
 
-        for transaction, expected in test_cases:
-            result = mappings(transaction)
-            assert result == expected
-
-    def test_partial_keyword_matching(self):
-        """Test that partial keyword matching works correctly."""
-        test_cases = [
+    @pytest.mark.parametrize(
+        "transaction,expected",
+        [
             ("visit to biedronka store", "FOOD"),
             ("my netflix account renewal", "SUBSCRIPTIONS"),
             ("bought fuel at orlen station", "FUEL"),
             ("coffee meeting at starbucks", "COFFEE"),
-        ]
-
-        for transaction, expected in test_cases:
-            result = mappings(transaction)
-            assert result == expected
+        ],
+    )
+    def test_partial_keyword_matching(self, transaction: str, expected: str) -> None:
+        """Test that partial keyword matching works correctly."""
+        assert mappings(transaction) == expected
 
     def test_category_precedence(self):
         """Test that first matching category takes precedence."""
@@ -163,30 +162,30 @@ class TestMappingsFunction:
         result = mappings(mixed_transaction)
         assert result == "FOOD"  # FOOD should win due to precedence
 
-    def test_multiple_keywords_same_category(self):
-        """Test transactions with multiple keywords from the same category."""
-        test_cases = [
+    @pytest.mark.parametrize(
+        "transaction,expected",
+        [
             ("biedronka and lidl shopping trip", "FOOD"),
             ("starbucks and cafe visit", "COFFEE"),
             ("netflix and spotify subscriptions", "SUBSCRIPTIONS"),
-        ]
+        ],
+    )
+    def test_multiple_keywords_same_category(self, transaction: str, expected: str) -> None:
+        """Test transactions with multiple keywords from the same category."""
+        assert mappings(transaction) == expected
 
-        for transaction, expected in test_cases:
-            result = mappings(transaction)
-            assert result == expected
-
-    def test_special_characters_in_transaction_data(self):
-        """Test handling of special characters in transaction descriptions."""
-        test_cases = [
+    @pytest.mark.parametrize(
+        "transaction,expected",
+        [
             ("biedronka - weekly shopping", "FOOD"),
             ("starbucks: morning coffee", "COFFEE"),
             ("netflix (monthly subscription)", "SUBSCRIPTIONS"),
             ("orlen/shell fuel station", "FUEL"),
-        ]
-
-        for transaction, expected in test_cases:
-            result = mappings(transaction)
-            assert result == expected
+        ],
+    )
+    def test_special_characters_in_transaction_data(self, transaction: str, expected: str) -> None:
+        """Test handling of special characters in transaction descriptions."""
+        assert mappings(transaction) == expected
 
     @pytest.mark.parametrize(
         "category_set,category_name",

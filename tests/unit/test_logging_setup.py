@@ -15,14 +15,11 @@ from config.logging_setup import setup_logging
 class TestSetupLogging:
     """Test suite for setup_logging function."""
 
-    def setup_method(self):
-        """Reset logging configuration before each test."""
-        # Remove all loguru handlers
+    @pytest.fixture(autouse=True)
+    def reset_logger(self) -> None:
+        """Reset loguru handlers before and after each test."""
         logger.remove()
-
-    def teardown_method(self):
-        """Clean up after each test."""
-        # Remove all loguru handlers
+        yield
         logger.remove()
 
     def test_setup_logging_success(self):

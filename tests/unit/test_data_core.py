@@ -10,65 +10,15 @@ from pytest_mock import MockerFixture
 from data_processing.data_core import clean_descriptions, process_dataframe
 
 
-@pytest.fixture
-def raw_transaction_data() -> pd.DataFrame:
-    """Fixture with realistic raw transaction descriptions."""
-    return pd.DataFrame(
-        {
-            "data": [
-                "purchase in terminal - mobile code",
-                "web payment - mobile code",
-                "orlen",
-                "starbucks",
-                "piotrkowska 157a",
-            ],
-            "price": ["-50.0", "-20.0", "-100.0", "-15.0", "200.0"],
-            "month": [1, 1, 1, 1, 1],
-            "year": [2023, 2023, 2023, 2023, 2023],
-        }
-    )
-
-
-@pytest.fixture
-def expected_cleaned_data() -> pd.DataFrame:
-    """Expected output after cleaning transaction descriptions."""
-    return pd.DataFrame(
-        {
-            "data": [
-                "terminal purchase",
-                "web payment",
-                "Orlen gas station",
-                "Starbucks coffee shop",
-                "Biedronka - Piotrkowska 157a",
-            ],
-            "price": ["-50.0", "-20.0", "-100.0", "-15.0", "200.0"],
-            "month": [1, 1, 1, 1, 1],
-            "year": [2023, 2023, 2023, 2023, 2023],
-        }
-    )
-
-
-@pytest.fixture
-def mappings_mock() -> dict[str, str]:
-    """Fixture providing mock category mappings."""
-    return {
-        "terminal purchase": "SHOPPING",
-        "web payment": "ONLINE_PAYMENT",
-        "Orlen gas station": "FUEL",
-        "Starbucks coffee shop": "COFFEE",
-        "Biedronka - Piotrkowska 157a": "GROCERIES",
-    }
-
-
 @pytest.mark.unit
 class TestCleanDescriptions:
     """Test suite for transaction description cleaning."""
 
     def test_clean_descriptions_all_replacements(
-        self, raw_transaction_data: pd.DataFrame, expected_cleaned_data: pd.DataFrame
+        self, sample_raw_dataframe: pd.DataFrame, expected_cleaned_data: pd.DataFrame
     ) -> None:
         """Verify all replacement patterns work correctly."""
-        result = clean_descriptions(raw_transaction_data)
+        result = clean_descriptions(sample_raw_dataframe)
 
         pd.testing.assert_frame_equal(result, expected_cleaned_data, check_dtype=False)
 
@@ -89,13 +39,13 @@ class TestCleanDescriptions:
         result = clean_descriptions(df)
         assert result["data"].iloc[0] == expected_output
 
-    def test_clean_descriptions_preserves_other_columns(self, raw_transaction_data: pd.DataFrame) -> None:
+    def test_clean_descriptions_preserves_other_columns(self, sample_raw_dataframe: pd.DataFrame) -> None:
         """Ensure clean_descriptions doesn't modify non-data columns."""
-        result = clean_descriptions(raw_transaction_data)
+        result = clean_descriptions(sample_raw_dataframe)
 
-        pd.testing.assert_series_equal(result["price"], raw_transaction_data["price"], check_dtype=False)
-        pd.testing.assert_series_equal(result["month"], raw_transaction_data["month"], check_dtype=False)
-        pd.testing.assert_series_equal(result["year"], raw_transaction_data["year"], check_dtype=False)
+        pd.testing.assert_series_equal(result["price"], sample_raw_dataframe["price"], check_dtype=False)
+        pd.testing.assert_series_equal(result["month"], sample_raw_dataframe["month"], check_dtype=False)
+        pd.testing.assert_series_equal(result["year"], sample_raw_dataframe["year"], check_dtype=False)
 
     def test_clean_descriptions_with_empty_dataframe(self) -> None:
         """Test clean_descriptions with empty DataFrame."""
@@ -112,13 +62,13 @@ class TestProcessDataframe:
 
     def test_process_dataframe_complete_workflow(
         self,
-        raw_transaction_data: pd.DataFrame,
+        sample_raw_dataframe: pd.DataFrame,
         mappings_mock: dict[str, str],
         mocker: MockerFixture,
     ) -> None:
         """Test complete processing workflow with mock mappings."""
         mocker.patch("data_processing.data_core.mappings", mappings_mock)
-        processed_df = process_dataframe(raw_transaction_data)
+        processed_df = process_dataframe(sample_raw_dataframe)
 
         # Verify 4 rows after filtering out positive price
         assert len(processed_df) == 4
@@ -133,13 +83,13 @@ class TestProcessDataframe:
 
     def test_process_dataframe_filters_positive_prices(
         self,
-        raw_transaction_data: pd.DataFrame,
+        sample_raw_dataframe: pd.DataFrame,
         mappings_mock: dict[str, str],
         mocker: MockerFixture,
     ) -> None:
         """Verify positive price transactions are filtered out."""
         mocker.patch("data_processing.data_core.mappings", mappings_mock)
-        processed_df = process_dataframe(raw_transaction_data)
+        processed_df = process_dataframe(sample_raw_dataframe)
 
         # Verify prices are converted to absolute positive values
         assert all(float(price) > 0 for price in processed_df["price"])
@@ -166,13 +116,13 @@ class TestProcessDataframe:
 
     def test_process_dataframe_column_order(
         self,
-        raw_transaction_data: pd.DataFrame,
+        sample_raw_dataframe: pd.DataFrame,
         mappings_mock: dict[str, str],
         mocker: MockerFixture,
     ) -> None:
         """Verify column order in processed DataFrame."""
         mocker.patch("data_processing.data_core.mappings", mappings_mock)
-        result = process_dataframe(raw_transaction_data)
+        result = process_dataframe(sample_raw_dataframe)
 
         expected_columns = ["month", "year", "price", "category", "data"]
         assert list(result.columns) == expected_columns

@@ -215,13 +215,3 @@ biedronka,-50.0,1,2023
 # ============================================================================
 # Pytest Configuration
 # ============================================================================
-
-
-def pytest_configure(config: pytest.Config) -> None:
-    """Register custom markers."""
-    config.addinivalue_line("markers", "unit: mark test as a unit test")
-    config.addinivalue_line("markers", "integration: mark test as an integration test")
-    config.addinivalue_line("markers", "slow: mark test as slow running")
-    config.addinivalue_line("markers", "security: mark test as security-related")
-    config.addinivalue_line("markers", "performance: mark test as performance-related")
-    config.addinivalue_line("markers", "property: mark test as property-based test")
