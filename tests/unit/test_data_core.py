@@ -92,7 +92,7 @@ class TestCleanDescriptions:
         "replacements,input_text,expected",
         [
             ({"hello": "hi"}, "hello world", "hi world"),
-            ({"a": "b", "c": "d"}, "a and c", "b and d"),
+            ({"foo": "bar", "baz": "qux"}, "foo and baz", "bar and qux"),
             ({}, "unchanged text", "unchanged text"),
         ],
     )

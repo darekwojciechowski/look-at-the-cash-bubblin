@@ -8,7 +8,7 @@ repository = "https://github.com/darekwojciechowski/look-at-the-cash-bubblin"
 package-mode = false
 
 [tool.poetry.dependencies]
-python = "^3.13"
+python = "^3.11"
 pandas = "^2.2.3"
 numpy = "^2.2.1"
 loguru = "^0.7.3"

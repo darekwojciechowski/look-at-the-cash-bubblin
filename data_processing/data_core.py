@@ -47,7 +47,7 @@ def clean_descriptions(
         DataFrame with the ``data`` column cleaned in place.
     """
     for old, new in replacements.items():
-        df["data"] = df["data"].str.replace(old, new)
+        df["data"] = df["data"].str.replace(old, new, regex=False)
 
     return df
 
