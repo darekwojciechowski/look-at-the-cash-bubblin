@@ -3,6 +3,7 @@ Shared pytest fixtures and configuration for all tests.
 Standardizes test data and reduces duplication across test modules.
 """
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pandas as pd
@@ -165,15 +166,24 @@ def polish_names_without_diacritics() -> dict[str, str]:
 
 
 @pytest.fixture
-def mappings_mock() -> dict[str, str]:
-    """Fixture providing mock category mappings."""
-    return {
+def mappings_mock() -> Callable[[str], str]:
+    """Fixture providing a callable mock for the mappings() function.
+
+    Returns a callable (not a plain dict) so that:
+    - Known test-data strings map to explicit categories.
+    - Any unknown string falls back to "MISC", matching the real mappings() contract.
+
+    Using a callable via mocker.patch() ensures df["data"].map(mock) behaves
+    identically to the production code path.
+    """
+    _mapping: dict[str, str] = {
         "terminal purchase": "SHOPPING",
         "web payment": "ONLINE_PAYMENT",
         "Orlen gas station": "FUEL",
         "Starbucks coffee shop": "COFFEE",
         "Biedronka - Piotrkowska 157a": "GROCERIES",
     }
+    return lambda data: _mapping.get(str(data), "MISC")
 
 
 # ============================================================================

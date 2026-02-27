@@ -3,6 +3,8 @@ Tests for data_processing.data_core module.
 Comprehensive testing of data cleaning and processing functionality.
 """
 
+from collections.abc import Callable
+
 import pandas as pd
 import pytest
 from pytest_mock import MockerFixture
@@ -55,6 +57,53 @@ class TestCleanDescriptions:
         assert result.empty
         assert list(result.columns) == ["data", "price", "month", "year"]
 
+    def test_clean_descriptions_with_custom_replacements(self) -> None:
+        """Test that a custom replacements dict is honoured (OCP injection point).
+
+        clean_descriptions accepts an optional ``replacements`` parameter so
+        callers can support other bank formats without touching the function
+        body.  This test verifies that the injected dict is applied instead of
+        the default IPKO replacement map.
+        """
+        # Arrange — custom bank format with different description conventions
+        custom_replacements = {
+            "pkt zakup": "card purchase",
+            "przel wychodzacy": "outgoing transfer",
+        }
+        df = pd.DataFrame(
+            {
+                "data": ["pkt zakup sklep", "przel wychodzacy firma", "orlen"],
+                "price": ["-30.0", "-200.0", "-100.0"],
+                "month": [1, 1, 1],
+                "year": [2023, 2023, 2023],
+            }
+        )
+
+        # Act
+        result = clean_descriptions(df, replacements=custom_replacements)
+
+        # Assert — custom replacements applied, default IPKO map NOT applied
+        assert result["data"].iloc[0] == "card purchase sklep"
+        assert result["data"].iloc[1] == "outgoing transfer firma"
+        # "orlen" stays unchanged — it's not in the custom dict
+        assert result["data"].iloc[2] == "orlen"
+
+    @pytest.mark.parametrize(
+        "replacements,input_text,expected",
+        [
+            ({"hello": "hi"}, "hello world", "hi world"),
+            ({"a": "b", "c": "d"}, "a and c", "b and d"),
+            ({}, "unchanged text", "unchanged text"),
+        ],
+    )
+    def test_clean_descriptions_custom_replacements_parametrized(
+        self, replacements: dict[str, str], input_text: str, expected: str
+    ) -> None:
+        """Parametrized checks that custom replacement dicts are applied correctly."""
+        df = pd.DataFrame({"data": [input_text], "price": ["-10.0"], "month": [1], "year": [2023]})
+        result = clean_descriptions(df, replacements=replacements)
+        assert result["data"].iloc[0] == expected
+
 
 @pytest.mark.unit
 class TestProcessDataframe:
@@ -63,7 +112,7 @@ class TestProcessDataframe:
     def test_process_dataframe_complete_workflow(
         self,
         sample_raw_dataframe: pd.DataFrame,
-        mappings_mock: dict[str, str],
+        mappings_mock: Callable[[str], str],
         mocker: MockerFixture,
     ) -> None:
         """Test complete processing workflow with mock mappings."""
@@ -84,7 +133,7 @@ class TestProcessDataframe:
     def test_process_dataframe_filters_positive_prices(
         self,
         sample_raw_dataframe: pd.DataFrame,
-        mappings_mock: dict[str, str],
+        mappings_mock: Callable[[str], str],
         mocker: MockerFixture,
     ) -> None:
         """Verify positive price transactions are filtered out."""
@@ -97,7 +146,7 @@ class TestProcessDataframe:
         assert len(processed_df) == 4
 
     def test_process_dataframe_converts_price_to_absolute(
-        self, mappings_mock: dict[str, str], mocker: MockerFixture
+        self, mappings_mock: Callable[[str], str], mocker: MockerFixture
     ) -> None:
         """Test price conversion to absolute values."""
         df = pd.DataFrame(
@@ -117,7 +166,7 @@ class TestProcessDataframe:
     def test_process_dataframe_column_order(
         self,
         sample_raw_dataframe: pd.DataFrame,
-        mappings_mock: dict[str, str],
+        mappings_mock: Callable[[str], str],
         mocker: MockerFixture,
     ) -> None:
         """Verify column order in processed DataFrame."""
@@ -127,7 +176,7 @@ class TestProcessDataframe:
         expected_columns = ["month", "year", "price", "category", "data"]
         assert list(result.columns) == expected_columns
 
-    def test_process_dataframe_with_empty_dataframe(self, mappings_mock: dict[str, str], mocker: MockerFixture) -> None:
+    def test_process_dataframe_with_empty_dataframe(self, mappings_mock: Callable[[str], str], mocker: MockerFixture) -> None:
         """Test process_dataframe with empty DataFrame."""
         empty_df = pd.DataFrame(columns=["data", "price", "month", "year"])
 
@@ -171,7 +220,7 @@ class TestProcessDataframe:
             process_dataframe(invalid_df)
 
     def test_process_dataframe_handles_mixed_price_formats(
-        self, mappings_mock: dict[str, str], mocker: MockerFixture
+        self, mappings_mock: Callable[[str], str], mocker: MockerFixture
     ) -> None:
         """Test processing with various price formats."""
         df = pd.DataFrame(
@@ -199,7 +248,7 @@ class TestProcessDataframe:
         ],
     )
     def test_process_dataframe_with_various_negative_prices(
-        self, price_value: str, mappings_mock: dict[str, str], mocker: MockerFixture
+        self, price_value: str, mappings_mock: Callable[[str], str], mocker: MockerFixture
     ) -> None:
         """Test processing with various negative price values."""
         df = pd.DataFrame(

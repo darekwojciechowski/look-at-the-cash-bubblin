@@ -30,8 +30,17 @@ class TestEndToEndDataProcessing:
         cleaned_df = clean_descriptions(df)
         assert "data" in cleaned_df.columns
 
-        # Mock mappings for categorization
-        mock_mappings = {"orlen": "FUEL", "biedronka": "FOOD"}
+        # Mock mappings for categorization — use a callable so that
+        # post-cleaning descriptions (e.g. "Orlen gas station") are matched
+        # via substring, replicating real mappings() behaviour.
+        def mock_mappings(data: str) -> str:
+            data_lower = data.lower()
+            if "orlen" in data_lower:
+                return "FUEL"
+            if "biedronka" in data_lower:
+                return "FOOD"
+            return "MISC"
+
         mocker.patch("data_processing.data_core.mappings", mock_mappings)
 
         processed_df = process_dataframe(cleaned_df)
@@ -139,9 +148,11 @@ class TestLargeDatasetProcessing:
         cleaned_df = clean_descriptions(df)
         assert len(cleaned_df) == 1000
 
-        # Mock mappings
-        mocker.patch("data_processing.data_core.mappings", {})
+        # Mock mappings — use a callable so .map() receives a function,
+        # returning "MISC" for every description (matching real fallback behaviour).
+        mocker.patch("data_processing.data_core.mappings", lambda _data: "MISC")
 
         processed_df = process_dataframe(cleaned_df)
-        # All should be MISC since no mappings match
+        # All should be MISC since no descriptions match a real keyword
         assert len(processed_df) == 1000
+        assert (processed_df["category"] == "MISC").all()
