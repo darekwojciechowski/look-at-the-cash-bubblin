@@ -23,7 +23,9 @@ from data_processing.exporter import (
 class TestExportForGoogleSheets:
     """Test suite for Google Sheets export functionality."""
 
-    def test_export_for_google_sheets_success(self, mocker: MockerFixture, sample_dataframe_with_categories: pd.DataFrame) -> None:
+    def test_export_for_google_sheets_success(
+        self, mocker: MockerFixture, sample_dataframe_with_categories: pd.DataFrame
+    ) -> None:
         """Test successful export to Google Sheets format."""
         mock_to_csv = mocker.patch("pandas.DataFrame.to_csv")
         mock_logger = mocker.patch("data_processing.exporter.logger")
@@ -47,7 +49,9 @@ class TestExportForGoogleSheets:
 class TestExportMiscTransactions:
     """Test suite for MISC category transaction export."""
 
-    def test_export_misc_transactions_filters_correctly(self, mocker: MockerFixture, sample_dataframe_with_categories: pd.DataFrame) -> None:
+    def test_export_misc_transactions_filters_correctly(
+        self, mocker: MockerFixture, sample_dataframe_with_categories: pd.DataFrame
+    ) -> None:
         """Test that only MISC category transactions are exported."""
         mock_to_csv = mocker.patch("pandas.DataFrame.to_csv")
         export_misc_transactions(sample_dataframe_with_categories)
@@ -57,7 +61,9 @@ class TestExportMiscTransactions:
         # Verify only MISC rows are selected
         misc_df = sample_dataframe_with_categories[sample_dataframe_with_categories["category"] == "MISC"]
         assert len(misc_df) == 2
-        pd.testing.assert_frame_equal(misc_df, sample_dataframe_with_categories[sample_dataframe_with_categories["category"] == "MISC"])
+        pd.testing.assert_frame_equal(
+            misc_df, sample_dataframe_with_categories[sample_dataframe_with_categories["category"] == "MISC"]
+        )
 
     def test_export_misc_transactions_no_misc_category(self, mocker: MockerFixture) -> None:
         """Test export when no MISC transactions exist."""
@@ -90,7 +96,9 @@ class TestExportMiscTransactions:
 class TestExportUnassignedTransactions:
     """Test suite for unassigned transactions export."""
 
-    def test_export_unassigned_transactions_to_csv(self, mocker: MockerFixture, sample_dataframe_with_categories: pd.DataFrame) -> None:
+    def test_export_unassigned_transactions_to_csv(
+        self, mocker: MockerFixture, sample_dataframe_with_categories: pd.DataFrame
+    ) -> None:
         """Test basic export of unassigned transactions."""
         mock_to_csv = mocker.patch("pandas.DataFrame.to_csv")
         export_unassigned_transactions_to_csv(sample_dataframe_with_categories)

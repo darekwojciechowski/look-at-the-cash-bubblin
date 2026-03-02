@@ -92,7 +92,10 @@ class TestReadTransactionCsv:
     def test_read_transaction_csv_unicode_error_fallback(self, mocker: MockerFixture) -> None:
         """Test that function tries alternative encodings on UnicodeDecodeError."""
         mock_read_csv = mocker.patch("pandas.read_csv")
-        mock_read_csv.side_effect = [UnicodeDecodeError("utf-8", b"", 0, 1, "invalid"), pd.DataFrame({"col1": ["val1"]})]
+        mock_read_csv.side_effect = [
+            UnicodeDecodeError("utf-8", b"", 0, 1, "invalid"),
+            pd.DataFrame({"col1": ["val1"]}),
+        ]
 
         df = read_transaction_csv("test.csv", "utf-8")
 

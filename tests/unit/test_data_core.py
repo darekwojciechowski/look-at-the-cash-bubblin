@@ -176,7 +176,9 @@ class TestProcessDataframe:
         expected_columns = ["month", "year", "price", "category", "data"]
         assert list(result.columns) == expected_columns
 
-    def test_process_dataframe_with_empty_dataframe(self, mappings_mock: Callable[[str], str], mocker: MockerFixture) -> None:
+    def test_process_dataframe_with_empty_dataframe(
+        self, mappings_mock: Callable[[str], str], mocker: MockerFixture
+    ) -> None:
         """Test process_dataframe with empty DataFrame."""
         empty_df = pd.DataFrame(columns=["data", "price", "month", "year"])
 
