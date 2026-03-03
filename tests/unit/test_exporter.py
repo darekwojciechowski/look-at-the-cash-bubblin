@@ -10,7 +10,6 @@ import pandas as pd
 import pytest
 from pytest_mock import MockerFixture
 
-from data_processing.data_loader import Expense
 from data_processing.exporter import (
     export_for_google_sheets,
     export_misc_transactions,

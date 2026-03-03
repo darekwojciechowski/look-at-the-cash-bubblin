@@ -1,14 +1,14 @@
-# Test organization
+# Test suite
 
-This test suite follows pytest best practices with a hierarchical structure
-for better organization and selective test execution.
+292 tests organized into five categories. All configuration lives in
+`pytest.ini` at the project root.
 
 ## Directory structure
 
 ```
 tests/
-├── conftest.py              # Shared fixtures for all tests
-├── unit/                    # Unit tests - fast, isolated, no external dependencies
+├── conftest.py           # Shared fixtures for all tests
+├── unit/                 # Fast, isolated tests (256 tests)
 │   ├── test_category.py
 │   ├── test_data_core.py
 │   ├── test_data_imports.py
@@ -18,67 +18,51 @@ tests/
 │   ├── test_logging_setup.py
 │   ├── test_main.py
 │   └── test_mappings.py
-├── integration/             # Integration tests - component interaction and end-to-end
+├── integration/          # Cross-module and end-to-end tests (8 tests)
 │   ├── test_integration.py
 │   └── test_exporter_import.py
-├── performance/             # Performance and load testing
+├── performance/          # Benchmarks and scaling tests (8 tests)
 │   └── test_performance.py
-├── security/                # Security validation tests
+├── security/             # Input validation tests (12 tests)
 │   └── test_security.py
-└── property_based/          # Property-based tests using Hypothesis
+└── property_based/       # Generative tests using Hypothesis (8 tests)
     └── test_property_based.py
 ```
 
 ## Running tests
 
-### All tests
+Run all tests:
 
 ```bash
 pytest
 ```
 
-### By category
+Run a specific category:
 
 ```bash
-# Unit tests only (fast - 224 tests)
 pytest tests/unit
-
-# Integration tests (8 tests)
 pytest tests/integration
-
-# Performance tests (slow - 8 tests)
 pytest tests/performance
-
-# Security tests (12 tests)
 pytest tests/security
-
-# Property-based tests (requires hypothesis)
 pytest tests/property_based
 ```
 
-### By marker
+Filter by marker:
 
 ```bash
-# Unit tests
 pytest -m unit
-
-# Integration tests
 pytest -m integration
-
-# Skip slow tests
-pytest -m "not slow"
-
-# Security tests only
 pytest -m security
+pytest -m "not slow"
 ```
 
-### Specific test file
+Run a single file:
 
 ```bash
 pytest tests/unit/test_data_core.py
 ```
 
-### With coverage report
+Generate an HTML coverage report:
 
 ```bash
 pytest --cov=data_processing --cov-report=html
@@ -88,7 +72,7 @@ pytest --cov=data_processing --cov-report=html
 
 | Category | Count | Speed | Purpose |
 |---|---|---|---|
-| unit | 224 | Fast | Core logic, individual functions |
+| unit | 256 | Fast | Core logic, individual functions |
 | integration | 8 | Medium | End-to-end workflows, file I/O |
 | performance | 8 | Slow | Benchmarks, scaling tests |
 | security | 12 | Medium | Input validation, injection prevention |
@@ -96,15 +80,16 @@ pytest --cov=data_processing --cov-report=html
 
 ## Development workflow
 
-1. **During development**: Run `pytest tests/unit` for quick feedback.
-2. **Before commit**: Run `pytest tests/unit tests/integration`.
-3. **CI/CD**: Run all tests with `pytest`.
-4. **Performance check**: Run `pytest tests/performance` periodically.
+1. Run `pytest tests/unit` during active development for fast feedback.
+2. Run `pytest tests/unit tests/integration` before every commit.
+3. Run `pytest` for a full test run in CI/CD.
+4. Run `pytest tests/performance` periodically to catch regressions.
 
 ## Configuration
 
-Test configuration is in `pytest.ini` at the project root. Key settings:
+Key settings in `pytest.ini`:
 
-- Test discovery: `testpaths = tests`
-- Coverage target: `--cov-fail-under=90`
-- Markers defined for categorization
+- `testpaths = tests` — limits test discovery to the `tests/` directory
+- `--cov-fail-under=90` — enforces a 90% coverage threshold
+- `--maxfail=3` — stops the run after three failures
+- `--strict-markers` — treats unknown markers as errors
