@@ -63,13 +63,84 @@ Execute the test suite:
 poetry run pytest
 ```
 
-## Additional Poetry Commands
+## Updating dependencies to latest versions
 
-Here are some other useful Poetry commands:
+Poetry's built-in `poetry update` respects the version constraints in
+`pyproject.toml` (e.g. `^1.0.0`) and will not bump major versions. To upgrade
+all dependencies to their **latest available versions** and rewrite the
+constraints in `pyproject.toml`, use the `poetry-plugin-up` plugin.
 
-- **Add a new dependency**: `poetry add package-name`
-- **Add a dev dependency**: `poetry add --group dev package-name`
-- **Update dependencies**: `poetry update`
-- **List all dependencies**: `poetry show`
-- **Remove a dependency**: `poetry remove package-name`
-- **Check for outdated packages**: `poetry show --outdated`
+### Install the plugin (one-time)
+
+```bash
+poetry self add poetry-plugin-up
+```
+
+### Upgrade all dependencies (runtime + dev)
+
+```bash
+poetry up --latest
+```
+
+### Upgrade only dev dependencies
+
+```bash
+poetry up --latest --only dev
+```
+
+### Check what is outdated before upgrading
+
+```bash
+poetry show --outdated
+```
+
+> **Note:** `poetry up --latest` modifies `pyproject.toml` and regenerates
+> `poetry.lock`. Review the diff and run `make all` afterwards to confirm
+> nothing is broken.
+
+### Alternative: upgrade without the plugin
+
+If you prefer not to install the plugin, pass `@latest` to `poetry add` directly:
+
+```bash
+poetry add --group dev \
+  pytest@latest \
+  pytest-cov@latest \
+  pytest-mock@latest \
+  pytest-xdist@latest \
+  pytest-html@latest \
+  pytest-timeout@latest \
+  hypothesis@latest \
+  black@latest \
+  isort@latest \
+  flake8@latest \
+  mypy@latest \
+  ruff@latest \
+  pre-commit@latest
+```
+
+This rewrites the constraints in `pyproject.toml` and updates `poetry.lock` in
+one step, without requiring any plugin.
+
+---
+
+## Common Poetry commands
+
+| Command | Description |
+|---|---|
+| `poetry add package-name` | Add a runtime dependency |
+| `poetry add --group dev package-name` | Add a dev dependency |
+| `poetry update` | Update dependencies within existing constraints |
+| `poetry up --latest` | Upgrade all deps to latest and rewrite constraints |
+| `poetry show` | List installed packages |
+| `poetry remove package-name` | Remove a dependency |
+| `poetry show --outdated` | List outdated packages |
+
+## Code quality
+
+Run linting with auto-fix and formatting using Ruff:
+
+```bash
+poetry run ruff check --fix .
+poetry run ruff format --check .
+```

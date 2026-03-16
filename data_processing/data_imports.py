@@ -120,7 +120,7 @@ def read_transaction_csv(file_path: str | Path, encoding: str) -> pd.DataFrame:
                 df = pd.read_csv(file_path, on_bad_lines="skip", encoding=enc)
                 logger.info(f"[SUCCESS] Loaded CSV file: {file_path} with encoding: {enc}")
                 return df
-            except (UnicodeDecodeError, UnicodeError):
+            except UnicodeDecodeError, UnicodeError:
                 logger.debug(f"[ENCODING] Failed with encoding: {enc}")
                 continue
             except FileNotFoundError as e:
