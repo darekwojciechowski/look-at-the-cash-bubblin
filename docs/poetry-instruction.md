@@ -144,3 +144,24 @@ Run linting with auto-fix and formatting using Ruff:
 poetry run ruff check --fix .
 poetry run ruff format --check .
 ```
+
+### Pre-commit hooks
+
+Install hooks (one-time, after cloning):
+
+```bash
+poetry run pre-commit install
+```
+
+Run all hooks manually against every file:
+
+```bash
+poetry run pre-commit run --all-files
+```
+
+If you hit environment errors (e.g. wrong Python version in the cache), clean and re-run:
+
+```bash
+poetry run pre-commit clean
+poetry run pre-commit run --all-files
+```

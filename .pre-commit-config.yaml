@@ -7,7 +7,7 @@ repos:
   # Code Formatting
   # ==========================================================================
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.11
+    rev: v0.15.7
     hooks:
       - id: ruff-format
         exclude: ^data_processing/category\.py$
@@ -20,7 +20,7 @@ repos:
   # Type Checking
   # ==========================================================================
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.14.0
+    rev: v1.19.1
     hooks:
       - id: mypy
         additional_dependencies:
@@ -62,7 +62,7 @@ repos:
 
 # Configuration
 default_language_version:
-  python: python3.13
+  python: python3.14
 
 ci:
   autofix_commit_msg: "style: auto-fix by pre-commit hooks"
