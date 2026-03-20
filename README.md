@@ -1,6 +1,6 @@
 # 💰 Look at the cash bubblin
 
-[![CI Pipeline](https://github.com/darekwojciechowski/look-at-the-cash-bubblin/workflows/CI%20Pipeline/badge.svg)](https://github.com/darekwojciechowski/look-at-the-cash-bubblin/actions)
+[![CI Pipeline](https://github.com/darekwojciechowski/look-at-the-cash-bubblin/actions/workflows/ci.yml/badge.svg)](https://github.com/darekwojciechowski/look-at-the-cash-bubblin/actions)
 ![Coverage](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/darekwojciechowski/look-at-the-cash-bubblin/main/coverage.json&query=$.totals.percent_covered_display&label=Coverage&suffix=%25&style=flat-square&color=success)
 ![Python](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/darekwojciechowski/look-at-the-cash-bubblin/main/pyproject.toml&query=$.tool.poetry.dependencies.python&label=Python&style=flat-square&logo=python&logoColor=white&color=blue)
 ![Pandas](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/darekwojciechowski/look-at-the-cash-bubblin/main/pyproject.toml&query=$.tool.poetry.dependencies.pandas&label=Pandas&style=flat-square&logo=pandas&logoColor=white&color=150458)
@@ -26,7 +26,7 @@
 - **Location Processing**: Integrates with Google Maps for transaction location data.
 
 ## 🛠️ Tech Stack
-- **Language**: Python 3.13
+- **Language**: Python 3.14
 - **Libraries**: pandas, numpy, loguru
 - **Testing**: pytest, hypothesis, mypy
 - **Tools**: ruff, pre-commit

@@ -4,13 +4,13 @@ Poetry is a dependency management and packaging tool for Python. It helps manage
 
 ## Step 1: Install Poetry
 
-**MacOS** Install Poetry: Use Homebrew to install Poetry by running the following command:
+**macOS:** Install Poetry using Homebrew:
 
 ```bash
 brew install poetry
 ```
 
-Alternatively, if you're on **Windows**, you can use:
+**Windows:** Alternatively, install via pip:
 
 ```bash
 pip install poetry
