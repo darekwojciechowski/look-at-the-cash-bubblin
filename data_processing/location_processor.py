@@ -57,33 +57,24 @@ _POLISH_REPLACEMENTS: dict[str, str] = {
     "sw ": "św. ",
 }
 
-# Keywords that strongly suggest a text fragment contains an address.
-# Includes Polish, Spanish, and Italian street/location markers for international support.
-_ADDRESS_INDICATORS: tuple[str, ...] = (
-    "ul.",
-    "al.",
-    "pl.",
-    "os.",
-    "centrum",
-    "calle",
-    "avenida",
-    "avda.",
-    "paseo",
-    "plaza",
-    "via",
-    "viale",
-    "piazza",
-    "corso",
-    "strada",
+_POLISH_RE: re.Pattern[str] = re.compile(
+    r"\b(?:" + "|".join(re.escape(k) for k in sorted(_POLISH_REPLACEMENTS, key=len, reverse=True)) + r")\b",
+    re.IGNORECASE,
 )
 
-# Extended set of street indicators used specifically for validating Google Maps links.
-# More comprehensive than _ADDRESS_INDICATORS to reduce false positives in URL generation.
+
+def _polish_replacer(m: re.Match[str]) -> str:
+    return _POLISH_REPLACEMENTS[m.group(0).lower()]
+
+
+# Street indicators used for address heuristics and Google Maps link validation.
+# Includes Polish, Spanish, Italian and English street/location markers.
 _MAPS_STREET_TOKENS: tuple[str, ...] = (
     "ul.",
     "al.",
     "pl.",
     "os.",
+    "centrum",
     "aleja",
     "ulica",
     "plac",
@@ -259,13 +250,7 @@ def normalize_polish_names(location: str | None) -> str:
     """
     if not location:
         return ""
-
-    normalised = location
-    # Replace each ASCII variant with its proper Unicode form using word boundaries
-    for incorrect, correct in _POLISH_REPLACEMENTS.items():
-        pattern = r"\b" + re.escape(incorrect) + r"\b"
-        normalised = re.sub(pattern, correct, normalised, flags=re.IGNORECASE)
-    return normalised
+    return _POLISH_RE.sub(_polish_replacer, location)
 
 
 def extract_location_from_data(data_string: str | float | None) -> str:
@@ -290,30 +275,13 @@ def extract_location_from_data(data_string: str | float | None) -> str:
     if not parts:
         return ""
 
-    # Priority 1: Structured location blocks
-    for part in parts:
-        structured = _parse_structured_part(part)
-        if structured:
-            return _finalise_location(structured)
-
-    # Priority 2: Dash-separated fallback
-    for part in parts:
-        dash_location = _extract_dash_part(part)
-        if dash_location:
-            return _finalise_location(dash_location)
-
-    # Priority 3: Address-like patterns
-    for part in parts:
-        if _looks_like_address(part):
-            return _finalise_location(part)
-
-    # Priority 4: Any non-generic text
-    for part in parts:
-        lowered = part.lower()
-        if lowered not in _EXCLUDE_TERMS and len(part) > 3:
-            return _finalise_location(part)
-
-    return ""
+    candidate = (
+        next((r for part in parts if (r := _parse_structured_part(part))), None)
+        or next((r for part in parts if (r := _extract_dash_part(part))), None)
+        or next((part for part in parts if _looks_like_address(part)), None)
+        or next((part for part in parts if part.lower() not in _EXCLUDE_TERMS and len(part) > 3), None)
+    )
+    return _finalise_location(candidate) if candidate else ""
 
 
 def create_google_maps_link(location: str | None) -> str:
@@ -389,17 +357,10 @@ def _parse_structured_part(part: str) -> str | None:
         Extracted address string, or None if no valid structure found.
     """
     lowered = part.lower()
-    # Require both 'lokalizacja' and 'adres' keywords
     if "lokalizacja" not in lowered or "adres" not in lowered:
         return None
 
-    # Handle cases where location is after " - " separator
-    candidate = part.split(" - ")[-1].strip()
-    candidate_lower = candidate.lower()
-    working = candidate if "lokalizacja" in candidate_lower else part
-
-    # Split at the 'lokalizacja:' marker
-    split_payload = re.split(r"(?i)lokalizacja\s*:\s*", working, maxsplit=1)
+    split_payload = re.split(r"(?i)lokalizacja\s*:\s*", part, maxsplit=1)
     if len(split_payload) != 2:
         return None
 
@@ -492,7 +453,7 @@ def _looks_like_address(part: str) -> bool:
         return False
 
     # Check for explicit street indicators
-    if any(keyword in lowered for keyword in _ADDRESS_INDICATORS):
+    if any(keyword in lowered for keyword in _MAPS_STREET_TOKENS):
         return True
 
     # Look for "street name number" pattern

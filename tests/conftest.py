@@ -227,6 +227,16 @@ def polish_names_without_diacritics() -> dict[str, str]:
         "ul. kosciuszki 10, lodz": "ul. kościuszki 10, łódź",
         "al. pilsudskiego, krakow": "al. piłsudskiego, kraków",
         "poznan, wroclaw, gdansk": "poznań, wrocław, gdańsk",
+        "ul. swietokrzyska 14, warszawa": "ul. świętokrzyska 14, warszawa",
+        "ul. slowackiego 3, rzeszow": "ul. słowackiego 3, rzeszów",
+        "al. krolowej jadwigi 7, krakow": "al. królowej jadwigi 7, kraków",
+        "ul. zeromskiego 22, torun": "ul. żeromskiego 22, toruń",
+        "ul. polnocna 8, bialystok": "ul. północna 8, białystok",
+        "ul. poludniowa 5, wroclaw": "ul. południowa 5, wrocław",
+        "ul. legionow 11, piotrkow": "ul. legionów 11, piotrków",
+        "ul. powstancow 19, gdansk": "ul. powstańców 19, gdańsk",
+        "ul. wladyslawa iv 2, nowy sacz": "ul. władysława iv 2, nowy sącz",
+        "ul. jozefa stanislawa 1, zielona gora": "ul. józefa stanisława 1, zielona góra",
     }
 
 

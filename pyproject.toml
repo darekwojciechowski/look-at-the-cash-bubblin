@@ -9,23 +9,23 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.14"
-pandas = "^3.0.1"
-numpy = "^2.4.3"
+pandas = "^3.0.2"
+numpy = "^2.4.4"
 loguru = "^0.7.3"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^9.0.2"
-pytest-cov = "^7.0.0"
+pytest = "^9.0.3"
+pytest-cov = "^7.1.0"
 pytest-mock = "^3.15.1"
 pytest-xdist = "^3.8.0"
 pytest-html = "^4.2.0"
 pytest-timeout = "^2.4.0"
-hypothesis = "^6.151.9"
+hypothesis = "^6.151.12"
 black = "^26.3.1"
 isort = "^8.0.1"
 flake8 = "^7.3.0"
-mypy = "^1.19.1"
-ruff = "^0.15.6"
+mypy = "^1.20.0"
+ruff = "^0.15.10"
 pre-commit = "^4.5.1"
 
 [build-system]
