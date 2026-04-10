@@ -22,13 +22,15 @@ class TestExporterModuleImport:
         except ImportError as e:
             pytest.fail(f"Failed to import exporter module: {e}")
 
-    def test_module_level_variables_exist(self):
-        """Test that module-level variables are created correctly."""
+    def test_get_data_accepts_path_parameter(self):
+        """Test that get_data accepts an optional path parameter."""
+        import inspect
+
         import data_processing.exporter
 
-        # Check that the module has the expected attributes
-        assert hasattr(data_processing.exporter, "CSV_OUT_FILE")
-        assert Path("data/processed_transactions.csv") == data_processing.exporter.CSV_OUT_FILE
+        sig = inspect.signature(data_processing.exporter.get_data)
+        assert "path" in sig.parameters
+        assert sig.parameters["path"].default == Path("data/processed_transactions.csv")
 
     def test_module_has_expected_functions(self):
         """Test that the module exports expected functions."""

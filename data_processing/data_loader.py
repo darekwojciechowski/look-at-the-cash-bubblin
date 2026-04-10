@@ -1,5 +1,6 @@
 """Domain model: Expense dataclass plus CATEGORY and IMPORTANCE enumerations."""
 
+from dataclasses import dataclass, field
 from enum import Enum
 
 
@@ -34,6 +35,28 @@ class IMPORTANCE(Enum):
     NEEDS_REVIEW = "Needs Review"
 
 
+# Each rule groups all keywords that map to the same (CATEGORY, IMPORTANCE) pair.
+# Order is significant: the first matching rule wins.
+_CATEGORY_RULES: list[tuple[CATEGORY, IMPORTANCE, frozenset[str]]] = [
+    (CATEGORY.APARTMENT, IMPORTANCE.ESSENTIAL, frozenset({"apartment", "bills", "renovation"})),
+    (CATEGORY.FOOD, IMPORTANCE.ESSENTIAL, frozenset({"food", "greenfood"})),
+    (CATEGORY.CAR, IMPORTANCE.HAVE_TO_HAVE, frozenset({"fuel", "repairs", "car", "leasing"})),
+    (CATEGORY.TRANSPORTATION, IMPORTANCE.HAVE_TO_HAVE, frozenset({"transportation"})),
+    (CATEGORY.EATING_OUT, IMPORTANCE.NICE_TO_HAVE, frozenset({"groceries", "coffee", "catering"})),
+    (CATEGORY.ANIMALS, IMPORTANCE.HAVE_TO_HAVE, frozenset({"animals"})),
+    (CATEGORY.SELF_DEVELOPMENT, IMPORTANCE.NICE_TO_HAVE, frozenset({"self_development", "book"})),
+    (CATEGORY.CLOTHES, IMPORTANCE.NICE_TO_HAVE, frozenset({"clothes", "jewelry"})),
+    (CATEGORY.ENTERTAINMENT, IMPORTANCE.NICE_TO_HAVE, frozenset({"entertainment", "subscriptions", "pcgames"})),
+    (CATEGORY.SHOPPING, IMPORTANCE.NICE_TO_HAVE, frozenset({"shopping", "electronic"})),
+    (CATEGORY.INVESTMENTS, IMPORTANCE.NICE_TO_HAVE, frozenset({"investment"})),
+    (CATEGORY.CARE, IMPORTANCE.NICE_TO_HAVE, frozenset({"pharmacy", "cosmetics", "insurance", "sport", "bike"})),
+    (CATEGORY.TRAVEL, IMPORTANCE.NICE_TO_HAVE, frozenset({"travel"})),
+    (CATEGORY.SELF_DESTRUCTION, IMPORTANCE.SHOULDNT_HAVE, frozenset({"alcohol", "fastfood"})),
+    (CATEGORY.KIDS, IMPORTANCE.HAVE_TO_HAVE, frozenset({"kids"})),
+]
+
+
+@dataclass
 class Expense:
     """Single classified transaction read from ``data/processed_transactions.csv``.
 
@@ -41,65 +64,33 @@ class Expense:
     string to a ``CATEGORY`` and ``IMPORTANCE`` value via keyword matching.
     """
 
-    def __init__(self, month: str, year: str, item: str, price: str) -> None:
-        """Initialize an Expense and resolve its category and importance.
+    month: str
+    year: str
+    item: str
+    price: str
+    category: CATEGORY = field(init=False, repr=True)
+    importance: IMPORTANCE = field(init=False, repr=True)
 
-        Args:
-            month: Month number as a string (for example, ``"3"`` for March).
-            year: Four-digit year as a string (for example, ``"2025"``).
-            item: Category label from the processed CSV (for example, ``"FOOD"``),
-                used for keyword-based classification.
-            price: Transaction amount as a string (unsigned, without leading dash).
-        """
-        self.month = month
-        self.year = year
-        self.item = item
-        self.price = price
+    def __post_init__(self) -> None:
         self.category, self.importance = self._determine_category_and_importance()
 
     def _determine_category_and_importance(self) -> tuple[CATEGORY, IMPORTANCE]:
         """Map ``self.item`` to a ``CATEGORY`` / ``IMPORTANCE`` pair by keyword.
 
-        Checks lowercase substrings in priority order. Returns
-        ``CATEGORY.MISC`` / ``IMPORTANCE.NEEDS_REVIEW`` when no keyword matches.
+        Iterates ``_CATEGORY_IMPORTANCE_MAP`` in insertion order and returns the
+        result for the first keyword found as a substring of the lowercased item.
+        Returns ``CATEGORY.MISC`` / ``IMPORTANCE.NEEDS_REVIEW`` when no keyword matches.
 
         Returns:
             Two-tuple of ``(CATEGORY, IMPORTANCE)``.
         """
         item = self.item.lower()
-        if "apartment" in item or "bills" in item or "renovation" in item:
-            return CATEGORY.APARTMENT, IMPORTANCE.ESSENTIAL
-        if "food" in item or "greenfood" in item:
-            return CATEGORY.FOOD, IMPORTANCE.ESSENTIAL
-        if "fuel" in item or "repairs" in item or "car" in item or "leasing" in item:
-            return CATEGORY.CAR, IMPORTANCE.HAVE_TO_HAVE
-        if "transportation" in item:
-            return CATEGORY.TRANSPORTATION, IMPORTANCE.HAVE_TO_HAVE
-        if "groceries" in item or "coffee" in item or "catering" in item:
-            return CATEGORY.EATING_OUT, IMPORTANCE.NICE_TO_HAVE
-        if "animals" in item:
-            return CATEGORY.ANIMALS, IMPORTANCE.HAVE_TO_HAVE
-        if "self_development" in item or "book" in item:
-            return CATEGORY.SELF_DEVELOPMENT, IMPORTANCE.NICE_TO_HAVE
-        if "clothes" in item or "jewelry" in item:
-            return CATEGORY.CLOTHES, IMPORTANCE.NICE_TO_HAVE
-        if "entertainment" in item or "subscriptions" in item or "pcgames" in item:
-            return CATEGORY.ENTERTAINMENT, IMPORTANCE.NICE_TO_HAVE
-        if "shopping" in item or "electronic" in item:
-            return CATEGORY.SHOPPING, IMPORTANCE.NICE_TO_HAVE
-        if "investment" in item:
-            return CATEGORY.INVESTMENTS, IMPORTANCE.NICE_TO_HAVE
-        if "pharmacy" in item or "cosmetics" in item or "insurance" in item or "sport" in item or "bike" in item:
-            return CATEGORY.CARE, IMPORTANCE.NICE_TO_HAVE
-        if "travel" in item:
-            return CATEGORY.TRAVEL, IMPORTANCE.NICE_TO_HAVE
-        if "alcohol" in item or "fastfood" in item:
-            return CATEGORY.SELF_DESTRUCTION, IMPORTANCE.SHOULDNT_HAVE
-        if "kids" in item:
-            return CATEGORY.KIDS, IMPORTANCE.HAVE_TO_HAVE
+        for category, importance, keywords in _CATEGORY_RULES:
+            if any(kw in item for kw in keywords):
+                return category, importance
         return CATEGORY.MISC, IMPORTANCE.NEEDS_REVIEW
 
-    def __repr__(self) -> str:
+    def to_csv_row(self) -> str:
         """Return a comma-separated string suitable for CSV output.
 
         Format: ``month,year,item,category_value,price,importance_value``.

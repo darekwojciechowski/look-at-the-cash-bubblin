@@ -95,14 +95,14 @@ class TestExpenseCategorization:
 class TestExpenseRepresentation:
     """Test suite for Expense string representation."""
 
-    def test_expense_repr_basic(self):
-        """Test __repr__ method produces correct CSV-formatted output."""
+    def test_expense_to_csv_row_basic(self):
+        """Test to_csv_row method produces correct CSV-formatted output."""
         expense = Expense(1, 2023, "apartment rent", 1200)
-        expected_repr = "1,2023,apartment rent,🏯 Apartment,1200,Essential"
-        assert repr(expense) == expected_repr
+        expected = "1,2023,apartment rent,🏯 Apartment,1200,Essential"
+        assert expense.to_csv_row() == expected
 
     @pytest.mark.parametrize(
-        "month,year,item,price,expected_repr",
+        "month,year,item,price,expected_csv",
         [
             (
                 1,
@@ -130,27 +130,32 @@ class TestExpenseRepresentation:
             (9, 2023, "unknown", 100, "9,2023,unknown,Misc,100,Needs Review"),
         ],
     )
-    def test_expense_repr_multiple_categories(self, month, year, item, price, expected_repr):
-        """Test __repr__ output for different expense categories."""
+    def test_expense_to_csv_row_multiple_categories(self, month, year, item, price, expected_csv):
+        """Test to_csv_row output for different expense categories."""
         expense = Expense(month, year, item, price)
-        assert repr(expense) == expected_repr
+        assert expense.to_csv_row() == expected_csv
 
-    def test_expense_repr_includes_emoji(self):
-        """Verify that repr includes category emoji."""
+    def test_expense_to_csv_row_includes_emoji(self):
+        """Verify that to_csv_row includes category emoji."""
         expense = Expense(1, 2023, "apartment rent", 1200)
-        repr_string = repr(expense)
-        assert "🏯" in repr_string
+        assert "🏯" in expense.to_csv_row()
 
-    def test_expense_repr_csv_format(self):
-        """Verify repr produces valid CSV format with comma separation."""
+    def test_expense_to_csv_row_csv_format(self):
+        """Verify to_csv_row produces valid CSV format with comma separation."""
         expense = Expense(1, 2023, "test item", 100)
-        repr_string = repr(expense)
-        parts = repr_string.split(",")
+        parts = expense.to_csv_row().split(",")
 
         # Should have 6 comma-separated parts
         assert len(parts) >= 5
         assert parts[0] == "1"
         assert parts[1] == "2023"
+
+    def test_expense_repr_is_developer_readable(self):
+        """Verify __repr__ returns dataclass representation, not CSV format."""
+        expense = Expense(1, 2023, "apartment rent", 1200)
+        repr_string = repr(expense)
+        assert "Expense(" in repr_string
+        assert "month=" in repr_string
 
 
 @pytest.mark.unit
@@ -179,6 +184,18 @@ class TestExpenseAttributes:
 
         assert hasattr(expense, "importance")
         assert expense.importance is not None
+
+    def test_expense_equality(self):
+        """Equal field values produce equal Expense instances (dataclass __eq__)."""
+        a = Expense(1, 2023, "apartment rent", 1200)
+        b = Expense(1, 2023, "apartment rent", 1200)
+        assert a == b
+
+    def test_expense_inequality(self):
+        """Different field values produce unequal Expense instances."""
+        a = Expense(1, 2023, "apartment rent", 1200)
+        b = Expense(2, 2023, "apartment rent", 1200)
+        assert a != b
 
 
 @pytest.mark.unit

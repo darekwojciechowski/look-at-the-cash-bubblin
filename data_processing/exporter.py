@@ -12,9 +12,6 @@ from data_processing.location_processor import (
     extract_location_from_data,
 )
 
-# Constants
-CSV_OUT_FILE: Path = Path("data/processed_transactions.csv")
-
 
 def export_for_google_sheets(processed_df: pd.DataFrame) -> None:
     """Write the processed DataFrame to ``for_google_spreadsheet.csv``.
@@ -90,17 +87,21 @@ def export_unassigned_transactions_to_csv(df: pd.DataFrame) -> None:
     logger.info(f"[EXPORT] Unassigned transactions with location data saved to {output_file}")
 
 
-def get_data() -> list[Expense]:
-    """Read ``data/processed_transactions.csv`` and return a list of Expense objects.
+def get_data(path: Path = Path("data/processed_transactions.csv")) -> list[Expense]:
+    """Read a processed transactions CSV and return a list of Expense objects.
 
     Skips the header row. Columns must be in the order
     ``month, year, category, price``.
+
+    Args:
+        path: Path to the CSV file. Defaults to
+            ``data/processed_transactions.csv``.
 
     Returns:
         List of ``Expense`` objects, one per row in the CSV.
     """
     expenses: list[Expense] = []
-    with open(CSV_OUT_FILE, newline="", encoding="utf-8-sig") as csvfile:
+    with open(path, newline="", encoding="utf-8-sig") as csvfile:
         reader = csv.reader(csvfile, delimiter=",")
         next(reader)  # Skip the header row
         for row in reader:
