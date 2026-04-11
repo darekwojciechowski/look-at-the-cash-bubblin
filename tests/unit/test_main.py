@@ -1,6 +1,5 @@
-"""
-Tests for main module.
-Ensures proper workflow integration and data pipeline execution.
+"""Tests for the main module.
+Covers the end-to-end pipeline: CSV reading, IPKO import, processing, and export.
 """
 
 from pathlib import Path
@@ -49,15 +48,13 @@ class TestMainWorkflow:
         main_raw_dataframe: pd.DataFrame,
         main_processed_dataframe: pd.DataFrame,
     ) -> None:
-        """
-        Integration test verifying complete main workflow.
+        """Verify call order, data flow, and output paths through the complete main() pipeline.
 
-        Ensures:
-        - Correct function call order
-        - Proper data flow between functions
-        - Expected CSV output format
-        - All pipeline components are invoked
+        Given: mocked pipeline steps returning known DataFrames
+        When:  main() is called
+        Then:  each step is called once in order with the correct arguments and DataFrames
         """
+        # Arrange
         mock_setup_logging = mocker.patch("main.setup_logging")
         mock_read_csv = mocker.patch("main.read_transaction_csv")
         mock_ipko_import = mocker.patch("main.ipko_import")
@@ -65,7 +62,6 @@ class TestMainWorkflow:
         mock_export_misc = mocker.patch("main.export_misc_transactions")
         mock_export_cleaned = mocker.patch("main.export_cleaned_data")
 
-        # Arrange
         mock_read_csv.return_value = main_raw_dataframe
         mock_ipko_import.return_value = main_raw_dataframe
         mock_process_df.return_value = main_processed_dataframe
@@ -88,7 +84,13 @@ class TestMainWorkflow:
         mock_export_cleaned.assert_called_once_with(main_processed_dataframe, Path("data/processed_transactions.csv"))
 
     def test_main_workflow_with_empty_dataframe(self, mocker: MockerFixture) -> None:
-        """Test main workflow with empty DataFrame."""
+        """Test main workflow with empty DataFrame.
+
+        Given: mocked pipeline steps all returning an empty DataFrame
+        When:  main() is called
+        Then:  the workflow completes without errors and both exports are called once
+        """
+        # Arrange
         mock_setup_logging = mocker.patch("main.setup_logging")
         mock_read_csv = mocker.patch("main.read_transaction_csv")
         mock_ipko_import = mocker.patch("main.ipko_import")
@@ -96,7 +98,6 @@ class TestMainWorkflow:
         mock_export_misc = mocker.patch("main.export_misc_transactions")
         mock_export_cleaned = mocker.patch("main.export_cleaned_data")
 
-        # Arrange
         empty_df = pd.DataFrame(columns=["data", "price", "month", "year"])
         mock_read_csv.return_value = empty_df
         mock_ipko_import.return_value = empty_df
@@ -111,14 +112,19 @@ class TestMainWorkflow:
         mock_export_cleaned.assert_called_once()
 
     def test_main_handles_read_csv_failure(self, mocker: MockerFixture) -> None:
-        """Test main workflow when CSV reading fails."""
+        """Test main workflow when CSV reading fails.
+
+        Given: read_transaction_csv raises FileNotFoundError
+        When:  main() is called
+        Then:  the error propagates out of main() and setup_logging was still called
+        """
+        # Arrange
         mock_setup_logging = mocker.patch("main.setup_logging")
         mock_read_csv = mocker.patch("main.read_transaction_csv")
 
-        # Arrange
         mock_read_csv.side_effect = FileNotFoundError("File not found")
 
-        # Act & Assert
+        # Act + Assert
         with pytest.raises(FileNotFoundError):
             main()
 
@@ -129,18 +135,23 @@ class TestMainWorkflow:
         mocker: MockerFixture,
         main_raw_dataframe: pd.DataFrame,
     ) -> None:
-        """Test main workflow when data processing fails."""
+        """Test main workflow when data processing fails.
+
+        Given: process_dataframe raises a KeyError for an invalid column
+        When:  main() is called
+        Then:  the error propagates out of main() and setup_logging was still called
+        """
+        # Arrange
         mock_setup_logging = mocker.patch("main.setup_logging")
         mock_read_csv = mocker.patch("main.read_transaction_csv")
         mock_ipko_import = mocker.patch("main.ipko_import")
         mock_process_df = mocker.patch("main.process_dataframe")
 
-        # Arrange
         mock_read_csv.return_value = main_raw_dataframe
         mock_ipko_import.return_value = main_raw_dataframe
         mock_process_df.side_effect = KeyError("Invalid column")
 
-        # Act & Assert
+        # Act + Assert
         with pytest.raises(KeyError):
             main()
 

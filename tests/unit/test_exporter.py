@@ -1,6 +1,5 @@
-"""
-Tests for data_processing.exporter module.
-Comprehensive testing of data export functionality to various formats.
+"""Tests for data_processing.exporter module.
+Covers CSV and Google Sheets export, MISC transaction filtering, and Expense loading.
 """
 
 from pathlib import Path
@@ -25,22 +24,38 @@ class TestExportForGoogleSheets:
     def test_export_for_google_sheets_success(
         self, mocker: MockerFixture, sample_dataframe_with_categories: pd.DataFrame
     ) -> None:
-        """Test successful export to Google Sheets format."""
+        """Test successful export to Google Sheets format.
+
+        Given: a DataFrame with category data and mocked to_csv/logger
+        When:  export_for_google_sheets() is called
+        Then:  logger.info is called and to_csv writes to the expected path
+        """
+        # Arrange
         mock_to_csv = mocker.patch("pandas.DataFrame.to_csv")
         mock_logger = mocker.patch("data_processing.exporter.logger")
 
+        # Act
         export_for_google_sheets(sample_dataframe_with_categories)
 
+        # Assert
         mock_logger.info.assert_called()
         mock_to_csv.assert_called_once_with(Path("for_google_spreadsheet.csv"), index=False)
 
     def test_export_for_google_sheets_empty_dataframe(self, mocker: MockerFixture) -> None:
-        """Test export with empty DataFrame."""
+        """Test export with empty DataFrame.
+
+        Given: an empty DataFrame with the expected columns
+        When:  export_for_google_sheets() is called
+        Then:  to_csv is still called with the correct output path
+        """
+        # Arrange
         mock_to_csv = mocker.patch("pandas.DataFrame.to_csv")
         empty_df = pd.DataFrame(columns=["category", "price", "month", "year", "data"])
 
+        # Act
         export_for_google_sheets(empty_df)
 
+        # Assert
         mock_to_csv.assert_called_once_with(Path("for_google_spreadsheet.csv"), index=False)
 
 
@@ -51,10 +66,19 @@ class TestExportMiscTransactions:
     def test_export_misc_transactions_filters_correctly(
         self, mocker: MockerFixture, sample_dataframe_with_categories: pd.DataFrame
     ) -> None:
-        """Test that only MISC category transactions are exported."""
+        """Test that only MISC category transactions are exported.
+
+        Given: a DataFrame with two MISC rows and other category rows
+        When:  export_misc_transactions() is called
+        Then:  to_csv is called once with the unassigned path and exactly two MISC rows exist
+        """
+        # Arrange
         mock_to_csv = mocker.patch("pandas.DataFrame.to_csv")
+
+        # Act
         export_misc_transactions(sample_dataframe_with_categories)
 
+        # Assert
         mock_to_csv.assert_called_once_with(Path("unassigned_transactions.csv"), index=False, encoding="utf-8-sig")
 
         # Verify only MISC rows are selected
@@ -65,7 +89,13 @@ class TestExportMiscTransactions:
         )
 
     def test_export_misc_transactions_no_misc_category(self, mocker: MockerFixture) -> None:
-        """Test export when no MISC transactions exist."""
+        """Test export when no MISC transactions exist.
+
+        Given: a DataFrame containing only FOOD and FUEL rows
+        When:  export_misc_transactions() is called
+        Then:  to_csv is still called once (with an empty selection)
+        """
+        # Arrange
         mock_to_csv = mocker.patch("pandas.DataFrame.to_csv")
         df = pd.DataFrame(
             {
@@ -77,17 +107,27 @@ class TestExportMiscTransactions:
             }
         )
 
+        # Act
         export_misc_transactions(df)
 
+        # Assert
         mock_to_csv.assert_called_once()
 
     def test_export_misc_transactions_empty_dataframe(self, mocker: MockerFixture) -> None:
-        """Test export with empty DataFrame."""
+        """Test export with empty DataFrame.
+
+        Given: an empty DataFrame with the expected columns
+        When:  export_misc_transactions() is called
+        Then:  to_csv is called once without raising an error
+        """
+        # Arrange
         mock_to_csv = mocker.patch("pandas.DataFrame.to_csv")
         empty_df = pd.DataFrame(columns=["category", "price", "month", "year", "data"])
 
+        # Act
         export_misc_transactions(empty_df)
 
+        # Assert
         mock_to_csv.assert_called_once()
 
 
@@ -98,10 +138,19 @@ class TestExportUnassignedTransactions:
     def test_export_unassigned_transactions_to_csv(
         self, mocker: MockerFixture, sample_dataframe_with_categories: pd.DataFrame
     ) -> None:
-        """Test basic export of unassigned transactions."""
+        """Test basic export of unassigned transactions.
+
+        Given: a DataFrame with category data
+        When:  export_unassigned_transactions_to_csv() is called
+        Then:  to_csv is called once with the unassigned path and utf-8-sig encoding
+        """
+        # Arrange
         mock_to_csv = mocker.patch("pandas.DataFrame.to_csv")
+
+        # Act
         export_unassigned_transactions_to_csv(sample_dataframe_with_categories)
 
+        # Assert
         mock_to_csv.assert_called_once_with(Path("unassigned_transactions.csv"), index=False, encoding="utf-8-sig")
 
 
@@ -110,7 +159,13 @@ class TestExportFinalData:
     """Test suite for final data export operations."""
 
     def test_get_data_success(self, mocker: MockerFixture, csv_data_mock: str) -> None:
-        """Test successful parsing of final data from CSV."""
+        """Test successful parsing of final data from CSV.
+
+        Given: a mocked CSV reader that returns a header row and two data rows
+        When:  get_data() is called
+        Then:  two Expense-like objects are returned with the correct field values
+        """
+        # Arrange
         mocker.patch("builtins.open", new_callable=mock_open)
         mock_csv_reader = mocker.patch("csv.reader")
         mock_csv_reader.return_value = iter(
@@ -121,8 +176,10 @@ class TestExportFinalData:
             ]
         )
 
+        # Act
         expenses = get_data()
 
+        # Assert
         assert len(expenses) == 2
         assert expenses[0].month == "1"
         assert expenses[0].year == "2023"
@@ -132,7 +189,13 @@ class TestExportFinalData:
         assert expenses[1].year == "2023"
 
     def test_get_data_empty_csv(self, mocker: MockerFixture) -> None:
-        """Test parsing empty CSV file."""
+        """Test parsing empty CSV file.
+
+        Given: a mocked CSV reader that returns only a header row
+        When:  get_data() is called
+        Then:  an empty list is returned
+        """
+        # Arrange
         mocker.patch("builtins.open", new_callable=mock_open)
         mock_csv_reader = mocker.patch("csv.reader")
         mock_csv_reader.return_value = iter(
@@ -141,8 +204,10 @@ class TestExportFinalData:
             ]
         )
 
+        # Act
         expenses = get_data()
 
+        # Assert
         assert len(expenses) == 0
 
 
@@ -154,8 +219,13 @@ class TestGetData:
         """
         Test get_data creates Expense objects from CSV.
 
+        Given: a mocked CSV reader with two data rows and a patched Expense constructor
+        When:  get_data() is called
+        Then:  the Expense constructor is called twice with the correct four arguments
+
         Fixed: get_data now properly passes all 4 arguments to Expense constructor.
         """
+        # Arrange
         mocker.patch("builtins.open", new_callable=mock_open)
         mock_csv_reader = mocker.patch("csv.reader")
         mock_expense = mocker.patch("data_processing.exporter.Expense")
@@ -166,12 +236,13 @@ class TestGetData:
                 ["2", "2023", "item2", "200"],
             ]
         )
-
         mock_expense_instance = MagicMock()
         mock_expense.return_value = mock_expense_instance
 
+        # Act
         expenses = get_data()
 
+        # Assert
         assert len(expenses) == 2
         # Verify Expense constructor calls with all 4 arguments
         expected_calls = [
@@ -181,7 +252,13 @@ class TestGetData:
         mock_expense.assert_has_calls(expected_calls)
 
     def test_get_data_empty_csv(self, mocker: MockerFixture) -> None:
-        """Test get_data with empty CSV file."""
+        """Test get_data with empty CSV file.
+
+        Given: a mocked CSV reader with only a header row
+        When:  get_data() is called
+        Then:  an empty list is returned and Expense is never called
+        """
+        # Arrange
         mocker.patch("builtins.open", new_callable=mock_open)
         mock_csv_reader = mocker.patch("csv.reader")
         mock_expense = mocker.patch("data_processing.exporter.Expense")
@@ -190,11 +267,12 @@ class TestGetData:
                 ["month", "year", "item", "price"],
             ]
         )
-
         mock_expense_instance = MagicMock()
         mock_expense.return_value = mock_expense_instance
 
+        # Act
         expenses = get_data()
 
+        # Assert
         assert len(expenses) == 0
         mock_expense.assert_not_called()

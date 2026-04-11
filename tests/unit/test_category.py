@@ -15,46 +15,37 @@ class TestCategoryKeywordUniqueness:
     """Test suite for validating category keyword uniqueness and preventing false matches."""
 
     def test_short_strings_not_substring_of_other_keywords(self):
-        """
-        Test that short strings (1-4 characters) are not substrings of other keywords.
+        """Short keywords (1-4 chars) must not appear as substrings of other keywords.
+
+        Given: all keyword sets from the category module
+        When:  every short keyword (1-4 chars) is checked against all other keywords
+        Then:  no short keyword appears as a substring inside another keyword
 
         This prevents false positive matches where a short keyword (e.g., "car")
         might match within a longer word (e.g., "carrefour").
-
-        Validates all category sets to ensure short keywords don't appear
-        as substrings in any other keywords across the entire category module.
         """
-        # Dynamically get all category sets from the module
+        # Arrange
         category_sets = []
         for attr_name in dir(category):
-            # Skip private attributes, all_category list, and non-uppercase attributes
             if attr_name.startswith("_") or attr_name == "all_category" or not attr_name.isupper():
                 continue
-
             attr_value = getattr(category, attr_name)
-            # Only include set objects (category keyword sets)
             if isinstance(attr_value, set):
                 category_sets.append((attr_name, attr_value))
 
-        # Collect all keywords from all categories
         all_keywords = []
         for category_name, category_set in category_sets:
             for keyword in category_set:
                 all_keywords.append((category_name, keyword.lower()))
 
-        # Find short keywords (1-4 characters)
         short_keywords = [(cat, kw) for cat, kw in all_keywords if 1 <= len(kw) <= 4]
 
-        # Check each short keyword against all other keywords
+        # Act
         problematic_matches = []
-
         for short_cat, short_kw in short_keywords:
             for other_cat, other_kw in all_keywords:
-                # Skip comparing keyword with itself
                 if short_kw == other_kw:
                     continue
-
-                # Check if short keyword is a substring of another keyword
                 if short_kw in other_kw:
                     problematic_matches.append(
                         {
@@ -65,7 +56,7 @@ class TestCategoryKeywordUniqueness:
                         }
                     )
 
-        # If there are problematic matches, create a detailed error message
+        # Assert
         if problematic_matches:
             error_message = "\n\nFound short keywords (1-4 chars) that appear as substrings in other keywords:\n"
             for match in problematic_matches:
@@ -78,38 +69,38 @@ class TestCategoryKeywordUniqueness:
             pytest.fail(error_message)
 
     def test_no_duplicate_keywords_across_categories(self):
-        """
-        Test that no keyword appears in multiple categories.
+        """No keyword may appear in multiple categories.
 
-        This is critical for transaction categorization - each keyword should
-        uniquely identify a single category.
+        Given: all keyword sets from the category module
+        When:  every keyword is mapped to its owning categories
+        Then:  no keyword belongs to more than one category
+
+        Each keyword must uniquely identify a single category to avoid
+        ambiguous transaction categorization.
         """
-        # Dynamically get all category sets from the module
+        # Arrange
         categories = {}
         for attr_name in dir(category):
             if attr_name.startswith("_") or attr_name == "all_category" or not attr_name.isupper():
                 continue
-
             attr_value = getattr(category, attr_name)
             if isinstance(attr_value, set):
                 categories[attr_name] = attr_value
 
-        # Create a mapping of keywords to their categories
+        # Act
         keyword_map = defaultdict(list)
         for category_name, keywords in categories.items():
             for keyword in keywords:
                 keyword_map[keyword.lower()].append(category_name)
 
-        # Find all keywords that appear in more than one category
         duplicates = {keyword: cats for keyword, cats in keyword_map.items() if len(cats) > 1}
 
-        # Build detailed error message if duplicates found
+        # Assert
         if duplicates:
             error_lines = [
                 f"\n❌ Found {len(duplicates)} duplicate keyword(s) across different categories:",
                 "",
             ]
-
             for keyword, cats in sorted(duplicates.items()):
                 error_lines.append(f"  • '{keyword}' appears in: {', '.join(cats)}")
 
@@ -117,74 +108,82 @@ class TestCategoryKeywordUniqueness:
             pytest.fail(error_message)
 
     def test_all_categories_have_keywords(self):
-        """
-        Test that all categories (except MISC) contain at least one keyword.
+        """All categories (except MISC) must contain at least one keyword.
+
+        Given: all category sets from the category module
+        When:  each set's length is checked
+        Then:  no set is empty (MISC is the only permitted exception as a fallback category)
 
         Empty categories would never match any transactions.
         MISC is intentionally empty as it serves as a fallback category.
         """
-        # Dynamically get all category sets from the module
+        # Arrange
         categories = {}
         for attr_name in dir(category):
             if attr_name.startswith("_") or attr_name == "all_category" or not attr_name.isupper():
                 continue
-
             attr_value = getattr(category, attr_name)
             if isinstance(attr_value, set):
                 categories[attr_name] = attr_value
 
+        # Act
         # MISC is intentionally empty as fallback category
         empty_categories = [name for name, keywords in categories.items() if len(keywords) == 0 and name != "MISC"]
 
+        # Assert
         assert not empty_categories, f"Found empty categories: {', '.join(empty_categories)}"
 
     def test_no_empty_string_keywords(self):
-        """
-        Test that no category contains empty string keywords.
+        """No category may contain empty or whitespace-only keywords.
 
-        Empty strings would cause false matches.
+        Given: all keyword sets from the category module
+        When:  each keyword is checked for emptiness or whitespace-only content
+        Then:  no category contains such a keyword
+
+        Empty strings would cause false matches on every transaction.
         """
-        # Dynamically get all category sets from the module
+        # Arrange
         categories = {}
         for attr_name in dir(category):
             if attr_name.startswith("_") or attr_name == "all_category" or not attr_name.isupper():
                 continue
-
             attr_value = getattr(category, attr_name)
             if isinstance(attr_value, set):
                 categories[attr_name] = attr_value
 
+        # Act
         categories_with_empty = []
-
         for category_name, keywords in categories.items():
             if "" in keywords or any(not keyword.strip() for keyword in keywords):
                 categories_with_empty.append(category_name)
 
+        # Assert
         assert not categories_with_empty, (
             f"Categories with empty/whitespace-only keywords: {', '.join(categories_with_empty)}"
         )
 
     def test_category_count(self):
-        """
-        Test that we have a reasonable number of categories.
+        """Category count must fall within the expected 30–50 range.
 
-        This is a sanity check to ensure the category module was loaded correctly.
+        Given: all uppercase set-typed attributes in the category module
+        When:  their count is checked
+        Then:  the count falls between 30 and 50 (sanity check for correct module loading)
         """
-        # Dynamically get all category sets from the module
+        # Arrange
         categories = {}
         for attr_name in dir(category):
             if attr_name.startswith("_") or attr_name == "all_category" or not attr_name.isupper():
                 continue
-
             attr_value = getattr(category, attr_name)
             if isinstance(attr_value, set):
                 categories[attr_name] = attr_value
 
-        # Based on the current file, we should have a reasonable number of categories
+        # Act
+        actual_count = len(categories)
+
+        # Assert
         expected_min_categories = 30  # Minimum expected
         expected_max_categories = 50  # Maximum reasonable
-
-        actual_count = len(categories)
 
         assert expected_min_categories <= actual_count <= expected_max_categories, (
             f"Expected between {expected_min_categories} and {expected_max_categories} "
@@ -192,27 +191,27 @@ class TestCategoryKeywordUniqueness:
         )
 
     def test_keywords_are_valid_characters(self):
-        """
-        Test that keywords don't contain unexpected characters.
+        """Keywords should not contain unexpected characters (informational warning).
 
-        This is a basic sanity check for data quality.
+        Given: all keyword sets from the category module
+        When:  every character in every keyword is checked against the allowed set
+        Then:  any violations are printed as a warning (no assertion failure)
         """
         import string
 
+        # Arrange
         allowed_chars = set(string.ascii_letters + string.digits + " '.,-_()&łąćęńóśźżŁĄĆĘŃÓŚŹŻ/ñóéíá:;öü")
 
-        # Dynamically get all category sets from the module
         categories = {}
         for attr_name in dir(category):
             if attr_name.startswith("_") or attr_name == "all_category" or not attr_name.isupper():
                 continue
-
             attr_value = getattr(category, attr_name)
             if isinstance(attr_value, set):
                 categories[attr_name] = attr_value
 
+        # Act
         invalid_keywords = []
-
         for category_name, keywords in categories.items():
             for keyword in keywords:
                 if not all(char in allowed_chars for char in keyword):
@@ -225,12 +224,13 @@ class TestCategoryKeywordUniqueness:
                 print(f"    {cat}: '{kw}'")
 
     def test_specific_sensitive_keywords(self):
-        """
-        Test for specific keywords that are known to potentially cause issues.
+        """Sensitive keywords known to overlap (e.g. 'car', 'food') must belong to exactly one category.
 
-        This test checks common words that might accidentally appear in multiple categories.
+        Given: a predefined list of sensitive keywords that could appear in multiple categories
+        When:  each keyword is looked up across all category sets
+        Then:  none of them belongs to more than one category
         """
-        # Common words that should probably only appear once
+        # Arrange
         sensitive_keywords = [
             "bike",
             "sport",
@@ -245,22 +245,20 @@ class TestCategoryKeywordUniqueness:
         ]
 
         keyword_locations = defaultdict(list)
-
         for attr_name in dir(category):
             if attr_name.startswith("_") or attr_name == "all_category" or not attr_name.isupper():
                 continue
-
             attr_value = getattr(category, attr_name)
-
             if isinstance(attr_value, set):
                 for keyword in attr_value:
                     keyword_locations[keyword.lower()].append(attr_name)
 
-        # Check our sensitive keywords
+        # Act
         duplicated_sensitive = {
             kw: cats for kw in sensitive_keywords for cats in [keyword_locations.get(kw.lower(), [])] if len(cats) > 1
         }
 
+        # Assert
         if duplicated_sensitive:
             error_lines = ["\n⚠️  Sensitive keywords found in multiple categories:", ""]
             for kw, cats in duplicated_sensitive.items():
@@ -269,30 +267,28 @@ class TestCategoryKeywordUniqueness:
             pytest.fail("\n".join(error_lines))
 
     def test_all_categories_exist_in_all_category_list(self):
-        """
-        Test that all category sets defined in the module are listed in all_category.
+        """All category sets in the module must be listed in all_category and vice versa.
 
-        This ensures consistency between category definitions and the category list.
+        Given: all uppercase set-typed attributes in the category module
+        When:  they are compared against all_category
+        Then:  both sets are identical with no missing or extra entries
         """
-        # Get all category sets from the module
+        # Arrange
         defined_categories = set()
         for attr_name in dir(category):
             if attr_name.startswith("_") or attr_name == "all_category" or not attr_name.isupper():
                 continue
-
             attr_value = getattr(category, attr_name)
             if isinstance(attr_value, set):
                 defined_categories.add(attr_name)
 
-        # Get categories from all_category list
         listed_categories = set(category.all_category)
 
-        # Find categories that are defined but not listed
+        # Act
         not_listed = defined_categories - listed_categories
-
-        # Find categories that are listed but not defined
         not_defined = listed_categories - defined_categories
 
+        # Assert
         error_messages = []
 
         if not_listed:
