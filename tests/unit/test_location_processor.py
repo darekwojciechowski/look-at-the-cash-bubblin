@@ -254,7 +254,8 @@ class TestCreateGoogleMapsLink:
 
 @pytest.mark.unit
 class TestExtractLocationEdgeCases:
-    """Cover uncovered branches in extract_location_from_data and internal helpers."""
+    """Edge cases for extract_location_from_data: whitespace input, short patterns
+    with no recognised street token, and generic-term filtering."""
 
     def test_whitespace_only_input_returns_empty(self) -> None:
         """Line 276: _split_parts returns empty list for whitespace-only string.
@@ -265,127 +266,81 @@ class TestExtractLocationEdgeCases:
         """
         assert extract_location_from_data("   ") == ""
 
-    def test_address_heuristic_three_token_number_pattern(self) -> None:
-        """Line 461: _looks_like_address returns True via 'word word number' regex.
-
-        Given: a three-token string ending in a number with no recognised street token
+    def test_returns_result_for_three_word_ending_with_number(self) -> None:
+        """Given: a three-token string ending in a number with no recognised street token
         When:  extract_location_from_data() is called
-        Then:  a non-empty result is returned (three-token number pattern matched)
-
-        Uses a name with no street token so the earlier street-indicator branch
-        is skipped and execution reaches the _THREE_TOKEN_NUMBER_RE check.
+        Then:  a non-empty result is returned
         """
         result = extract_location_from_data("Oak Park 42")
         assert result != ""
 
-    def test_address_heuristic_digit_long_text(self) -> None:
-        """Line 464: _looks_like_address returns True for long text containing a digit.
-
-        Given: a long string containing a digit
+    def test_returns_result_for_long_string_containing_digit(self) -> None:
+        """Given: a long string that contains a digit but no other address markers
         When:  extract_location_from_data() is called
-        Then:  a non-empty result is returned (digit-in-long-text heuristic matched)
+        Then:  a non-empty result is returned
         """
         result = extract_location_from_data("Ref9000000")
         assert result != ""
 
-    def test_structured_part_lokalizacja_without_colon_falls_through(self) -> None:
-        """Line 365: _parse_structured_part returns None when 'lokalizacja' has no colon.
-
-        Given: a string with 'lokalizacja' but no colon after it
+    def test_returns_string_when_lokalizacja_has_no_colon(self) -> None:
+        """Given: a string with 'lokalizacja' and 'adres:' but no colon after 'lokalizacja'
         When:  extract_location_from_data() is called
-        Then:  a string result is returned (falls through to generic handling)
+        Then:  a string result is returned
         """
-        # 'lokalizacja' and 'adres' are both present but the split regex
-        # (lokalizacja\s*:\s*) won't match — split yields one part → return None.
         result = extract_location_from_data("lokalizacja adres: ul. Testowa 12")
         assert isinstance(result, str)
 
-    def test_dash_part_skipped_when_lokalizacja_in_part(self) -> None:
-        """Line 427: _extract_dash_part returns None when 'lokalizacja' is in the text.
-
-        Given: a string that contains 'lokalizacja' before a dash-separated address
+    def test_returns_string_when_lokalizacja_precedes_dash_address(self) -> None:
+        """Given: a string containing 'lokalizacja' before a dash-separated address block
         When:  extract_location_from_data() is called
-        Then:  a string result is returned (dash extraction skipped)
+        Then:  a string result is returned
         """
-        # No 'adres:' so _parse_structured_part returns None first;
-        # _extract_dash_part then sees 'lokalizacja' and also returns None.
         result = extract_location_from_data("lokalizacja - ul. Main 5, Warszawa")
         assert isinstance(result, str)
 
-    def test_dash_part_excluded_term_falls_through_to_generic(self) -> None:
-        """Line 433: _extract_dash_part returns None when candidate is an excluded term.
-
-        Given: a string where the token after the dash is an excluded generic term
+    def test_returns_string_when_dash_candidate_is_generic_term(self) -> None:
+        """Given: a string where the token after the dash is a known generic term
         When:  extract_location_from_data() is called
-        Then:  a string result is returned (falls through to generic-text fallback)
+        Then:  a string result is returned
         """
-        # Candidate after dash is 'store' (in _EXCLUDE_TERMS) → returns None;
-        # the whole part is then picked up by the generic-text fallback.
         result = extract_location_from_data("Transaction desc - store")
         assert isinstance(result, str)
 
 
 @pytest.mark.unit
 class TestExtractAddressPayloadFallback:
-    """Cover the fallback branch in _extract_address_payload (lines 393-405).
-
-    All inputs are routed through extract_location_from_data.  The key is that
-    the structured part contains 'lokalizacja' and 'adres' but WITHOUT a colon
-    immediately after 'adres', so _STRUCTURED_ADDRESS_RE (which requires
-    'adres\\s*:\\s*') does not match and the manual fallback executes.
+    """Fallback address extraction when the 'adres' field has no colon suffix.
+    All cases are driven through extract_location_from_data.
     """
 
-    def test_fallback_with_colon_separator_returns_address_city(self) -> None:
-        """Lines 399-403: fallback uses rpartition(':') to split address from city.
-
-        Given: a lokalizacja block where 'adres' has no colon and 'miasto:' is present
+    def test_returns_address_and_city_when_adres_has_no_colon(self) -> None:
+        """Given: a lokalizacja block where 'adres' is not followed by a colon and 'miasto:' is present
         When:  extract_location_from_data() is called
-        Then:  a string result is returned containing address and city information
+        Then:  a string result containing address and city information is returned
         """
-        # payload after splitting on 'lokalizacja:' →
-        #   'adres ul. Testowa 12 miasto: Krakow kraj: Polska'
-        # regex won't match (no colon after 'adres'); fallback strips 'kraj:...',
-        # finds ':' in remainder, splits into address + city and returns both.
-        result = extract_location_from_data(
-            "lokalizacja: adres ul. Testowa 12 miasto: Krakow kraj: Polska"
-        )
+        result = extract_location_from_data("lokalizacja: adres ul. Testowa 12 miasto: Krakow kraj: Polska")
         assert isinstance(result, str)
 
-    def test_fallback_no_colon_returns_whole_string(self) -> None:
-        """Line 405: fallback returns without_country when no colon is present.
-
-        Given: a lokalizacja block with no 'miasto:' colon and no country segment
+    def test_returns_full_payload_when_no_city_separator_present(self) -> None:
+        """Given: a lokalizacja block with no 'miasto:' field and no country segment
         When:  extract_location_from_data() is called
-        Then:  a string result is returned with the full remaining payload
+        Then:  a string result is returned with the remaining payload
         """
-        # payload = 'adres ul. Testowa 12' — no colon, no kraj segment.
         result = extract_location_from_data("lokalizacja: adres ul. Testowa 12")
         assert isinstance(result, str)
 
-    def test_fallback_empty_after_country_strip_returns_none(self) -> None:
-        """Line 395: fallback returns None when everything before 'kraj:' is empty.
-
-        Given: a lokalizacja block where the country segment occupies all the payload
+    def test_returns_string_when_payload_is_only_country_segment(self) -> None:
+        """Given: a lokalizacja block where the entire payload is a country segment
         When:  extract_location_from_data() is called
-        Then:  a string result is returned (None converted to empty by the outer caller)
+        Then:  a string result is returned (empty string from outer caller)
         """
-        # payload = 'kraj: Polska adres' — splitting on 'kraj:' leaves '' as
-        # without_country → stripped to '' → return None.
         result = extract_location_from_data("lokalizacja: kraj: Polska adres")
         assert isinstance(result, str)
 
-    def test_structured_address_without_city_returns_address_only(self) -> None:
-        """Line 391: regex matches but city group is empty (no 'miasto:' present).
-
-        Given: a lokalizacja block with 'adres:' but no 'miasto:' field
+    def test_returns_address_fragment_when_city_field_is_absent(self) -> None:
+        """Given: a lokalizacja block with 'adres:' but no 'miasto:' field
         When:  extract_location_from_data() is called
         Then:  the address fragment 'testowa' is present in the result
-
-        When _STRUCTURED_ADDRESS_RE matches and address is non-empty but city is
-        empty, the 'if address and city' branch is skipped and
-        'return address or city or None' executes.
         """
-        result = extract_location_from_data(
-            "lokalizacja: adres: ul. Testowa 12 kraj: Polska"
-        )
+        result = extract_location_from_data("lokalizacja: adres: ul. Testowa 12 kraj: Polska")
         assert "testowa" in result.lower()

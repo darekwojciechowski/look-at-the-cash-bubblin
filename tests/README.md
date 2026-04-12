@@ -1,6 +1,6 @@
 # Test suite
 
-292 tests organized into five categories. All configuration lives in
+Tests organized into five categories. All configuration lives in
 `pytest.ini` at the project root.
 
 ## Directory structure
@@ -70,13 +70,15 @@ pytest --cov=data_processing --cov-report=html
 
 ## Test categories
 
+Counts below are approximate and may drift as tests are added.
+
 | Category | Count | Speed | Purpose |
 |---|---|---|---|
-| unit | 256 | Fast | Core logic, individual functions |
-| integration | 8 | Medium | End-to-end workflows, file I/O |
-| performance | 8 | Slow | Benchmarks, scaling tests |
-| security | 12 | Medium | Input validation, injection prevention |
-| property_based | 8 | Medium | Generative testing with Hypothesis |
+| unit | ~256 | Fast | Core logic, individual functions |
+| integration | ~8 | Medium | End-to-end workflows, file I/O |
+| performance | ~8 | Slow | Benchmarks, scaling tests |
+| security | ~12 | Medium | Input validation, injection prevention |
+| property_based | ~8 | Medium | Generative testing with Hypothesis |
 
 ## Development workflow
 

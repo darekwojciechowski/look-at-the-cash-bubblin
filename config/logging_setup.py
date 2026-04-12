@@ -1,3 +1,16 @@
+"""Logging configuration for the application.
+
+Provides two public functions:
+
+- `setup_logging` — initializes loguru with a colorized stderr handler and a
+  plain-text file handler that overwrites ``app.log`` on each run.
+- `log_dataframe_preview` — logs the full contents of a pandas DataFrame at
+  INFO level using temporary display settings that show all rows and columns.
+
+Call `setup_logging` once at application startup before any other logging
+calls.
+"""
+
 import sys
 from pathlib import Path
 
@@ -6,11 +19,11 @@ from loguru import logger
 
 
 def setup_logging() -> None:
-    """Configure loguru handlers for console (stderr) and file output.
+    """Configure loguru with a colorized stderr handler and a file handler.
 
-    Removes the default loguru handler, sets custom level colors, adds a
-    colorized stderr handler at INFO level, and adds a file handler that
-    overwrites ``app.log`` on each run.
+    Writes INFO-and-above records to stderr and to ``app.log`` in the current
+    working directory. Truncates ``app.log`` on each run. On failure, prints
+    the error to stdout instead of raising.
     """
     try:
         # Remove default handler
@@ -52,10 +65,10 @@ def setup_logging() -> None:
 
 
 def log_dataframe_preview(df: pd.DataFrame) -> None:
-    """Log the full contents of a DataFrame at INFO level via loguru.
+    """Log the full contents of a DataFrame at INFO level.
 
-    Temporarily overrides pandas display options so all columns, rows,
-    and cell content are visible in the log output.
+    Temporarily disables pandas display truncation so all rows and columns
+    appear in the log output.
 
     Args:
         df: DataFrame to log.

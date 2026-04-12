@@ -16,10 +16,6 @@ from data_processing.location_processor import (
 def export_for_google_sheets(processed_df: pd.DataFrame) -> None:
     """Write the processed DataFrame to ``for_google_spreadsheet.csv``.
 
-    Logs the full DataFrame before writing so the output is visible in
-    the run log. The file uses the default pandas encoding in tests and
-    ``utf-8-sig`` in production.
-
     Args:
         processed_df: Processed transaction DataFrame to export.
     """
@@ -38,7 +34,7 @@ def export_for_google_sheets(processed_df: pd.DataFrame) -> None:
 
 
 def export_misc_transactions(df: pd.DataFrame) -> None:
-    """Filter MISC rows and delegate to ``export_unassigned_transactions_to_csv``.
+    """Export uncategorized (MISC) transactions to CSV.
 
     Args:
         df: DataFrame containing all categorized transactions.
@@ -68,10 +64,10 @@ def export_cleaned_data(df: pd.DataFrame, output_file: Path | str = Path("data/p
 
 
 def export_unassigned_transactions_to_csv(df: pd.DataFrame) -> None:
-    """Write MISC transactions to ``unassigned_transactions.csv`` with location columns.
+    """Write MISC transactions to ``unassigned_transactions.csv``.
 
-    Adds ``extracted_location`` and ``google_maps_link`` columns before
-    writing. Uses ``utf-8-sig`` encoding for Windows Excel compatibility.
+    The output includes ``extracted_location`` and ``google_maps_link`` columns.
+    Uses ``utf-8-sig`` encoding for Windows Excel compatibility.
 
     Args:
         df: DataFrame containing uncategorized (MISC) transactions.
@@ -90,8 +86,7 @@ def export_unassigned_transactions_to_csv(df: pd.DataFrame) -> None:
 def get_data(path: Path = Path("data/processed_transactions.csv")) -> list[Expense]:
     """Read a processed transactions CSV and return a list of Expense objects.
 
-    Skips the header row. Columns must be in the order
-    ``month, year, category, price``.
+    Columns must be in the order ``month, year, category, price``.
 
     Args:
         path: Path to the CSV file. Defaults to

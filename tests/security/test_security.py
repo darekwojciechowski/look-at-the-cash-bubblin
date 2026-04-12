@@ -205,7 +205,7 @@ class TestDataTypeValidation:
                 result = process_dataframe(df)
                 # Assert — if it succeeds, verify data integrity
                 assert isinstance(result, pd.DataFrame)
-            except (ValueError, TypeError):
+            except ValueError, TypeError:
                 # Expected for invalid data
                 pass
 

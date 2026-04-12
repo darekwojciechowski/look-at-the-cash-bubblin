@@ -60,8 +60,8 @@ _CATEGORY_RULES: list[tuple[CATEGORY, IMPORTANCE, frozenset[str]]] = [
 class Expense:
     """Single classified transaction read from ``data/processed_transactions.csv``.
 
-    On construction, ``_determine_category_and_importance`` maps the item
-    string to a ``CATEGORY`` and ``IMPORTANCE`` value via keyword matching.
+    On construction, ``category`` and ``importance`` are computed from
+    ``item`` by keyword matching against ``_CATEGORY_RULES``.
     """
 
     month: str
@@ -72,14 +72,14 @@ class Expense:
     importance: IMPORTANCE = field(init=False, repr=True)
 
     def __post_init__(self) -> None:
+        """Set ``category`` and ``importance`` based on ``item`` after construction."""
         self.category, self.importance = self._determine_category_and_importance()
 
     def _determine_category_and_importance(self) -> tuple[CATEGORY, IMPORTANCE]:
-        """Map ``self.item`` to a ``CATEGORY`` / ``IMPORTANCE`` pair by keyword.
+        """Return the ``CATEGORY`` and ``IMPORTANCE`` for ``self.item``.
 
-        Iterates ``_CATEGORY_IMPORTANCE_MAP`` in insertion order and returns the
-        result for the first keyword found as a substring of the lowercased item.
-        Returns ``CATEGORY.MISC`` / ``IMPORTANCE.NEEDS_REVIEW`` when no keyword matches.
+        Falls back to ``CATEGORY.MISC`` / ``IMPORTANCE.NEEDS_REVIEW`` when no
+        rule matches.
 
         Returns:
             Two-tuple of ``(CATEGORY, IMPORTANCE)``.

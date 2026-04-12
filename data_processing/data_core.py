@@ -52,16 +52,11 @@ def clean_descriptions(
 
 
 def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-    """Run the full cleaning and categorization pipeline on a transaction DataFrame.
+    """Return a cleaned and categorized expense DataFrame ready for export.
 
-    Steps applied in order:
-    1. Normalize descriptions via ``clean_descriptions``.
-    2. Assign a category to each row via ``mappings``.
-    3. Drop ``REMOVE_ENTRY`` rows (refunds / reversals).
-    4. Drop rows with positive prices (income).
-    5. Convert price to absolute string value via ``abs()``.
-    6. Reorder columns to ``[month, year, price, category, data]``.
-    7. Drop rows where price is NaN (safety net).
+    Refunds, reversals, and income (positive prices) are excluded. Prices are
+    converted to absolute values. Output columns are
+    ``[month, year, price, category, data]``.
 
     Args:
         df: DataFrame produced by ``ipko_import`` with columns

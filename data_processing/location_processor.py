@@ -220,7 +220,7 @@ def clean_location_text(location: str | None) -> str:
     """Strip boilerplate markers and standardise separators.
 
     Args:
-        location: Raw location string potentially containing metadata prefixes.
+        location: Raw location string that may contain metadata prefixes.
 
     Returns:
         Cleaned location string with normalized spacing and punctuation.
@@ -243,7 +243,7 @@ def normalize_polish_names(location: str | None) -> str:
     """Restore missing Polish diacritics for common tokens.
 
     Args:
-        location: Location string potentially containing names without proper diacritics.
+        location: Location string that may contain names without proper diacritics.
 
     Returns:
         Location string with Polish characters properly restored.
@@ -254,13 +254,7 @@ def normalize_polish_names(location: str | None) -> str:
 
 
 def extract_location_from_data(data_string: str | float | None) -> str:
-    """Derive the most reliable location fragment from raw transaction data.
-
-    Uses a priority-based extraction strategy:
-    1. Structured metadata blocks (lokalizacja: adres: ... miasto: ...)
-    2. Dash-separated patterns (DESC - ADDRESS)
-    3. Address-like heuristics (street indicators, numbers)
-    4. Any remaining meaningful text
+    """Return the most specific location found in raw transaction data.
 
     Args:
         data_string: Raw transaction data potentially containing location info.
@@ -285,16 +279,15 @@ def extract_location_from_data(data_string: str | float | None) -> str:
 
 
 def create_google_maps_link(location: str | None) -> str:
-    """Return a Google Maps search URL when the text resembles an address.
+    """Return a Google Maps search URL for the location string.
 
-    Only generates links for strings that pass validation heuristics to avoid
-    creating useless map searches for generic transaction descriptions.
+    Returns an empty string when the text does not resemble a valid address.
 
     Args:
-        location: Location string to potentially convert to a Maps URL.
+        location: Location string to convert to a Maps URL.
 
     Returns:
-        Encoded Google Maps search URL, or empty string if location is invalid.
+        Google Maps search URL, or empty string if the location is not geocodable.
     """
     if not location:
         return ""
@@ -333,7 +326,7 @@ def create_google_maps_link(location: str | None) -> str:
 
 
 def _split_parts(data_string: str | float | None) -> list[str]:
-    """Split raw transaction text by '//' and trim whitespace.
+    """Return the '//' -delimited segments of a raw transaction string.
 
     Args:
         data_string: Raw transaction data that may contain multiple segments.
@@ -345,10 +338,7 @@ def _split_parts(data_string: str | float | None) -> list[str]:
 
 
 def _parse_structured_part(part: str) -> str | None:
-    """Handle fragments that expose 'lokalizacja' metadata blocks.
-
-    Extracts location data from structured format like:
-    "lokalizacja: adres: ul. Name miasto: City kraj: Country"
+    """Return the location address from a 'lokalizacja' metadata block.
 
     Args:
         part: Text fragment potentially containing structured location metadata.
@@ -368,18 +358,13 @@ def _parse_structured_part(part: str) -> str | None:
 
 
 def _extract_address_payload(payload: str) -> str | None:
-    """Extract "adres", "miasto" chunks from the structured payload.
-
-    Handles multiple formats:
-    - "adres: Street miasto: City kraj: Country"
-    - "adres: Street : City kraj: Country" (alternative colon separator)
-    - "adres: Street kraj: Country" (city missing)
+    """Return a formatted address from a structured lokalizacja payload.
 
     Args:
         payload: The text following "lokalizacja:" in structured data.
 
     Returns:
-        Formatted "address, city" string, or None if parsing fails.
+        Formatted "address, city" string, or None if no address is present.
     """
     # Try regex-based structured parsing first
     match = _STRUCTURED_ADDRESS_RE.search(payload)
@@ -407,16 +392,14 @@ def _extract_address_payload(payload: str) -> str | None:
 
 
 def _extract_dash_part(part: str) -> str | None:
-    """Fallback for patterns like 'something - ADDRESS'.
-
-    Extracts the text after the last dash separator when no structured
-    metadata is present. Common in transaction descriptions.
+    """Return the location portion of a dash-separated transaction description.
 
     Args:
         part: Text fragment potentially containing dash-separated location.
 
     Returns:
-        Text after the last dash, or None if invalid or structured data present.
+        Text after the last dash, or None if the part is invalid or contains
+        structured metadata.
     """
     if " - " not in part:
         return None
@@ -434,12 +417,7 @@ def _extract_dash_part(part: str) -> str | None:
 
 
 def _looks_like_address(part: str) -> bool:
-    """Decide whether the text resembles an address using heuristics.
-
-    Checks for:
-    - Street indicators (ul., al., via, calle, etc.)
-    - Patterns like "word word number" (street name + number)
-    - Any text with digits longer than 8 characters
+    """Return True when the text resembles a street address.
 
     Args:
         part: Text fragment to evaluate.
@@ -465,11 +443,7 @@ def _looks_like_address(part: str) -> bool:
 
 
 def _finalise_location(part: str) -> str:
-    """Run the standard cleaning pipeline for a raw location candidate.
-
-    Applies two-stage normalization:
-    1. Clean metadata markers and standardize formatting
-    2. Restore Polish diacritical characters
+    """Return a cleaned and normalized version of a raw location candidate.
 
     Args:
         part: Raw location text extracted from transaction data.

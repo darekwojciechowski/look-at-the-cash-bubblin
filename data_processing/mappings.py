@@ -1,7 +1,12 @@
-"""Transaction categorization using keyword matching."""
+"""Transaction categorization using keyword matching.
+
+Exports ``mappings()`` (the main categorization function) and
+``DEFAULT_CATEGORY`` (the fallback string returned when no keyword matches).
+"""
 
 from data_processing import category
 
+# Fallback value returned by mappings() when no keyword in _CATEGORY_MAP matches.
 DEFAULT_CATEGORY = "MISC"
 
 # Built once at import time — avoids rebuilding on every mappings() call.
