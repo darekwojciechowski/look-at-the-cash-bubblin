@@ -344,3 +344,29 @@ class TestExtractAddressPayloadFallback:
         """
         result = extract_location_from_data("lokalizacja: adres: ul. Testowa 12 kraj: Polska")
         assert "testowa" in result.lower()
+
+
+@pytest.mark.unit
+class TestExtractLocationNanInputs:
+    """Parametrized NaN / falsy guard for extract_location_from_data.
+
+    Covers every NaN representation that pandas and numpy expose so that the
+    pd.isna() early-exit branch is exercised by each variant independently.
+    """
+
+    @pytest.mark.parametrize(
+        "nan_input",
+        [float("nan"), np.nan, None, ""],
+        ids=["float_nan", "np_nan", "none", "empty_str"],
+    )
+    def test_extract_location_returns_empty_string_for_nan_inputs(self, nan_input: object) -> None:
+        """extract_location_from_data() must return '' for all null-like values.
+
+        Given: a null-like input (parametrized: float NaN, np.nan, None, empty string)
+        When:  extract_location_from_data() is called
+        Then:  an empty string is returned without raising
+        """
+        result = extract_location_from_data(nan_input)
+
+        assert result == ""
+        assert isinstance(result, str)

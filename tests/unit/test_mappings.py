@@ -417,6 +417,48 @@ class TestCategorySetIntegrity:
             f"Expected {len(defined_category_variables)} categories but found {len(all_category)}"
         )
 
+    def test_keyword_in_multiple_categories_returns_first_by_priority(self, monkeypatch):
+        """Test that when the same keyword exists in multiple categories, the first one in all_category wins.
+
+        Given: a keyword injected into two categories at different positions in all_category
+               (COFFEE at index 8, SUBSCRIPTIONS much later)
+        When:  mappings() is called with that keyword
+        Then:  the category that appears first in all_category is returned, not the later one
+
+        This validates that the priority order in all_category is the tiebreaker when
+        an article is mistakenly added to more than one category.
+        """
+
+        import data_processing.mappings as mappings_module
+        from data_processing import category as category_module
+
+        # Arrange — inject the same keyword into two categories
+        duplicate_keyword = "_test_duplicate_keyword_"
+        original_coffee = set(category_module.COFFEE)
+        original_subscriptions = set(category_module.SUBSCRIPTIONS)
+
+        monkeypatch.setattr(category_module, "COFFEE", original_coffee | {duplicate_keyword})
+        monkeypatch.setattr(category_module, "SUBSCRIPTIONS", original_subscriptions | {duplicate_keyword})
+
+        # Rebuild _CATEGORY_MAP so it picks up the patched sets
+        patched_map = {cat_name: getattr(category_module, cat_name) for cat_name in category_module.all_category}
+        monkeypatch.setattr(mappings_module, "_CATEGORY_MAP", patched_map)
+
+        # Act
+        result = mappings_module.mappings(duplicate_keyword)
+
+        # Assert — COFFEE (index 8) comes before SUBSCRIPTIONS in all_category
+        coffee_index = category_module.all_category.index("COFFEE")
+        subscriptions_index = category_module.all_category.index("SUBSCRIPTIONS")
+        assert coffee_index < subscriptions_index, (
+            "Test precondition failed: COFFEE must appear before SUBSCRIPTIONS in all_category"
+        )
+        assert result == "COFFEE", (
+            f"Expected 'COFFEE' (priority {coffee_index}) but got '{result}'. "
+            f"When the same keyword appears in multiple categories, "
+            f"the one with the lower index in all_category must win."
+        )
+
     def test_mappings_categories_match_all_category(self):
         """Test that categories dict in mappings() matches all_category dynamically.
 

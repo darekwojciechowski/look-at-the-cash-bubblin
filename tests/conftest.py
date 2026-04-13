@@ -16,6 +16,7 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+from loguru import logger
 
 from data_processing.data_loader import Expense
 
@@ -24,6 +25,30 @@ _TRANSACTION_COLUMNS: list[str] = ["data", "price", "month", "year"]
 
 # Type alias used by the make_transaction_dataframe factory fixture.
 type TransactionRow = dict[str, str | int | float]
+
+# ============================================================================
+# Observability Fixtures
+# ============================================================================
+
+
+@pytest.fixture
+def loguru_sink() -> list[str]:
+    """Capture loguru log messages emitted during a test.
+
+    Adds a temporary in-memory sink at DEBUG level, yields the accumulated
+    records list, then removes the sink so it does not bleed into other tests.
+
+    Usage::
+
+        def test_something_is_logged(loguru_sink):
+            do_work()
+            assert any("expected text" in msg for msg in loguru_sink)
+    """
+    records: list[str] = []
+    sink_id = logger.add(lambda msg: records.append(msg), level="DEBUG")
+    yield records
+    logger.remove(sink_id)
+
 
 # ============================================================================
 # DataFrame Fixtures - Common test data
