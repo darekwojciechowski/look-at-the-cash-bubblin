@@ -133,14 +133,12 @@ class TestProcessDataframeOutputContract:
         Then:  the positive-price row is absent from the result
         """
         # Arrange — mixed-sign prices
-        df = pd.DataFrame(
-            {
-                "data": ["orlen", "salary income"],
-                "price": ["-100.0", "3000.0"],
-                "month": [1, 1],
-                "year": [2023, 2023],
-            }
-        )
+        df = pd.DataFrame({
+            "data": ["orlen", "salary income"],
+            "price": ["-100.0", "3000.0"],
+            "month": [1, 1],
+            "year": [2023, 2023],
+        })
 
         # Act
         result = process_dataframe(df)
@@ -190,14 +188,12 @@ class TestCleanDescriptionsContract:
         Then:  'foo' is replaced by 'baz' without modifying the remaining text
         """
         # Arrange
-        df = pd.DataFrame(
-            {
-                "data": ["foo bar"],
-                "price": ["-50.0"],
-                "month": [1],
-                "year": [2023],
-            }
-        )
+        df = pd.DataFrame({
+            "data": ["foo bar"],
+            "price": ["-50.0"],
+            "month": [1],
+            "year": [2023],
+        })
 
         # Act
         result = clean_descriptions(df.copy(), replacements={"foo": "baz"})

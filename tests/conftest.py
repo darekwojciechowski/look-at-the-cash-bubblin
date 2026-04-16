@@ -63,76 +63,68 @@ def sample_raw_dataframe() -> pd.DataFrame:
     ``clean_descriptions(sample_raw_dataframe)`` should equal
     ``expected_cleaned_data``.  Recreated per test so mutations are isolated.
     """
-    return pd.DataFrame(
-        {
-            "data": [
-                "purchase in terminal - mobile code",
-                "web payment - mobile code",
-                "orlen",
-                "starbucks",
-                "piotrkowska 157a",
-            ],
-            "price": ["-50.0", "-20.0", "-100.0", "-15.0", "200.0"],
-            "month": [1, 1, 1, 1, 1],
-            "year": [2023, 2023, 2023, 2023, 2023],
-        }
-    )
+    return pd.DataFrame({
+        "data": [
+            "purchase in terminal - mobile code",
+            "web payment - mobile code",
+            "orlen",
+            "starbucks",
+            "piotrkowska 157a",
+        ],
+        "price": ["-50.0", "-20.0", "-100.0", "-15.0", "200.0"],
+        "month": [1, 1, 1, 1, 1],
+        "year": [2023, 2023, 2023, 2023, 2023],
+    })
 
 
 @pytest.fixture
 def sample_processed_dataframe() -> pd.DataFrame:
     """Fixture providing expected processed transaction data."""
-    return pd.DataFrame(
-        {
-            "month": [1, 1, 2, 2],
-            "year": [2023, 2023, 2023, 2023],
-            "price": [100.0, 200.0, 300.0, 50.0],
-            "category": ["MISC", "FOOD", "MISC", "FUEL"],
-            "data": [
-                "unknown transaction",
-                "biedronka shopping",
-                "misc item",
-                "orlen fuel",
-            ],
-        }
-    )
+    return pd.DataFrame({
+        "month": [1, 1, 2, 2],
+        "year": [2023, 2023, 2023, 2023],
+        "price": [100.0, 200.0, 300.0, 50.0],
+        "category": ["MISC", "FOOD", "MISC", "FUEL"],
+        "data": [
+            "unknown transaction",
+            "biedronka shopping",
+            "misc item",
+            "orlen fuel",
+        ],
+    })
 
 
 @pytest.fixture
 def sample_dataframe_with_categories() -> pd.DataFrame:
     """Provides realistic transaction DataFrame with categories."""
-    return pd.DataFrame(
-        {
-            "category": ["MISC", "FOOD", "MISC", "FUEL"],
-            "price": [100.0, 200.0, 300.0, 50.0],
-            "month": [1, 1, 2, 2],
-            "year": [2023, 2023, 2023, 2023],
-            "data": [
-                "unknown transaction",
-                "biedronka shopping",
-                "misc item",
-                "orlen fuel",
-            ],
-        }
-    )
+    return pd.DataFrame({
+        "category": ["MISC", "FOOD", "MISC", "FUEL"],
+        "price": [100.0, 200.0, 300.0, 50.0],
+        "month": [1, 1, 2, 2],
+        "year": [2023, 2023, 2023, 2023],
+        "data": [
+            "unknown transaction",
+            "biedronka shopping",
+            "misc item",
+            "orlen fuel",
+        ],
+    })
 
 
 @pytest.fixture
 def sample_ipko_dataframe() -> pd.DataFrame:
     """Provides a sample DataFrame for testing the ipko_import function."""
-    return pd.DataFrame(
-        {
-            0: ["2023-01-01", "2023-01-02"],
-            1: ["PLN", "PLN"],
-            2: ["transfer", "payment"],
-            3: ["-100.0", "-50.0"],
-            4: ["PLN", "PLN"],
-            5: ["description1", "description2"],
-            6: ["extra1", "extra2"],
-            7: ["data1", "data2"],
-            8: ["extra3", "extra4"],
-        }
-    )
+    return pd.DataFrame({
+        0: ["2023-01-01", "2023-01-02"],
+        1: ["PLN", "PLN"],
+        2: ["transfer", "payment"],
+        3: ["-100.0", "-50.0"],
+        4: ["PLN", "PLN"],
+        5: ["description1", "description2"],
+        6: ["extra1", "extra2"],
+        7: ["data1", "data2"],
+        8: ["extra3", "extra4"],
+    })
 
 
 @pytest.fixture
@@ -142,20 +134,18 @@ def expected_cleaned_data() -> pd.DataFrame:
     The two fixtures form a matched input/output pair for description-cleaning
     tests.  Recreated per test so mutations are isolated.
     """
-    return pd.DataFrame(
-        {
-            "data": [
-                "terminal purchase",
-                "web payment",
-                "Orlen gas station",
-                "Starbucks coffee shop",
-                "Biedronka - Piotrkowska 157a",
-            ],
-            "price": ["-50.0", "-20.0", "-100.0", "-15.0", "200.0"],
-            "month": [1, 1, 1, 1, 1],
-            "year": [2023, 2023, 2023, 2023, 2023],
-        }
-    )
+    return pd.DataFrame({
+        "data": [
+            "terminal purchase",
+            "web payment",
+            "Orlen gas station",
+            "Starbucks coffee shop",
+            "Biedronka - Piotrkowska 157a",
+        ],
+        "price": ["-50.0", "-20.0", "-100.0", "-15.0", "200.0"],
+        "month": [1, 1, 1, 1, 1],
+        "year": [2023, 2023, 2023, 2023, 2023],
+    })
 
 
 @pytest.fixture

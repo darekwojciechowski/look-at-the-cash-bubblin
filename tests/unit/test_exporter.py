@@ -97,15 +97,13 @@ class TestExportMiscTransactions:
         """
         # Arrange
         mock_to_csv = mocker.patch("pandas.DataFrame.to_csv")
-        df = pd.DataFrame(
-            {
-                "category": ["FOOD", "FUEL"],
-                "price": [100.0, 50.0],
-                "month": [1, 1],
-                "year": [2023, 2023],
-                "data": ["groceries", "fuel"],
-            }
-        )
+        df = pd.DataFrame({
+            "category": ["FOOD", "FUEL"],
+            "price": [100.0, 50.0],
+            "month": [1, 1],
+            "year": [2023, 2023],
+            "data": ["groceries", "fuel"],
+        })
 
         # Act
         export_misc_transactions(df)
@@ -168,13 +166,11 @@ class TestExportFinalData:
         # Arrange
         mocker.patch("builtins.open", new_callable=mock_open)
         mock_csv_reader = mocker.patch("csv.reader")
-        mock_csv_reader.return_value = iter(
-            [
-                ["month", "year", "item", "price"],
-                ["1", "2023", "item1", "100"],
-                ["2", "2023", "item2", "200"],
-            ]
-        )
+        mock_csv_reader.return_value = iter([
+            ["month", "year", "item", "price"],
+            ["1", "2023", "item1", "100"],
+            ["2", "2023", "item2", "200"],
+        ])
 
         # Act
         expenses = get_data()
@@ -198,11 +194,9 @@ class TestExportFinalData:
         # Arrange
         mocker.patch("builtins.open", new_callable=mock_open)
         mock_csv_reader = mocker.patch("csv.reader")
-        mock_csv_reader.return_value = iter(
-            [
-                ["month", "year", "item", "price"],
-            ]
-        )
+        mock_csv_reader.return_value = iter([
+            ["month", "year", "item", "price"],
+        ])
 
         # Act
         expenses = get_data()
@@ -229,13 +223,11 @@ class TestGetData:
         mocker.patch("builtins.open", new_callable=mock_open)
         mock_csv_reader = mocker.patch("csv.reader")
         mock_expense = mocker.patch("data_processing.exporter.Expense")
-        mock_csv_reader.return_value = iter(
-            [
-                ["month", "year", "item", "price"],
-                ["1", "2023", "item1", "100"],
-                ["2", "2023", "item2", "200"],
-            ]
-        )
+        mock_csv_reader.return_value = iter([
+            ["month", "year", "item", "price"],
+            ["1", "2023", "item1", "100"],
+            ["2", "2023", "item2", "200"],
+        ])
         mock_expense_instance = MagicMock()
         mock_expense.return_value = mock_expense_instance
 
@@ -262,11 +254,9 @@ class TestGetData:
         mocker.patch("builtins.open", new_callable=mock_open)
         mock_csv_reader = mocker.patch("csv.reader")
         mock_expense = mocker.patch("data_processing.exporter.Expense")
-        mock_csv_reader.return_value = iter(
-            [
-                ["month", "year", "item", "price"],
-            ]
-        )
+        mock_csv_reader.return_value = iter([
+            ["month", "year", "item", "price"],
+        ])
         mock_expense_instance = MagicMock()
         mock_expense.return_value = mock_expense_instance
 

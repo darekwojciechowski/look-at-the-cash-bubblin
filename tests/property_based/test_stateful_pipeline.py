@@ -82,14 +82,12 @@ class TransactionPipelineMachine(RuleBasedStateMachine):
     )
     def load_transactions(self, description: str, price: str, month: int, year: int) -> None:
         """Transition EMPTY → LOADED by creating a raw transaction DataFrame."""
-        self.buffer = pd.DataFrame(
-            {
-                "data": [description],
-                "price": [price],
-                "month": [month],
-                "year": [year],
-            }
-        )
+        self.buffer = pd.DataFrame({
+            "data": [description],
+            "price": [price],
+            "month": [month],
+            "year": [year],
+        })
         self._state = "LOADED"
 
     @rule()

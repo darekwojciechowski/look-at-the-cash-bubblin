@@ -197,14 +197,12 @@ class TestLargeDatasetProcessing:
         Then:  the processed DataFrame contains 1000 rows all categorised as MISC
         """
         # Arrange
-        large_df = pd.DataFrame(
-            {
-                "data": [f"transaction {i}" for i in range(1000)],
-                "price": [f"-{i % 100 + 10}.0" for i in range(1000)],
-                "month": [i % 12 + 1 for i in range(1000)],
-                "year": [2023] * 1000,
-            }
-        )
+        large_df = pd.DataFrame({
+            "data": [f"transaction {i}" for i in range(1000)],
+            "price": [f"-{i % 100 + 10}.0" for i in range(1000)],
+            "month": [i % 12 + 1 for i in range(1000)],
+            "year": [2023] * 1000,
+        })
 
         # Save to file
         input_file = test_data_dir / "large_transactions.csv"

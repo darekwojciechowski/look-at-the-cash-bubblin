@@ -14,28 +14,24 @@ from main import main
 @pytest.fixture
 def main_raw_dataframe() -> pd.DataFrame:
     """Fixture providing minimal raw transaction data for main() pipeline mocking."""
-    return pd.DataFrame(
-        {
-            "data": ["orlen fuel station", "starbucks coffee"],
-            "price": ["-100.0", "-15.0"],
-            "month": [1, 1],
-            "year": [2023, 2023],
-        }
-    )
+    return pd.DataFrame({
+        "data": ["orlen fuel station", "starbucks coffee"],
+        "price": ["-100.0", "-15.0"],
+        "month": [1, 1],
+        "year": [2023, 2023],
+    })
 
 
 @pytest.fixture
 def main_processed_dataframe() -> pd.DataFrame:
     """Fixture providing expected processed transaction data for main() pipeline mocking."""
-    return pd.DataFrame(
-        {
-            "month": [1, 1],
-            "year": [2023, 2023],
-            "price": [100.0, 15.0],
-            "category": ["FUEL", "COFFEE"],
-            "data": ["orlen fuel station", "starbucks coffee"],
-        }
-    )
+    return pd.DataFrame({
+        "month": [1, 1],
+        "year": [2023, 2023],
+        "price": [100.0, 15.0],
+        "category": ["FUEL", "COFFEE"],
+        "data": ["orlen fuel station", "starbucks coffee"],
+    })
 
 
 @pytest.mark.unit

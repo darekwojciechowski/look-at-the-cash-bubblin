@@ -106,15 +106,13 @@ class TestExporterAuditLogs:
     @pytest.fixture
     def minimal_export_df(self) -> pd.DataFrame:
         """Minimal DataFrame suitable for all export functions."""
-        return pd.DataFrame(
-            {
-                "month": [1],
-                "year": [2023],
-                "price": ["100.0"],
-                "category": ["MISC"],
-                "data": ["test transaction"],
-            }
-        )
+        return pd.DataFrame({
+            "month": [1],
+            "year": [2023],
+            "price": ["100.0"],
+            "category": ["MISC"],
+            "data": ["test transaction"],
+        })
 
     def test_dataframe_preview_is_logged_by_export_for_google_sheets(
         self, loguru_sink: list[str], minimal_export_df: pd.DataFrame

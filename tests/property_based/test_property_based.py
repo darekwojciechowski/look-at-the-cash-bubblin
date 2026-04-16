@@ -51,14 +51,12 @@ class TestPropertyBasedDataCore:
         """
         # Arrange
         transaction_count = len(prices)
-        df = pd.DataFrame(
-            {
-                "data": [f"transaction {i}" for i in range(transaction_count)],
-                "price": [str(p) for p in prices],
-                "month": [1] * transaction_count,
-                "year": [2023] * transaction_count,
-            }
-        )
+        df = pd.DataFrame({
+            "data": [f"transaction {i}" for i in range(transaction_count)],
+            "price": [str(p) for p in prices],
+            "month": [1] * transaction_count,
+            "year": [2023] * transaction_count,
+        })
 
         # Act
         with patch("data_processing.data_core.mappings", {}):
@@ -124,14 +122,12 @@ class TestPropertyBasedDataCore:
         Then:  every price in the result is a positive float
         """
         # Arrange
-        df = pd.DataFrame(
-            {
-                "data": [f"test {i}" for i in range(len(prices))],
-                "price": [str(p) for p in prices],
-                "month": [1] * len(prices),
-                "year": [2023] * len(prices),
-            }
-        )
+        df = pd.DataFrame({
+            "data": [f"test {i}" for i in range(len(prices))],
+            "price": [str(p) for p in prices],
+            "month": [1] * len(prices),
+            "year": [2023] * len(prices),
+        })
 
         # Act
         with patch("data_processing.data_core.mappings", {}):
@@ -216,14 +212,12 @@ class TestPropertyBasedInvariants:
         Then:  columns are always in [month, year, price, category, data] order
         """
         # Arrange
-        df = pd.DataFrame(
-            {
-                "data": [f"test {i}" for i in range(count)],
-                "price": ["-10.0"] * count,
-                "month": [1] * count,
-                "year": [2023] * count,
-            }
-        )
+        df = pd.DataFrame({
+            "data": [f"test {i}" for i in range(count)],
+            "price": ["-10.0"] * count,
+            "month": [1] * count,
+            "year": [2023] * count,
+        })
 
         # Act
         with patch("data_processing.data_core.mappings", {}):

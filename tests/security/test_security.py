@@ -79,14 +79,12 @@ class TestInputValidation:
             "admin'--",
             "' UNION SELECT * FROM users--",
         ]
-        df = pd.DataFrame(
-            {
-                "data": malicious_inputs,
-                "price": ["-10.0"] * len(malicious_inputs),
-                "month": [1] * len(malicious_inputs),
-                "year": [2023] * len(malicious_inputs),
-            }
-        )
+        df = pd.DataFrame({
+            "data": malicious_inputs,
+            "price": ["-10.0"] * len(malicious_inputs),
+            "month": [1] * len(malicious_inputs),
+            "year": [2023] * len(malicious_inputs),
+        })
 
         def mock_mappings(data: str) -> str:
             return "MISC"
@@ -114,14 +112,12 @@ class TestInputValidation:
             "javascript:alert('XSS')",
             "<svg/onload=alert('XSS')>",
         ]
-        df = pd.DataFrame(
-            {
-                "data": xss_payloads,
-                "price": ["-10.0"] * len(xss_payloads),
-                "month": [1] * len(xss_payloads),
-                "year": [2023] * len(xss_payloads),
-            }
-        )
+        df = pd.DataFrame({
+            "data": xss_payloads,
+            "price": ["-10.0"] * len(xss_payloads),
+            "month": [1] * len(xss_payloads),
+            "year": [2023] * len(xss_payloads),
+        })
 
         # Act
         with patch("data_processing.data_core.mappings", MagicMock(return_value="MISC")):
@@ -158,14 +154,12 @@ class TestInputValidation:
         """
         # Arrange
         null_byte_inputs = ["test\x00malicious", "file.csv\x00.txt", "data\x00\x00\x00"]
-        df = pd.DataFrame(
-            {
-                "data": null_byte_inputs,
-                "price": ["-10.0"] * len(null_byte_inputs),
-                "month": [1] * len(null_byte_inputs),
-                "year": [2023] * len(null_byte_inputs),
-            }
-        )
+        df = pd.DataFrame({
+            "data": null_byte_inputs,
+            "price": ["-10.0"] * len(null_byte_inputs),
+            "month": [1] * len(null_byte_inputs),
+            "year": [2023] * len(null_byte_inputs),
+        })
 
         # Assert — should not crash
         assert len(df) == len(null_byte_inputs)
@@ -189,14 +183,12 @@ class TestDataTypeValidation:
             "NaN",
             "1e308",  # Very large number
         ]
-        df = pd.DataFrame(
-            {
-                "data": ["test"] * len(invalid_prices),
-                "price": invalid_prices,
-                "month": [1] * len(invalid_prices),
-                "year": [2023] * len(invalid_prices),
-            }
-        )
+        df = pd.DataFrame({
+            "data": ["test"] * len(invalid_prices),
+            "price": invalid_prices,
+            "month": [1] * len(invalid_prices),
+            "year": [2023] * len(invalid_prices),
+        })
 
         # Act
         with patch("data_processing.data_core.mappings", MagicMock(return_value="MISC")):
@@ -217,14 +209,12 @@ class TestDataTypeValidation:
         Then:  a DataFrame is returned (validation is structural, not value-range based)
         """
         # Arrange
-        df = pd.DataFrame(
-            {
-                "data": ["test", "test2", "test3"],
-                "price": ["-10.0", "-20.0", "-30.0"],
-                "month": [13, -1, 0],  # Invalid months
-                "year": [1800, 3000, -1],  # Unusual years
-            }
-        )
+        df = pd.DataFrame({
+            "data": ["test", "test2", "test3"],
+            "price": ["-10.0", "-20.0", "-30.0"],
+            "month": [13, -1, 0],  # Invalid months
+            "year": [1800, 3000, -1],  # Unusual years
+        })
 
         # Act
         with patch("data_processing.data_core.mappings", MagicMock(return_value="MISC")):
@@ -253,14 +243,12 @@ class TestEncodingAndCharacterSet:
             "右から左へ",  # Right-to-left text
             "emoji 🔥💰📊",  # Emojis
         ]
-        df = pd.DataFrame(
-            {
-                "data": unicode_strings,
-                "price": ["-10.0"] * len(unicode_strings),
-                "month": [1] * len(unicode_strings),
-                "year": [2023] * len(unicode_strings),
-            }
-        )
+        df = pd.DataFrame({
+            "data": unicode_strings,
+            "price": ["-10.0"] * len(unicode_strings),
+            "month": [1] * len(unicode_strings),
+            "year": [2023] * len(unicode_strings),
+        })
 
         # Act
         with patch("data_processing.data_core.mappings", MagicMock(return_value="MISC")):

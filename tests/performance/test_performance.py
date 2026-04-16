@@ -27,17 +27,15 @@ class TestPerformance:
         Then:  the result has 10,000 rows and execution time is under 5 seconds
         """
         # Arrange
-        large_df = pd.DataFrame(
-            {
-                "data": [
-                    (f"purchase in terminal - mobile code {i}" if i % 2 == 0 else f"orlen station {i}")
-                    for i in range(10000)
-                ],
-                "price": [f"-{i % 100 + 10}.50" for i in range(10000)],
-                "month": [i % 12 + 1 for i in range(10000)],
-                "year": [2023] * 10000,
-            }
-        )
+        large_df = pd.DataFrame({
+            "data": [
+                (f"purchase in terminal - mobile code {i}" if i % 2 == 0 else f"orlen station {i}")
+                for i in range(10000)
+            ],
+            "price": [f"-{i % 100 + 10}.50" for i in range(10000)],
+            "month": [i % 12 + 1 for i in range(10000)],
+            "year": [2023] * 10000,
+        })
 
         # Act + timing
         start_time = time.perf_counter()
@@ -56,14 +54,12 @@ class TestPerformance:
         Then:  the result has 10,000 rows and execution time is under 10 seconds
         """
         # Arrange
-        large_df = pd.DataFrame(
-            {
-                "data": [f"transaction {i}" for i in range(10000)],
-                "price": [f"-{i % 100 + 10}.0" for i in range(10000)],
-                "month": [i % 12 + 1 for i in range(10000)],
-                "year": [2023] * 10000,
-            }
-        )
+        large_df = pd.DataFrame({
+            "data": [f"transaction {i}" for i in range(10000)],
+            "price": [f"-{i % 100 + 10}.0" for i in range(10000)],
+            "month": [i % 12 + 1 for i in range(10000)],
+            "year": [2023] * 10000,
+        })
         mock_mappings = {f"transaction {i}": "TEST" for i in range(100)}
         mocker.patch("data_processing.data_core.mappings", mock_mappings)
 
@@ -85,14 +81,12 @@ class TestPerformance:
         """
         # Arrange
         csv_file = test_data_dir / "large_test.csv"
-        large_df = pd.DataFrame(
-            {
-                "data": [f"transaction {i}" for i in range(50000)],
-                "price": [f"-{i % 1000 + 10}.0" for i in range(50000)],
-                "month": [i % 12 + 1 for i in range(50000)],
-                "year": [2023] * 50000,
-            }
-        )
+        large_df = pd.DataFrame({
+            "data": [f"transaction {i}" for i in range(50000)],
+            "price": [f"-{i % 1000 + 10}.0" for i in range(50000)],
+            "month": [i % 12 + 1 for i in range(50000)],
+            "year": [2023] * 50000,
+        })
         large_df.to_csv(csv_file, index=False)
 
         # Act + timing
@@ -114,14 +108,12 @@ class TestPerformance:
         import sys
 
         # Arrange
-        large_df = pd.DataFrame(
-            {
-                "data": [f"transaction {i}" for i in range(100000)],
-                "price": [f"-{i}.0" for i in range(100000)],
-                "month": [1] * 100000,
-                "year": [2023] * 100000,
-            }
-        )
+        large_df = pd.DataFrame({
+            "data": [f"transaction {i}" for i in range(100000)],
+            "price": [f"-{i}.0" for i in range(100000)],
+            "month": [1] * 100000,
+            "year": [2023] * 100000,
+        })
         initial_size = sys.getsizeof(large_df)
 
         # Act
@@ -145,14 +137,12 @@ class TestPerformanceBenchmarks:
         Then:  the result has the same row count and execution time stays within budget
         """
         # Arrange
-        df = pd.DataFrame(
-            {
-                "data": [f"purchase in terminal {i}" for i in range(dataset_size)],
-                "price": ["-10.0"] * dataset_size,
-                "month": [1] * dataset_size,
-                "year": [2023] * dataset_size,
-            }
-        )
+        df = pd.DataFrame({
+            "data": [f"purchase in terminal {i}" for i in range(dataset_size)],
+            "price": ["-10.0"] * dataset_size,
+            "month": [1] * dataset_size,
+            "year": [2023] * dataset_size,
+        })
 
         # Act + timing
         start_time = time.perf_counter()
@@ -172,14 +162,12 @@ class TestPerformanceBenchmarks:
         Then:  column access completes in under 0.1 s and filtering in under 1.0 s
         """
         # Arrange
-        df = pd.DataFrame(
-            {
-                "data": ["test"] * 10000,
-                "price": ["-10.0"] * 10000,
-                "month": [1] * 10000,
-                "year": [2023] * 10000,
-            }
-        )
+        df = pd.DataFrame({
+            "data": ["test"] * 10000,
+            "price": ["-10.0"] * 10000,
+            "month": [1] * 10000,
+            "year": [2023] * 10000,
+        })
 
         # Act + timing (column access)
         start_time = time.perf_counter()

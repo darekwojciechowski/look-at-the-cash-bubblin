@@ -47,14 +47,12 @@ class TestCategoryKeywordUniqueness:
                 if short_kw == other_kw:
                     continue
                 if short_kw in other_kw:
-                    problematic_matches.append(
-                        {
-                            "short_keyword": short_kw,
-                            "short_category": short_cat,
-                            "found_in": other_kw,
-                            "found_in_category": other_cat,
-                        }
-                    )
+                    problematic_matches.append({
+                        "short_keyword": short_kw,
+                        "short_category": short_cat,
+                        "found_in": other_kw,
+                        "found_in_category": other_cat,
+                    })
 
         # Assert
         if problematic_matches:

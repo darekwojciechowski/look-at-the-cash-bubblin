@@ -99,14 +99,12 @@ class TestCleanDescriptions:
             "pkt zakup": "card purchase",
             "przel wychodzacy": "outgoing transfer",
         }
-        df = pd.DataFrame(
-            {
-                "data": ["pkt zakup sklep", "przel wychodzacy firma", "orlen"],
-                "price": ["-30.0", "-200.0", "-100.0"],
-                "month": [1, 1, 1],
-                "year": [2023, 2023, 2023],
-            }
-        )
+        df = pd.DataFrame({
+            "data": ["pkt zakup sklep", "przel wychodzacy firma", "orlen"],
+            "price": ["-30.0", "-200.0", "-100.0"],
+            "month": [1, 1, 1],
+            "year": [2023, 2023, 2023],
+        })
 
         # Act
         result = clean_descriptions(df, replacements=custom_replacements)
@@ -207,14 +205,12 @@ class TestProcessDataframe:
         Then:  the price in the result is the absolute value as a float
         """
         # Arrange
-        df = pd.DataFrame(
-            {
-                "data": ["terminal purchase"],
-                "price": ["-50.0"],
-                "month": [1],
-                "year": [2023],
-            }
-        )
+        df = pd.DataFrame({
+            "data": ["terminal purchase"],
+            "price": ["-50.0"],
+            "month": [1],
+            "year": [2023],
+        })
         mocker.patch("data_processing.data_core.mappings", mappings_mock)
 
         # Act
@@ -274,14 +270,12 @@ class TestProcessDataframe:
         Then:  only the regular purchase row remains and REMOVE_ENTRY is absent
         """
         # Arrange
-        df = pd.DataFrame(
-            {
-                "data": ["zwrot za zamowienie", "regular purchase", "refund processed"],
-                "price": ["-30.0", "-50.0", "-20.0"],
-                "month": [1, 1, 1],
-                "year": [2023, 2023, 2023],
-            }
-        )
+        df = pd.DataFrame({
+            "data": ["zwrot za zamowienie", "regular purchase", "refund processed"],
+            "price": ["-30.0", "-50.0", "-20.0"],
+            "month": [1, 1, 1],
+            "year": [2023, 2023, 2023],
+        })
 
         # Act
         result = process_dataframe(df)
@@ -300,14 +294,12 @@ class TestProcessDataframe:
         """
         # Arrange
         mocker.patch("logging.error")
-        invalid_df = pd.DataFrame(
-            {
-                "invalid_column": ["test"],
-                "wrong_price": ["invalid_price"],
-                "month": [1],
-                "year": [2023],
-            }
-        )
+        invalid_df = pd.DataFrame({
+            "invalid_column": ["test"],
+            "wrong_price": ["invalid_price"],
+            "month": [1],
+            "year": [2023],
+        })
 
         # Act + Assert
         with pytest.raises(KeyError):
@@ -323,14 +315,12 @@ class TestProcessDataframe:
         Then:  both prices are converted to their correct absolute float values
         """
         # Arrange
-        df = pd.DataFrame(
-            {
-                "data": ["terminal purchase", "web payment"],
-                "price": ["-50", "-20.50"],
-                "month": [1, 1],
-                "year": [2023, 2023],
-            }
-        )
+        df = pd.DataFrame({
+            "data": ["terminal purchase", "web payment"],
+            "price": ["-50", "-20.50"],
+            "month": [1, 1],
+            "year": [2023, 2023],
+        })
         mocker.patch("data_processing.data_core.mappings", mappings_mock)
 
         # Act
@@ -359,14 +349,12 @@ class TestProcessDataframe:
         Then:  the result contains one row whose price is the absolute value of the input
         """
         # Arrange
-        df = pd.DataFrame(
-            {
-                "data": ["terminal purchase"],
-                "price": [price_value],
-                "month": [1],
-                "year": [2023],
-            }
-        )
+        df = pd.DataFrame({
+            "data": ["terminal purchase"],
+            "price": [price_value],
+            "month": [1],
+            "year": [2023],
+        })
         mocker.patch("data_processing.data_core.mappings", mappings_mock)
 
         # Act
