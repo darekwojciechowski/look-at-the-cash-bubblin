@@ -189,3 +189,6 @@ coverage.json
 # Claude Code
 .claude/
 plans/
+.agent/plans/
+CLAUDE.md
+PROGRESS.md

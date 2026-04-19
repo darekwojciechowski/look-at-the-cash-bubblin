@@ -6,50 +6,43 @@ PROCESSED → EMPTY) and that cross-state invariants are never violated.
 
 This technique catches ordering bugs and emergent state corruption that
 per-function unit tests miss because they only test one transition at a time.
-
-Markers: property
 """
+
+from enum import StrEnum
 
 import pandas as pd
 import pytest
-
-try:
-    from hypothesis import HealthCheck, settings
-    from hypothesis import strategies as st
-    from hypothesis.stateful import RuleBasedStateMachine, initialize, invariant, rule
-
-    HYPOTHESIS_AVAILABLE = True
-except ImportError:
-    HYPOTHESIS_AVAILABLE = False
-    pytest.skip("Hypothesis not installed", allow_module_level=True)
+from hypothesis import settings
+from hypothesis import strategies as st
+from hypothesis.stateful import RuleBasedStateMachine, initialize, invariant, precondition, rule
 
 from data_processing.data_core import clean_descriptions, process_dataframe
+from tests.property_based.strategies import transaction_descriptions
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Strategies
+# State enum
 # ─────────────────────────────────────────────────────────────────────────────
 
-_SAMPLE_DESCRIPTIONS: list[str] = [
-    "orlen",
-    "biedronka shopping",
-    "starbucks",
-    "unknown transaction",
-    "mcd",
-    "netflix",
-    "terminal purchase",
-]
+
+class PipelineState(StrEnum):
+    EMPTY = "EMPTY"
+    LOADED = "LOADED"
+    CLEANED = "CLEANED"
+    PROCESSED = "PROCESSED"
+
+
+# Column sets per pipeline stage — used to enforce strict structural invariants.
+_RAW_COLUMNS: frozenset[str] = frozenset({"data", "price", "month", "year"})
+_PROCESSED_COLUMNS: list[str] = ["month", "year", "price", "category", "data"]
 
 _SAMPLE_PRICES: list[str] = ["-100.0", "-50.0", "-200.0", "-15.0", "-30.0"]
-
-# Columns that may appear in the buffer at any pipeline stage.
-_VALID_COLUMNS: frozenset[str] = frozenset({"data", "price", "month", "year", "category"})
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # State machine
 # ─────────────────────────────────────────────────────────────────────────────
 
 
+@settings(max_examples=50, stateful_step_count=50, deadline=None)
 class TransactionPipelineMachine(RuleBasedStateMachine):
     """Models the four-state pipeline and checks structural invariants at every step.
 
@@ -64,7 +57,8 @@ class TransactionPipelineMachine(RuleBasedStateMachine):
     def __init__(self) -> None:
         super().__init__()
         self.buffer: pd.DataFrame = pd.DataFrame()
-        self._state: str = "EMPTY"
+        self._state: PipelineState = PipelineState.EMPTY
+        self._pre_process_count: int = 0
 
     # ── Transitions ──────────────────────────────────────────────────────────
 
@@ -72,51 +66,44 @@ class TransactionPipelineMachine(RuleBasedStateMachine):
     def start_empty(self) -> None:
         """Machine always begins in the EMPTY state."""
         self.buffer = pd.DataFrame()
-        self._state = "EMPTY"
+        self._state = PipelineState.EMPTY
 
     @rule(
-        description=st.sampled_from(_SAMPLE_DESCRIPTIONS),
+        description=transaction_descriptions(),
         price=st.sampled_from(_SAMPLE_PRICES),
         month=st.integers(min_value=1, max_value=12),
         year=st.integers(min_value=2020, max_value=2026),
     )
     def load_transactions(self, description: str, price: str, month: int, year: int) -> None:
-        """Transition EMPTY → LOADED by creating a raw transaction DataFrame."""
+        """Transition any → LOADED by creating a raw transaction DataFrame."""
         self.buffer = pd.DataFrame({
             "data": [description],
             "price": [price],
             "month": [month],
             "year": [year],
         })
-        self._state = "LOADED"
+        self._state = PipelineState.LOADED
 
+    @precondition(lambda self: self._state == PipelineState.LOADED)
     @rule()
     def clean_pipeline(self) -> None:
-        """Transition LOADED → CLEANED by normalising descriptions.
-
-        No-op when not in LOADED state.
-        """
-        if self._state != "LOADED":
-            return
+        """Transition LOADED → CLEANED by normalising descriptions."""
         self.buffer = clean_descriptions(self.buffer.copy())
-        self._state = "CLEANED"
+        self._state = PipelineState.CLEANED
 
+    @precondition(lambda self: self._state in (PipelineState.LOADED, PipelineState.CLEANED))
     @rule()
     def process_pipeline(self) -> None:
-        """Transition LOADED/CLEANED → PROCESSED by categorising and filtering.
-
-        No-op when not in a processable state.
-        """
-        if self._state not in ("LOADED", "CLEANED"):
-            return
+        """Transition LOADED/CLEANED → PROCESSED by categorising and filtering."""
+        self._pre_process_count = len(self.buffer)
         self.buffer = process_dataframe(self.buffer.copy())
-        self._state = "PROCESSED"
+        self._state = PipelineState.PROCESSED
 
     @rule()
     def reset(self) -> None:
         """Transition any state → EMPTY."""
         self.buffer = pd.DataFrame()
-        self._state = "EMPTY"
+        self._state = PipelineState.EMPTY
 
     # ── Invariants ───────────────────────────────────────────────────────────
 
@@ -126,39 +113,47 @@ class TransactionPipelineMachine(RuleBasedStateMachine):
         assert isinstance(self.buffer, pd.DataFrame)
 
     @invariant()
-    def column_names_are_subset_of_valid_pipeline_columns(self) -> None:
-        """No unexpected columns should appear at any pipeline stage."""
-        assert set(self.buffer.columns).issubset(_VALID_COLUMNS)
+    def column_schema_matches_pipeline_state(self) -> None:
+        """Column schema must match the expected structure for each pipeline state.
+
+        PROCESSED state requires exactly [month, year, price, category, data].
+        LOADED/CLEANED state columns must be a subset of the raw schema.
+        EMPTY state imposes no column constraint.
+        """
+        if self._state == PipelineState.PROCESSED:
+            assert list(self.buffer.columns) == _PROCESSED_COLUMNS, (
+                f"Expected {_PROCESSED_COLUMNS}, got {list(self.buffer.columns)}"
+            )
+        elif self._state in (PipelineState.LOADED, PipelineState.CLEANED):
+            assert set(self.buffer.columns).issubset(_RAW_COLUMNS), (
+                f"Unexpected columns in {self._state}: {set(self.buffer.columns) - _RAW_COLUMNS}"
+            )
 
     @invariant()
     def processed_prices_are_non_negative_absolute_values(self) -> None:
-        """After PROCESSED state, all prices must be absolute (non-negative).
+        """After PROCESSED state, all prices must be non-negative absolute values.
 
-        process_dataframe() removes income (positive original prices) and
-        converts expenses to absolute values, so the result must contain
-        no negative numbers.
+        process_dataframe() strips income (positive input prices) and converts
+        expenses to absolute values; the result must never contain negatives.
         """
-        if self._state != "PROCESSED":
+        if self._state != PipelineState.PROCESSED:
             return
         if "price" not in self.buffer.columns or len(self.buffer) == 0:
             return
         prices = self.buffer["price"].astype(float)
-        assert (prices >= 0).all(), f"Negative prices found after processing: {prices[prices < 0].tolist()}"
+        assert (prices >= 0).all(), f"Negative prices after processing: {prices[prices < 0].tolist()}"
 
     @invariant()
     def row_count_does_not_increase_after_processing(self) -> None:
-        """Buffer length must be non-negative (sanity guard)."""
-        assert len(self.buffer) >= 0
+        """Processing must never add rows — filtering can only reduce or preserve count."""
+        if self._state == PipelineState.PROCESSED:
+            assert len(self.buffer) <= self._pre_process_count, (
+                f"Row count grew from {self._pre_process_count} to {len(self.buffer)}"
+            )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Pytest test class
+# Pytest entry point
 # ─────────────────────────────────────────────────────────────────────────────
 
-TestPipelineStateMachine = TransactionPipelineMachine.TestCase
-TestPipelineStateMachine.settings = settings(  # type: ignore[attr-defined]
-    max_examples=50,
-    stateful_step_count=10,
-    deadline=None,
-    suppress_health_check=[HealthCheck.too_slow],
-)
+TestPipelineStateMachine = pytest.mark.property(TransactionPipelineMachine.TestCase)

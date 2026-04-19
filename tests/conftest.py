@@ -261,6 +261,19 @@ def polish_names_without_diacritics() -> dict[str, str]:
 
 
 @pytest.fixture
+def empty_mappings(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Patch data_processing.data_core.mappings with an empty dict for property tests.
+
+    Every description maps to NaN, so no category-based filtering occurs.
+    Hypothesis generates all examples within one test invocation; monkeypatch
+    sets up the patch once before the first example and tears it down after the last.
+    """
+    import data_processing.data_core
+
+    monkeypatch.setattr(data_processing.data_core, "mappings", {})
+
+
+@pytest.fixture
 def mappings_mock() -> Callable[[str], str]:
     """Callable drop-in replacement for the production ``mappings()`` function.
 
