@@ -3,6 +3,7 @@ Tests for data_processing.category module.
 Validates category keywords to prevent false matches.
 """
 
+import re
 from collections import defaultdict
 
 import pytest
@@ -301,3 +302,140 @@ class TestCategoryKeywordUniqueness:
 
         if error_messages:
             pytest.fail("".join(error_messages))
+
+
+@pytest.mark.unit
+class TestCategoryRealisticEdgeCases:
+    """Edge-case tests that guard against real bank data and data-entry mistakes."""
+
+    def _all_keywords(self) -> list[tuple[str, str]]:
+        """Return [(category_name, keyword), ...] for every non-special set."""
+        result = []
+        for attr_name in dir(category):
+            if attr_name.startswith("_") or attr_name == "all_category" or not attr_name.isupper():
+                continue
+            attr_value = getattr(category, attr_name)
+            if isinstance(attr_value, set):
+                for kw in attr_value:
+                    result.append((attr_name, kw))
+        return result
+
+    def test_all_keywords_are_lowercase(self):
+        """Every keyword must be stored in lowercase.
+
+        Given: all keyword sets from the category module
+        When:  each keyword is compared with its lowercase form
+        Then:  no keyword contains uppercase characters
+
+        mappings() lowercases the input string but never lowercases keywords,
+        so a typo like "Biedronka" silently never matches anything.
+        """
+        # Arrange
+        all_kws = self._all_keywords()
+
+        # Act
+        non_lowercase = [(cat, kw) for cat, kw in all_kws if kw != kw.lower()]
+
+        # Assert
+        assert not non_lowercase, f"Keywords containing uppercase characters: {non_lowercase}"
+
+    def test_remove_entry_is_first_in_all_category(self):
+        """REMOVE_ENTRY must be the first entry in all_category.
+
+        Given: the all_category priority list
+        When:  its first element is checked
+        Then:  it equals "REMOVE_ENTRY"
+
+        Refund rows must be dropped before any other category matches;
+        inserting a new category before REMOVE_ENTRY would let refunds
+        be mis-classified instead of dropped.
+        """
+        # Arrange / Act / Assert
+        assert category.all_category[0] == "REMOVE_ENTRY"
+
+    def test_misc_is_last_in_all_category(self):
+        """MISC must be the last entry in all_category.
+
+        Given: the all_category priority list
+        When:  its last element is checked
+        Then:  it equals "MISC"
+
+        MISC is the catch-all fallback; placing it before any other
+        category would shadow every subsequent category entirely.
+        """
+        # Arrange / Act / Assert
+        assert category.all_category[-1] == "MISC"
+
+    def test_no_keyword_is_digits_only(self):
+        """No keyword may consist entirely of digits.
+
+        Given: all keyword sets from the category module
+        When:  each keyword is tested with str.isdigit()
+        Then:  no keyword is digits-only
+
+        A digit-only keyword (e.g. "123", "2024") would substring-match
+        payment IDs, dates, and reference numbers on nearly every bank row.
+        """
+        # Arrange
+        all_kws = self._all_keywords()
+
+        # Act
+        digit_only = [(cat, kw) for cat, kw in all_kws if kw.isdigit()]
+
+        # Assert
+        assert not digit_only, f"Digit-only keywords found: {digit_only}"
+
+    def test_multi_word_keywords_have_single_space(self):
+        """Multi-word keywords must use exactly one space between words.
+
+        Given: all keyword sets from the category module
+        When:  each keyword is searched for two or more consecutive whitespace characters
+        Then:  no keyword contains such a sequence
+
+        A double-space typo in "fast  food" would silently never match the
+        real transaction description "fast food".
+        """
+        # Arrange
+        all_kws = self._all_keywords()
+
+        # Act
+        double_space = [(cat, repr(kw)) for cat, kw in all_kws if re.search(r"\s{2,}", kw)]
+
+        # Assert
+        assert not double_space, f"Keywords with consecutive whitespace: {double_space}"
+
+    def test_no_banking_metadata_terms_in_categories(self):
+        """Common Polish bank metadata terms must not appear as standalone keywords.
+
+        Given: all keyword sets from the category module
+        When:  they are intersected with a set of known banking noise terms
+        Then:  the intersection is empty
+
+        Words like "przelew", "blik", or "bankomat" prefix nearly every
+        bank export row; if one lands in a category set, that category
+        would match the majority of all transactions.
+        """
+        # Arrange
+        BANKING_NOISE = {"przelew", "platnosc", "blik", "bankomat", "wyplata", "saldo", "prowizja", "opłata"}
+        all_kws = {kw for _, kw in self._all_keywords()}
+
+        # Act
+        collision = all_kws & BANKING_NOISE
+
+        # Assert
+        assert not collision, f"Banking metadata terms found in category keywords: {collision}"
+
+    def test_remove_entry_covers_polish_and_english_refund_terms(self):
+        """REMOVE_ENTRY must contain both Polish and English refund terms.
+
+        Given: the REMOVE_ENTRY keyword set
+        When:  it is checked for "zwrot" (Polish) and "refund" (English)
+        Then:  both terms are present
+
+        Polish banks export in Polish, but some fintech cards use English;
+        dropping either term would let one entire language's refunds pass
+        through to spending categories.
+        """
+        # Arrange / Act / Assert
+        assert "zwrot" in category.REMOVE_ENTRY, "'zwrot' missing from REMOVE_ENTRY"
+        assert "refund" in category.REMOVE_ENTRY, "'refund' missing from REMOVE_ENTRY"
