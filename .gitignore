@@ -183,8 +183,10 @@ agents/
 coverage.json
 
 # GitHub Copilot
+.github/copilot-instructions.md
 .github/prompts/
 .github/skills/
+.github/hooks/
 
 # Claude Code
 .claude/

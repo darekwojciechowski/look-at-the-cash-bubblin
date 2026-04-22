@@ -266,3 +266,58 @@ class TestGetData:
         # Assert
         assert len(expenses) == 0
         mock_expense.assert_not_called()
+
+
+@pytest.mark.unit
+class TestExporterModuleImport:
+    """Smoke tests for the public API surface of data_processing.exporter."""
+
+    def test_module_imports_successfully(self) -> None:
+        """Verify the exporter module imports without raising an error.
+
+        Given: the data_processing.exporter module on the Python path
+        When:  the module is imported
+        Then:  no ImportError is raised
+        """
+        # Arrange + Act + Assert — top-level import already succeeded; reaching
+        # this line proves the module loaded cleanly.
+        import data_processing.exporter  # noqa: F401
+
+    def test_get_data_accepts_path_parameter(self) -> None:
+        """Verify get_data has a path parameter with the expected default.
+
+        Given: the data_processing.exporter module is imported
+        When:  the signature of get_data is inspected
+        Then:  a 'path' parameter exists with default Path('data/processed_transactions.csv')
+        """
+        # Arrange
+        import inspect
+
+        # Act
+        sig = inspect.signature(get_data)
+
+        # Assert
+        assert "path" in sig.parameters
+        assert sig.parameters["path"].default == Path("data/processed_transactions.csv")
+
+    def test_module_has_expected_functions(self) -> None:
+        """Verify the exporter module exposes the four expected public functions.
+
+        Given: the data_processing.exporter module is imported
+        When:  each expected function name is checked with hasattr and callable
+        Then:  all four functions exist and are callable
+        """
+        # Arrange
+        import data_processing.exporter
+
+        expected_functions = [
+            "export_for_google_sheets",
+            "export_misc_transactions",
+            "export_unassigned_transactions_to_csv",
+            "get_data",
+        ]
+
+        # Act + Assert
+        for func_name in expected_functions:
+            assert hasattr(data_processing.exporter, func_name)
+            assert callable(getattr(data_processing.exporter, func_name))
