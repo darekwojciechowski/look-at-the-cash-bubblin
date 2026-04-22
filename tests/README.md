@@ -23,8 +23,13 @@ tests/
 ├── integration/                # Cross-module and end-to-end tests (9 tests)
 │   ├── test_integration.py
 │   └── test_exporter_import.py
-├── performance/                # Benchmarks and scaling tests (8 tests)
-│   └── test_performance.py
+├── performance/                # Benchmarks and scaling tests (9 tests)
+│   ├── conftest.py             # Large-DataFrame factory fixture
+│   ├── test_clean_descriptions.py
+│   ├── test_csv_reading.py
+│   ├── test_dataframe_primitives.py
+│   ├── test_memory_footprint.py
+│   └── test_process_dataframe.py
 ├── security/                   # Input validation tests (12 tests)
 │   └── test_security.py
 └── property_based/             # Generative tests using Hypothesis (9 tests)
@@ -79,7 +84,7 @@ Counts below are approximate and may drift as tests are added.
 |---|---|---|---|
 | unit | ~315 | Fast | Core logic, individual functions |
 | integration | ~9 | Medium | End-to-end workflows, file I/O |
-| performance | ~8 | Slow | Benchmarks, scaling tests |
+| performance | ~9 | Slow | Benchmarks, scaling tests |
 | security | ~12 | Medium | Input validation, injection prevention |
 | property_based | ~9 | Medium | Generative testing with Hypothesis |
 

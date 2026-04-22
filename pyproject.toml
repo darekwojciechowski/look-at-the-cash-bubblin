@@ -24,9 +24,9 @@ hypothesis = "^6.152.1"
 black = "^26.3.1"
 isort = "^8.0.1"
 flake8 = "^7.3.0"
-mypy = "^1.20.1"
-ruff = "^0.15.10"
-pre-commit = "^4.5.1"
+mypy = "^1.20.2"
+ruff = "^0.15.11"
+pre-commit = "^4.6.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
