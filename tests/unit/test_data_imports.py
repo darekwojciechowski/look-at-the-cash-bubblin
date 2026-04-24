@@ -92,7 +92,10 @@ class TestReadTransactionCsv:
         df = read_transaction_csv("dummy_path.csv", "utf-8")
 
         # Assert
-        mock_read_csv.assert_called_once_with("dummy_path.csv", on_bad_lines="skip", encoding="utf-8")
+        call_kwargs = mock_read_csv.call_args.kwargs
+        assert call_kwargs["encoding"] == "utf-8"
+        assert callable(call_kwargs["on_bad_lines"])
+        assert call_kwargs["engine"] == "python"
         assert not df.empty
         assert df["col1"].iloc[0] == "val1"
         assert df["col2"].iloc[0] == "val2"
@@ -114,7 +117,10 @@ class TestReadTransactionCsv:
 
         # Assert
         assert not df.empty
-        mock_read_csv.assert_called_once_with(path_obj, on_bad_lines="skip", encoding="utf-8")
+        call_kwargs = mock_read_csv.call_args.kwargs
+        assert call_kwargs["encoding"] == "utf-8"
+        assert callable(call_kwargs["on_bad_lines"])
+        assert call_kwargs["engine"] == "python"
 
     def test_read_transaction_csv_unicode_error_fallback(self, mocker: MockerFixture) -> None:
         """Test that function tries alternative encodings on UnicodeDecodeError.

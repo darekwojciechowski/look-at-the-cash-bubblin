@@ -12,6 +12,25 @@ from data_processing.location_processor import (
     extract_location_from_data,
 )
 
+# Characters that trigger formula execution in Google Sheets / Excel when at the
+# start of a cell value. Prefix them with a single quote to neutralise the risk.
+_FORMULA_INJECTION_CHARS: frozenset[str] = frozenset("=+-@\t\r")
+
+
+def _sanitize_cell(value: object) -> object:
+    """Prefix formula-injection chars with a literal quote so spreadsheets treat the cell as text."""
+    if isinstance(value, str) and value and value[0] in _FORMULA_INJECTION_CHARS:
+        return "'" + value
+    return value
+
+
+def _sanitize_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    """Return a copy of *df* with all string cells sanitized against formula injection."""
+    df = df.copy()
+    for col in df.select_dtypes(include="object").columns:
+        df[col] = df[col].map(_sanitize_cell)
+    return df
+
 
 def export_for_google_sheets(processed_df: pd.DataFrame) -> None:
     """Write the processed DataFrame to ``for_google_spreadsheet.csv``.
@@ -19,12 +38,9 @@ def export_for_google_sheets(processed_df: pd.DataFrame) -> None:
     Args:
         processed_df: Processed transaction DataFrame to export.
     """
-    # Example logic for preparing data for Google Sheets
-    google_sheets_df = processed_df.copy()
-    # Add any transformations or filtering here if needed
+    google_sheets_df = _sanitize_dataframe(processed_df)
 
-    # Log the final DataFrame to the console (only once)
-    logger.info("Final DataFrame for Google Sheets:\n{}", google_sheets_df.to_string())
+    logger.info("Exporting {} rows for Google Sheets", len(google_sheets_df))
 
     # Export the DataFrame to a CSV file
     output_file = Path("for_google_spreadsheet.csv")
@@ -54,7 +70,8 @@ def export_cleaned_data(df: pd.DataFrame, output_file: Path | str = Path("data/p
         output_file: Destination path. Defaults to
             ``data/processed_transactions.csv``.
     """
-    df.to_csv(
+    sanitized = _sanitize_dataframe(df)
+    sanitized.to_csv(
         output_file,
         columns=["month", "year", "category", "price"],
         index=False,
@@ -77,6 +94,7 @@ def export_unassigned_transactions_to_csv(df: pd.DataFrame) -> None:
     df_copy["extracted_location"] = df_copy["data"].apply(extract_location_from_data)
     df_copy["google_maps_link"] = df_copy["extracted_location"].apply(create_google_maps_link)
 
+    df_copy = _sanitize_dataframe(df_copy)
     output_file = Path("unassigned_transactions.csv")
     # Keep BOM for Windows Excel when exporting unassigned transactions
     df_copy.to_csv(output_file, index=False, encoding="utf-8-sig")

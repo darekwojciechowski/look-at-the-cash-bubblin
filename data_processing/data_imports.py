@@ -6,6 +6,12 @@ import pandas as pd
 from loguru import logger
 
 
+def _warn_and_skip_bad_line(bad_line: list[str]) -> list[str] | None:
+    """Log a warning for each malformed CSV row and instruct pandas to skip it."""
+    logger.warning(f"[SKIP_BAD_LINE] Malformed row skipped: {bad_line}")
+    return None
+
+
 def ipko_import(df: pd.DataFrame) -> pd.DataFrame:
     """Normalize a raw IPKO CSV DataFrame into the standard pipeline format.
 
@@ -117,7 +123,12 @@ def read_transaction_csv(file_path: str | Path, encoding: str) -> pd.DataFrame:
     try:
         for enc in encodings_to_try:
             try:
-                df = pd.read_csv(file_path, on_bad_lines="skip", encoding=enc)
+                df = pd.read_csv(
+                    file_path,
+                    on_bad_lines=_warn_and_skip_bad_line,
+                    engine="python",
+                    encoding=enc,
+                )
                 logger.info(f"[SUCCESS] Loaded CSV file: {file_path} with encoding: {enc}")
                 return df
             except UnicodeDecodeError, UnicodeError:

@@ -117,17 +117,17 @@ class TestExporterAuditLogs:
     def test_dataframe_preview_is_logged_by_export_for_google_sheets(
         self, loguru_sink: list[str], minimal_export_df: pd.DataFrame
     ) -> None:
-        """export_for_google_sheets() must log the DataFrame contents.
+        """export_for_google_sheets() must log how many rows are being exported.
 
         Given: a minimal processed DataFrame and a loguru sink
         When:  export_for_google_sheets() is called
-        Then:  at least one log record contains 'Final DataFrame'
+        Then:  at least one log record mentions the row count (not the raw DataFrame)
         """
         # Act
         export_for_google_sheets(minimal_export_df)
 
-        # Assert
-        assert any("Final DataFrame" in msg for msg in loguru_sink)
+        # Assert — row-count log replaced the full-DataFrame dump (PII hardening)
+        assert any("rows for Google Sheets" in msg for msg in loguru_sink)
 
     def test_output_path_appears_in_export_log(self, loguru_sink: list[str], minimal_export_df: pd.DataFrame) -> None:
         """export_for_google_sheets() must log the output file path.
