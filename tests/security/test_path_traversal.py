@@ -40,20 +40,11 @@ class TestPathTraversalOnRead:
         with pytest.raises((FileNotFoundError, PermissionError, OSError, ValueError)):
             read_transaction_csv(vector, "utf-8")
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason=(
-            "read_transaction_csv() follows symlinks; base-dir confinement via Path.resolve() is not yet implemented."
-        ),
-    )
     def test_read_rejects_symlink_outside_base(self, tmp_path: Path) -> None:
         """Given a symlink inside tmp_path pointing at /etc/hosts, read must refuse.
 
         When:  read_transaction_csv() is called with the symlink path
         Then:  an error is raised — the function must not silently follow the link
-
-        xfail: current read_transaction_csv() does not perform base-dir
-        confinement after resolving symlinks; a future hardening task must add it.
         """
         symlink = tmp_path / "evil.csv"
         try:
@@ -68,18 +59,11 @@ class TestPathTraversalOnRead:
 class TestPathTraversalOnExport:
     """export_cleaned_data must refuse paths that escape the intended output directory."""
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason=("export_cleaned_data() does not validate that output_file stays within the project data/ directory."),
-    )
     def test_export_refuses_escape_from_base_dir(self, tmp_path: Path) -> None:
         """Given an output path outside the expected data dir, export must raise.
 
         When:  export_cleaned_data() is called with a path that escapes via '..'
         Then:  ValueError is raised
-
-        xfail: current export_cleaned_data() accepts any user-supplied path;
-        base-dir confinement is not yet implemented.
         """
         df = pd.DataFrame({
             "data": ["test"],

@@ -23,6 +23,7 @@ def _make_export_df(extra_data: str = "regular description") -> pd.DataFrame:
     return pd.DataFrame({
         "data": [extra_data],
         "price": ["-10.0"],
+        "day": [15],
         "month": [1],
         "year": [2023],
         "category": ["MISC"],
@@ -72,6 +73,7 @@ class TestPiiNotLeakedToLogs:
         df = pd.DataFrame({
             "data": ["desc_a", "desc_b", "desc_c"],
             "price": ["-10.0", "-20.0", "-30.0"],
+            "day": [1, 2, 3],
             "month": [1, 1, 1],
             "year": [2023, 2023, 2023],
             "category": ["MISC", "FOOD", "FUEL"],

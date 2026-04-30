@@ -54,21 +54,10 @@ class TestLargeFileHandling:
 
 class TestDecompressionBomb:
     @pytest.mark.timeout(10)
-    @pytest.mark.xfail(
-        strict=True,
-        reason=(
-            "read_transaction_csv() uses pd.read_csv with no size guard on gzip "
-            "expansion; a streaming-reader cap is not yet implemented."
-        ),
-    )
     def test_read_rejects_decompression_bomb(self, tmp_path: Path) -> None:
         """Given a gzip-compressed CSV that inflates to a huge size,
         when read_transaction_csv() is called,
         then it raises or caps memory rather than exhausting the process.
-
-        xfail: pandas autodetects gzip without a size guard; this path is
-        unguarded in the current codebase.  A future hardening task must add
-        a streaming reader with a size cap.
         """
         # Arrange — 100 B compressed, ~1 MB inflated (harmless for xfail)
         row = "transaction,-10.0,1,2023\n"

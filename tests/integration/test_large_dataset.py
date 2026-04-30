@@ -28,6 +28,7 @@ class TestLargeDatasetProcessing:
             "price": [f"-{i % 100 + 10}.0" for i in range(1000)],
             "month": [i % 12 + 1 for i in range(1000)],
             "year": [2023] * 1000,
+            "day": [i % 28 + 1 for i in range(1000)],
         })
 
         # Save to file

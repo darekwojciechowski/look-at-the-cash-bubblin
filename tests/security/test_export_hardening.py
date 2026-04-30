@@ -6,6 +6,7 @@ Covers:
 - ipko_import robustness to wrong column counts (M14).
 """
 
+import datetime
 import sys
 from pathlib import Path
 
@@ -37,6 +38,7 @@ def _make_export_df() -> pd.DataFrame:
     return pd.DataFrame({
         "data": ["regular description"],
         "price": ["-10.0"],
+        "day": [15],
         "month": [1],
         "year": [2023],
         "category": ["MISC"],
@@ -50,19 +52,9 @@ def _make_export_df() -> pd.DataFrame:
 
 class TestSymlinkToctou:
     @pytest.mark.skipif(sys.platform == "win32", reason="symlinks require elevated privileges on Windows")
-    @pytest.mark.xfail(
-        strict=True,
-        reason=(
-            "export_for_google_sheets() uses pandas to_csv() which follows "
-            "symlinks; O_NOFOLLOW / atomic-create protection is not yet implemented."
-        ),
-    )
     def test_export_refuses_symlink_target(self, isolated_cwd: Path) -> None:
         """Given that for_google_spreadsheet.csv already exists as a symlink
         pointing at a victim file, export_for_google_sheets must refuse to follow it.
-
-        xfail: the current exporter uses pandas to_csv() which does not pass
-        O_NOFOLLOW; symlink TOCTOU protection is not yet implemented.
         """
         # Arrange — create the symlink before the export call
         victim = isolated_cwd / "victim.txt"
@@ -87,22 +79,9 @@ class TestSymlinkToctou:
 
 class TestExportFileMode:
     @pytest.mark.skipif(sys.platform == "win32", reason="POSIX file modes not applicable on Windows")
-    @pytest.mark.xfail(
-        strict=True,
-        reason=(
-            "export_for_google_sheets() does not set file mode 0o600; "
-            "explicit O_CREAT with mode is not yet implemented."
-        ),
-    )
     def test_export_file_mode_is_0o600_on_posix(self, isolated_cwd: Path) -> None:
-        """After export, the output file must be readable only by the owner (0o600).
-
-        xfail: the current exporter delegates file creation to pandas to_csv(),
-        which uses the process umask; explicit mode-0o600 creation is not yet
-        implemented.
-        """
-        export_for_google_sheets(_make_export_df())
-        output = isolated_cwd / "for_google_spreadsheet.csv"
+        """After export, the output file must be readable only by the owner (0o600)."""
+        output = export_for_google_sheets(_make_export_df())
         file_mode = output.stat().st_mode & 0o777
         assert file_mode == 0o600, f"Expected 0o600 but got 0o{file_mode:o}"
 

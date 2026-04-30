@@ -7,7 +7,7 @@ from loguru import logger
 from config.logging_setup import log_dataframe_preview, setup_logging
 from data_processing.data_core import process_dataframe
 from data_processing.data_imports import ipko_import, read_transaction_csv
-from data_processing.exporter import export_cleaned_data, export_misc_transactions
+from data_processing.exporter import export_cleaned_data, export_for_google_sheets, export_misc_transactions
 
 # Constants
 CSV_INPUT_FILE: Path = Path("data/demo_ipko.csv")
@@ -19,7 +19,8 @@ def main() -> None:
     """Run the full transaction processing pipeline.
 
     Reads the IPKO CSV export, normalizes and categorizes transactions,
-    logs a preview, and writes two output files:
+    logs a preview, and writes three output files:
+    - ``for_google_spreadsheet.csv`` — full export for Google Sheets
     - ``data/processed_transactions.csv`` — all categorized expenses
     - ``unassigned_transactions.csv`` — MISC rows with Google Maps links
     """
@@ -36,6 +37,9 @@ def main() -> None:
 
     # Export unassigned (MISC) transactions for manual review
     export_misc_transactions(processed_df)
+
+    # Export for Google Sheets
+    export_for_google_sheets(processed_df)
 
     # Export cleaned data to CSV
     export_cleaned_data(processed_df, CSV_OUT_FILE)

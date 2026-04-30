@@ -1,6 +1,8 @@
 """CSV export functions for processed and unassigned transactions."""
 
 import csv
+import datetime
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -15,6 +17,10 @@ from data_processing.location_processor import (
 # Characters that trigger formula execution in Google Sheets / Excel when at the
 # start of a cell value. Prefix them with a single quote to neutralise the risk.
 _FORMULA_INJECTION_CHARS: frozenset[str] = frozenset("=+-@\t\r")
+
+
+def _today_str() -> str:
+    return datetime.date.today().strftime("%Y-%m-%d")
 
 
 def _sanitize_cell(value: object) -> object:
@@ -32,21 +38,52 @@ def _sanitize_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def export_for_google_sheets(processed_df: pd.DataFrame) -> None:
+def export_for_google_sheets(processed_df: pd.DataFrame) -> Path:
     """Write the processed DataFrame to ``for_google_spreadsheet.csv``.
+
+    Columns: ``Day, Month, Year, Item, Category, Amount, Importance``.
+    ``Amount`` uses a comma as the decimal separator (European format).
+    The file is written with a tab separator and restricted to owner-only
+    read/write permissions (PII protection).
 
     Args:
         processed_df: Processed transaction DataFrame to export.
+
+    Returns:
+        Path to the written CSV file.
     """
-    google_sheets_df = _sanitize_dataframe(processed_df)
+    logger.info("Exporting {} rows for Google Sheets", len(processed_df))
 
-    logger.info("Exporting {} rows for Google Sheets", len(google_sheets_df))
+    rows = []
+    for row in processed_df.itertuples(index=False):
+        expense = Expense(str(row.month), str(row.year), str(row.category), str(row.price))
+        rows.append({
+            "Day": row.day,
+            "Month": row.month,
+            "Year": row.year,
+            "Item": row.category,
+            "Category": expense.category.value,
+            "Amount": str(row.price).replace(".", ","),
+            "Importance": expense.importance.value,
+        })
 
-    # Export the DataFrame to a CSV file
+    output_df = pd.DataFrame(rows, columns=["Day", "Month", "Year", "Item", "Category", "Amount", "Importance"])
+    output_df = _sanitize_dataframe(output_df)
+
     output_file = Path("for_google_spreadsheet.csv")
-    # Let pandas use default encoding in tests; main export uses utf-8-sig
-    google_sheets_df.to_csv(output_file, index=False)
+
+    # Guard against symlink TOCTOU: refuse to overwrite a symlink target
+    if output_file.is_symlink():
+        raise OSError(f"Refusing to write to symlink: {output_file}")
+
+    output_df.to_csv(output_file, sep="\t", index=False)
+
+    # Restrict file permissions to owner-only read/write (PII protection)
+    if sys.platform != "win32":
+        output_file.chmod(0o600)
+
     logger.info(f"Exported data for Google Sheets to '{output_file}'.")
+    return output_file
 
 
 def export_misc_transactions(df: pd.DataFrame) -> None:
@@ -61,7 +98,7 @@ def export_misc_transactions(df: pd.DataFrame) -> None:
 
 
 def export_cleaned_data(df: pd.DataFrame, output_file: Path | str = Path("data/processed_transactions.csv")) -> None:
-    """Write the ``[month, year, category, price]`` columns to a CSV file.
+    """Write the ``[day, month, year, category, price]`` columns to a CSV file.
 
     Uses ``utf-8-sig`` encoding so the file opens correctly in Windows Excel.
 
@@ -69,11 +106,21 @@ def export_cleaned_data(df: pd.DataFrame, output_file: Path | str = Path("data/p
         df: Processed transaction DataFrame.
         output_file: Destination path. Defaults to
             ``data/processed_transactions.csv``.
+
+    Raises:
+        ValueError: If ``output_file`` resolves outside the current working directory.
     """
+    # Guard against path traversal: output must resolve within the project directory
+    resolved = Path(output_file).resolve()
+    try:
+        resolved.relative_to(Path.cwd())
+    except ValueError:
+        raise ValueError(f"Output path {output_file!r} must resolve within the project directory {Path.cwd()!r}")
+
     sanitized = _sanitize_dataframe(df)
     sanitized.to_csv(
         output_file,
-        columns=["month", "year", "category", "price"],
+        columns=["day", "month", "year", "category", "price"],
         index=False,
         encoding="utf-8-sig",
     )

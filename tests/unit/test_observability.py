@@ -107,6 +107,7 @@ class TestExporterAuditLogs:
     def minimal_export_df(self) -> pd.DataFrame:
         """Minimal DataFrame suitable for all export functions."""
         return pd.DataFrame({
+            "day": [15],
             "month": [1],
             "year": [2023],
             "price": ["100.0"],
@@ -140,7 +141,7 @@ class TestExporterAuditLogs:
         export_for_google_sheets(minimal_export_df)
 
         # Assert
-        assert any("for_google_spreadsheet.csv" in msg for msg in loguru_sink)
+        assert any("for_google_spreadsheet" in msg for msg in loguru_sink)
 
     def test_misc_completion_is_logged_by_export_misc_transactions(
         self, loguru_sink: list[str], minimal_export_df: pd.DataFrame

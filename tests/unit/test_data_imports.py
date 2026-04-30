@@ -21,19 +21,20 @@ class TestIpkoImport:
 
         Given: a raw IPKO-formatted DataFrame
         When:  ipko_import() is called
-        Then:  the result has [price, data, month, year] columns with correct values and dropped extras
+        Then:  the result has [price, data, month, year, day] columns with correct values and dropped extras
         """
         # Arrange — via sample_ipko_dataframe fixture
         processed_df = ipko_import(sample_ipko_dataframe)
 
         # Assert
         # Verify the expected columns are present
-        expected_columns = ["price", "data", "month", "year"]
+        expected_columns = ["price", "data", "month", "year", "day"]
         assert list(processed_df.columns) == expected_columns
 
         # Verify date conversion
         assert processed_df["month"].iloc[0] == 1
         assert processed_df["year"].iloc[0] == 2023
+        assert processed_df["day"].iloc[0] == 1
 
         # Verify data column transformation
         assert processed_df["data"].iloc[0] == "transfer//description1//extra1//extra3//data1"

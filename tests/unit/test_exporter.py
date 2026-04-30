@@ -33,13 +33,14 @@ class TestExportForGoogleSheets:
         # Arrange
         mock_to_csv = mocker.patch("pandas.DataFrame.to_csv")
         mock_logger = mocker.patch("data_processing.exporter.logger")
+        mocker.patch.object(Path, "chmod")
 
         # Act
         export_for_google_sheets(sample_dataframe_with_categories)
 
         # Assert
         mock_logger.info.assert_called()
-        mock_to_csv.assert_called_once_with(Path("for_google_spreadsheet.csv"), index=False)
+        mock_to_csv.assert_called_once_with(Path("for_google_spreadsheet.csv"), sep="\t", index=False)
 
     def test_export_for_google_sheets_empty_dataframe(self, mocker: MockerFixture) -> None:
         """Test export with empty DataFrame.
@@ -50,13 +51,14 @@ class TestExportForGoogleSheets:
         """
         # Arrange
         mock_to_csv = mocker.patch("pandas.DataFrame.to_csv")
+        mocker.patch.object(Path, "chmod")
         empty_df = pd.DataFrame(columns=["category", "price", "month", "year", "data"])
 
         # Act
         export_for_google_sheets(empty_df)
 
         # Assert
-        mock_to_csv.assert_called_once_with(Path("for_google_spreadsheet.csv"), index=False)
+        mock_to_csv.assert_called_once_with(Path("for_google_spreadsheet.csv"), sep="\t", index=False)
 
 
 @pytest.mark.unit

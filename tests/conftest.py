@@ -21,7 +21,7 @@ from loguru import logger
 from data_processing.data_loader import Expense
 
 # Canonical schema for transaction DataFrames used throughout the test suite.
-_TRANSACTION_COLUMNS: list[str] = ["data", "price", "month", "year"]
+_TRANSACTION_COLUMNS: list[str] = ["data", "price", "day", "month", "year"]
 
 # Type alias used by the make_transaction_dataframe factory fixture.
 type TransactionRow = dict[str, str | int | float]
@@ -74,6 +74,7 @@ def sample_raw_dataframe() -> pd.DataFrame:
         "price": ["-50.0", "-20.0", "-100.0", "-15.0", "200.0"],
         "month": [1, 1, 1, 1, 1],
         "year": [2023, 2023, 2023, 2023, 2023],
+        "day": [1, 2, 3, 4, 5],
     })
 
 
@@ -100,6 +101,7 @@ def sample_dataframe_with_categories() -> pd.DataFrame:
     return pd.DataFrame({
         "category": ["MISC", "FOOD", "MISC", "FUEL"],
         "price": [100.0, 200.0, 300.0, 50.0],
+        "day": [1, 5, 10, 15],
         "month": [1, 1, 2, 2],
         "year": [2023, 2023, 2023, 2023],
         "data": [
@@ -145,6 +147,7 @@ def expected_cleaned_data() -> pd.DataFrame:
         "price": ["-50.0", "-20.0", "-100.0", "-15.0", "200.0"],
         "month": [1, 1, 1, 1, 1],
         "year": [2023, 2023, 2023, 2023, 2023],
+        "day": [1, 2, 3, 4, 5],
     })
 
 
@@ -336,9 +339,9 @@ def test_data_dir(tmp_path: Path) -> Path:
 def sample_csv_file(test_data_dir: Path) -> Path:
     """Creates a sample CSV file for testing."""
     csv_path = test_data_dir / "test_transactions.csv"
-    csv_content = """data,price,month,year
-orlen,-100.0,1,2023
-biedronka,-50.0,1,2023
+    csv_content = """data,price,month,year,day
+orlen,-100.0,1,2023,1
+biedronka,-50.0,1,2023,2
 """
     csv_path.write_text(csv_content, encoding="utf-8")
     return csv_path

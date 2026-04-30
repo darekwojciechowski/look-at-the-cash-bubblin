@@ -168,7 +168,7 @@ class TestProcessDataframe:
         assert processed_df["category"].tolist() == expected_categories
 
         # Verify column order
-        expected_columns = ["month", "year", "price", "category", "data"]
+        expected_columns = ["day", "month", "year", "price", "category", "data"]
         assert list(processed_df.columns) == expected_columns
 
     def test_process_dataframe_filters_positive_prices(
@@ -210,6 +210,7 @@ class TestProcessDataframe:
             "price": ["-50.0"],
             "month": [1],
             "year": [2023],
+            "day": [1],
         })
         mocker.patch("data_processing.data_core.mappings", mappings_mock)
 
@@ -229,7 +230,7 @@ class TestProcessDataframe:
 
         Given: a raw DataFrame and a mock mappings function
         When:  process_dataframe() is called
-        Then:  columns appear in [month, year, price, category, data] order
+        Then:  columns appear in [day, month, year, price, category, data] order
         """
         # Arrange
         mocker.patch("data_processing.data_core.mappings", mappings_mock)
@@ -238,7 +239,7 @@ class TestProcessDataframe:
         result = process_dataframe(sample_raw_dataframe)
 
         # Assert
-        expected_columns = ["month", "year", "price", "category", "data"]
+        expected_columns = ["day", "month", "year", "price", "category", "data"]
         assert list(result.columns) == expected_columns
 
     def test_process_dataframe_with_empty_dataframe(
@@ -251,7 +252,7 @@ class TestProcessDataframe:
         Then:  the result is empty with columns in the expected order
         """
         # Arrange
-        empty_df = pd.DataFrame(columns=["data", "price", "month", "year"])
+        empty_df = pd.DataFrame(columns=["data", "price", "month", "year", "day"])
         mocker.patch("data_processing.data_core.mappings", mappings_mock)
 
         # Act
@@ -259,7 +260,7 @@ class TestProcessDataframe:
 
         # Assert
         assert result.empty
-        expected_columns = ["month", "year", "price", "category", "data"]
+        expected_columns = ["day", "month", "year", "price", "category", "data"]
         assert list(result.columns) == expected_columns
 
     def test_process_dataframe_removes_refund_entries(self, mocker: MockerFixture) -> None:
@@ -275,6 +276,7 @@ class TestProcessDataframe:
             "price": ["-30.0", "-50.0", "-20.0"],
             "month": [1, 1, 1],
             "year": [2023, 2023, 2023],
+            "day": [1, 2, 3],
         })
 
         # Act
@@ -320,6 +322,7 @@ class TestProcessDataframe:
             "price": ["-50", "-20.50"],
             "month": [1, 1],
             "year": [2023, 2023],
+            "day": [1, 2],
         })
         mocker.patch("data_processing.data_core.mappings", mappings_mock)
 
@@ -354,6 +357,7 @@ class TestProcessDataframe:
             "price": [price_value],
             "month": [1],
             "year": [2023],
+            "day": [1],
         })
         mocker.patch("data_processing.data_core.mappings", mappings_mock)
 

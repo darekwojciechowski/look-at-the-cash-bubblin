@@ -32,8 +32,8 @@ class PipelineState(StrEnum):
 
 
 # Column sets per pipeline stage — used to enforce strict structural invariants.
-_RAW_COLUMNS: frozenset[str] = frozenset({"data", "price", "month", "year"})
-_PROCESSED_COLUMNS: list[str] = ["month", "year", "price", "category", "data"]
+_RAW_COLUMNS: frozenset[str] = frozenset({"data", "price", "day", "month", "year"})
+_PROCESSED_COLUMNS: list[str] = ["day", "month", "year", "price", "category", "data"]
 
 _SAMPLE_PRICES: list[str] = ["-100.0", "-50.0", "-200.0", "-15.0", "-30.0"]
 
@@ -79,6 +79,7 @@ class TransactionPipelineMachine(RuleBasedStateMachine):
         self.buffer = pd.DataFrame({
             "data": [description],
             "price": [price],
+            "day": [1],
             "month": [month],
             "year": [year],
         })

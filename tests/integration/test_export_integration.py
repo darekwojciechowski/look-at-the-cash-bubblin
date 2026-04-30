@@ -56,6 +56,6 @@ class TestDataExportIntegration:
 
         # Assert
         result_df = pd.read_csv(output_file)
-        assert list(result_df.columns) == ["category", "price", "month", "year", "data"]
+        assert list(result_df.columns) == ["category", "price", "day", "month", "year", "data"]
         assert len(result_df) == len(sample_dataframe_with_categories)
         assert result_df.isna().sum().sum() == 0  # No NaN values

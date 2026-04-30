@@ -56,11 +56,11 @@ def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
     Refunds, reversals, and income (positive prices) are excluded. Prices are
     converted to absolute values. Output columns are
-    ``[month, year, price, category, data]``.
+    ``[day, month, year, price, category, data]``.
 
     Args:
         df: DataFrame produced by ``ipko_import`` with columns
-            ``price``, ``data``, ``month``, ``year``.
+            ``price``, ``data``, ``month``, ``year``, ``day``.
 
     Returns:
         Cleaned and categorized DataFrame ready for export.
@@ -82,7 +82,7 @@ def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df["price"] = df["price"].abs().astype(str)
 
     # Reorder columns
-    desired_columns = ["month", "year", "price", "category", "data"]
+    desired_columns = ["day", "month", "year", "price", "category", "data"]
     df = df[desired_columns]
 
     # Drop rows where price could not be parsed (safety net)

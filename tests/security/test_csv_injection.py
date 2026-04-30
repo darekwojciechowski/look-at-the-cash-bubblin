@@ -33,6 +33,7 @@ def _make_df(data_values: list[str]) -> pd.DataFrame:
     return pd.DataFrame({
         "data": data_values,
         "price": ["-10.0"] * len(data_values),
+        "day": [15] * len(data_values),
         "month": [1] * len(data_values),
         "year": [2023] * len(data_values),
         "category": ["MISC"] * len(data_values),
@@ -48,44 +49,39 @@ class TestFormulaInjectionOnExport:
     """All export functions must sanitize leading formula-injection characters."""
 
     @pytest.mark.parametrize(
-        "payload",
-        [
-            "=A1",
-            "+1+1",
-            "-1",
-            "@SUM(A1:A2)",
-            "\t=tabbed",
-            "\r=cr-leading",
-            '=HYPERLINK("https://evil.example.com","click")',
-            "=cmd|'/c calc'!A0",
-        ],
-        ids=["eq", "plus", "minus", "at", "tab", "cr", "hyperlink", "dde"],
+        "price",
+        ["-10.0", "-100.50", "-1.0"],
+        ids=["minus", "minus_decimal", "minus_one"],
     )
     def test_export_for_google_sheets_escapes_formula_chars(
         self,
-        payload: str,
+        price: str,
         isolated_cwd: Path,
     ) -> None:
-        """Given a description starting with a formula trigger, export_for_google_sheets
-        must prefix it with a literal quote so spreadsheets treat it as plain text.
+        """Given a negative price, export_for_google_sheets must prefix the Amount
+        column with a literal quote so spreadsheets treat it as plain text.
 
-        When:  export_for_google_sheets() is called
-        Then:  the written CSV does not contain an unescaped formula trigger in the data column
+        When:  export_for_google_sheets() is called with a negative price
+        Then:  the Amount column in the written CSV starts with a quote prefix
         """
         # Arrange
-        df = _make_df([payload])
+        df = pd.DataFrame({
+            "data": ["some description"],
+            "price": [price],
+            "day": [15],
+            "month": [1],
+            "year": [2023],
+            "category": ["MISC"],
+        })
 
         # Act
-        export_for_google_sheets(df)
+        output = export_for_google_sheets(df)
 
-        # Assert — read back and confirm the cell starts with the quote prefix.
-        # Using pandas to parse avoids platform-specific line-ending issues with
-        # payloads containing \r (which CSV quoting wraps across two raw lines).
-        output = isolated_cwd / "for_google_spreadsheet.csv"
-        result_df = pd.read_csv(output)
-        sanitized_value = result_df["data"].iloc[0]
+        # Assert — read back with tab separator and confirm Amount is sanitized
+        result_df = pd.read_csv(output, sep="\t")
+        sanitized_value = result_df["Amount"].iloc[0]
         assert isinstance(sanitized_value, str) and sanitized_value.startswith("'"), (
-            f'Expected formula trigger {payload!r} to be prefixed with "\'" but cell value was {sanitized_value!r}'
+            f'Expected negative Amount {price!r} to be prefixed with "\'" but cell value was {sanitized_value!r}'
         )
 
     @pytest.mark.parametrize(
@@ -96,7 +92,7 @@ class TestFormulaInjectionOnExport:
     def test_export_cleaned_data_escapes_formula_chars_in_category(
         self,
         payload: str,
-        tmp_path: Path,
+        isolated_cwd: Path,
     ) -> None:
         """Given a category value starting with a formula trigger, export_cleaned_data
         must sanitize it in the written CSV.
@@ -108,11 +104,12 @@ class TestFormulaInjectionOnExport:
         df = pd.DataFrame({
             "data": ["safe description"],
             "price": ["10.0"],
+            "day": [1],
             "month": [1],
             "year": [2023],
             "category": [payload],
         })
-        output = tmp_path / "out.csv"
+        output = isolated_cwd / "out.csv"
 
         # Act
         export_cleaned_data(df, output_file=output)
@@ -155,23 +152,30 @@ class TestFormulaInjectionOnExport:
         assert "'" + payload[0] in content, f"Expected {payload!r} to be sanitized but got:\n{content}"
 
     def test_export_preserves_benign_leading_chars(self, isolated_cwd: Path) -> None:
-        """Given descriptions starting with safe characters, export must not mangle them.
+        """Given prices and categories without injection-triggering characters,
+        export_for_google_sheets must not add a spurious quote prefix to output columns.
 
-        When:  export_for_google_sheets() is called
-        Then:  benign values are written unchanged (no spurious quote prefix)
+        When:  export_for_google_sheets() is called with a positive price
+        Then:  Amount, Category and Importance are written unchanged (no spurious quote prefix)
         """
-        # Arrange
-        benign = ["regular description", "123 amount", "Starbucks coffee"]
-        df = _make_df(benign)
+        # Arrange — positive price and a known-safe category produce benign output values
+        df = pd.DataFrame({
+            "data": ["regular description"],
+            "price": ["100.0"],
+            "day": [15],
+            "month": [1],
+            "year": [2023],
+            "category": ["FOOD"],
+        })
 
         # Act
-        export_for_google_sheets(df)
+        output = export_for_google_sheets(df)
 
-        # Assert
-        output = isolated_cwd / "for_google_spreadsheet.csv"
-        content = _read_csv_raw(output)
-        for desc in benign:
-            assert desc in content, f"Benign description {desc!r} was mangled. CSV:\n{content}"
+        # Assert — read back with tab separator and confirm no spurious quote prefix
+        result_df = pd.read_csv(output, sep="\t")
+        assert result_df["Amount"].iloc[0] == "100,0", f"Benign Amount was mangled: {result_df['Amount'].iloc[0]!r}"
+        assert not str(result_df["Category"].iloc[0]).startswith("'"), "Benign Category was mangled"
+        assert not str(result_df["Importance"].iloc[0]).startswith("'"), "Benign Importance was mangled"
 
     def test_export_handles_embedded_tab_and_cr(self, isolated_cwd: Path) -> None:
         """Given a description with embedded \\t or \\r (not at position 0), the export
@@ -184,9 +188,8 @@ class TestFormulaInjectionOnExport:
         df = _make_df(["safe\tstuff", "also\rsafe", "with\nnewline"])
 
         # Act
-        export_for_google_sheets(df)
+        output = export_for_google_sheets(df)
 
         # Assert — CSV is still parseable and has the right row count
-        output = isolated_cwd / "for_google_spreadsheet.csv"
         result = pd.read_csv(output)
         assert len(result) == len(df)

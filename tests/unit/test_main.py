@@ -56,6 +56,7 @@ class TestMainWorkflow:
         mock_ipko_import = mocker.patch("main.ipko_import")
         mock_process_df = mocker.patch("main.process_dataframe")
         mock_export_misc = mocker.patch("main.export_misc_transactions")
+        mock_export_google = mocker.patch("main.export_for_google_sheets")
         mock_export_cleaned = mocker.patch("main.export_cleaned_data")
 
         mock_read_csv.return_value = main_raw_dataframe
@@ -76,6 +77,9 @@ class TestMainWorkflow:
         mock_export_misc.assert_called_once()
         pd.testing.assert_frame_equal(mock_export_misc.call_args[0][0], main_processed_dataframe)
 
+        mock_export_google.assert_called_once()
+        pd.testing.assert_frame_equal(mock_export_google.call_args[0][0], main_processed_dataframe)
+
         # Verify export_cleaned_data called with correct parameters
         mock_export_cleaned.assert_called_once_with(main_processed_dataframe, Path("data/processed_transactions.csv"))
 
@@ -92,6 +96,7 @@ class TestMainWorkflow:
         mock_ipko_import = mocker.patch("main.ipko_import")
         mock_process_df = mocker.patch("main.process_dataframe")
         mock_export_misc = mocker.patch("main.export_misc_transactions")
+        mock_export_google = mocker.patch("main.export_for_google_sheets")
         mock_export_cleaned = mocker.patch("main.export_cleaned_data")
 
         empty_df = pd.DataFrame(columns=["data", "price", "month", "year"])
@@ -105,6 +110,7 @@ class TestMainWorkflow:
         # Assert - workflow should complete without errors
         mock_setup_logging.assert_called_once()
         mock_export_misc.assert_called_once()
+        mock_export_google.assert_called_once()
         mock_export_cleaned.assert_called_once()
 
     def test_main_handles_read_csv_failure(self, mocker: MockerFixture) -> None:

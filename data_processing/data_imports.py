@@ -1,5 +1,6 @@
 """CSV import utilities for PKO BP / IPKO bank exports."""
 
+import gzip
 from pathlib import Path
 
 import pandas as pd
@@ -10,6 +11,29 @@ def _warn_and_skip_bad_line(bad_line: list[str]) -> list[str] | None:
     """Log a warning for each malformed CSV row and instruct pandas to skip it."""
     logger.warning(f"[SKIP_BAD_LINE] Malformed row skipped: {bad_line}")
     return None
+
+
+_MAX_GZIP_RATIO: float = 50.0  # max allowed ratio of uncompressed/compressed bytes
+_GZIP_PROBE_SIZE: int = 65536  # 64 KB probe window
+
+
+def _check_gzip_bomb(file_path: Path) -> None:
+    """Raise ValueError if the gzip file appears to be a decompression bomb.
+
+    Reads the first 64 KB of uncompressed data and compares it to the
+    compressed file size.  A ratio above 50x indicates a likely bomb.
+    """
+    compressed_size = file_path.stat().st_size
+    if compressed_size == 0:
+        return
+    with gzip.open(file_path, "rb") as gz:
+        probe = gz.read(_GZIP_PROBE_SIZE)
+    ratio = len(probe) / compressed_size
+    if ratio > _MAX_GZIP_RATIO:
+        raise ValueError(
+            f"Gzip decompression bomb detected: {ratio:.0f}x expansion ratio exceeds "
+            f"limit of {_MAX_GZIP_RATIO:.0f}x (file: {file_path})"
+        )
 
 
 def ipko_import(df: pd.DataFrame) -> pd.DataFrame:
@@ -24,7 +48,7 @@ def ipko_import(df: pd.DataFrame) -> pd.DataFrame:
             no header).
 
     Returns:
-        DataFrame with columns: ``price``, ``data``, ``month``, ``year``.
+        DataFrame with columns: ``price``, ``data``, ``month``, ``year``, ``day``.
     """
     # Rename columns for consistency
     df = df.rename(
@@ -44,9 +68,10 @@ def ipko_import(df: pd.DataFrame) -> pd.DataFrame:
     # Convert 'transaction_date' to datetime format
     df["transaction_date"] = pd.to_datetime(df["transaction_date"])
 
-    # Extract month and year from 'transaction_date'
+    # Extract day, month and year from 'transaction_date'
     df["month"] = df["transaction_date"].dt.month
     df["year"] = df["transaction_date"].dt.year
+    df["day"] = df["transaction_date"].dt.day
 
     # Convert specified columns to lowercase safely
     columns_to_lower = [
@@ -102,8 +127,22 @@ def read_transaction_csv(file_path: str | Path, encoding: str) -> pd.DataFrame:
 
     Raises:
         FileNotFoundError: If ``file_path`` does not exist.
-        ValueError: If the file cannot be decoded with any tried encoding.
+        ValueError: If the file cannot be decoded with any tried encoding, or
+            if a symlink target escapes the parent directory, or if the file
+            is a gzip decompression bomb.
     """
+    # Guard against symlinks escaping the parent directory
+    path = Path(file_path)
+    if path.is_symlink():
+        resolved = path.resolve()
+        base = path.parent.resolve()
+        if not resolved.is_relative_to(base):
+            raise ValueError(f"Symlink target {resolved!r} escapes base directory {base!r}")
+
+    # Guard against gzip decompression bombs before handing off to pandas
+    if path.suffix.lower() in {".gz", ".gzip"}:
+        _check_gzip_bomb(path)
+
     # Prefer encodings that are commonly used for Polish text first.
     preferred_pl_encodings = ["utf-8", "utf-8-sig", "cp1250", "iso-8859-2"]
     # keep latin1 last as it rarely fails but can mojibake

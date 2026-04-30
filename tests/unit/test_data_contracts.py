@@ -20,8 +20,8 @@ from data_processing.location_processor import extract_location_from_data
 # ─────────────────────────────────────────────────────────────────────────────
 
 _IPKO_RAW_COLUMNS = {0, 1, 2, 3, 4, 5, 6, 7, 8}
-_IPKO_OUTPUT_COLUMNS = {"price", "data", "month", "year"}
-_PROCESSED_COLUMNS = ["month", "year", "price", "category", "data"]
+_IPKO_OUTPUT_COLUMNS = {"price", "data", "month", "year", "day"}
+_PROCESSED_COLUMNS = ["day", "month", "year", "price", "category", "data"]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -106,9 +106,9 @@ class TestProcessDataframeOutputContract:
     def test_output_column_order_matches_export_schema(self, sample_raw_dataframe: pd.DataFrame) -> None:
         """Output columns must match the canonical export order.
 
-        Given: a raw transaction DataFrame with data/price/month/year columns
+        Given: a raw transaction DataFrame with data/price/month/year/day columns
         When:  process_dataframe() is called
-        Then:  output columns are exactly [month, year, price, category, data]
+        Then:  output columns are exactly [day, month, year, price, category, data]
         """
         result = process_dataframe(sample_raw_dataframe)
 
@@ -138,6 +138,7 @@ class TestProcessDataframeOutputContract:
             "price": ["-100.0", "3000.0"],
             "month": [1, 1],
             "year": [2023, 2023],
+            "day": [1, 2],
         })
 
         # Act
