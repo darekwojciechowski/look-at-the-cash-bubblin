@@ -72,6 +72,35 @@ class TestIpkoImport:
         assert processed_df["price"].iloc[0] == "-100.0"
         assert processed_df["price"].iloc[1] == "-50.0"
 
+    def test_ipko_import_strips_nan_from_data_column(self) -> None:
+        """Verify that NaN cells are excluded from the concatenated data column.
+
+        Given: a raw IPKO DataFrame where unnamed_6, unnamed_8, and data columns are NaN
+        When:  ipko_import() is called
+        Then:  the resulting data column contains no '//nan' fragments
+        """
+        # Arrange
+        import numpy as np
+
+        raw_df = pd.DataFrame({
+            0: ["2023-01-01"],
+            1: ["PLN"],
+            2: ["przelew z rachunku"],
+            3: ["-500.0"],
+            4: ["PLN"],
+            5: ["car repair"],
+            6: [np.nan],
+            7: [np.nan],
+            8: [np.nan],
+        })
+
+        # Act
+        result = ipko_import(raw_df)
+
+        # Assert
+        assert "nan" not in result["data"].iloc[0]
+        assert result["data"].iloc[0] == "przelew z rachunku//car repair"
+
 
 @pytest.mark.unit
 class TestReadTransactionCsv:

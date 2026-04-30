@@ -93,7 +93,7 @@ def ipko_import(df: pd.DataFrame) -> pd.DataFrame:
             "unnamed_8",
             "data",
         ]
-    ].apply(lambda row: "//".join(str(v) for v in row), axis=1)
+    ].apply(lambda row: "//".join(s for s in map(str, row) if s != "nan"), axis=1)
 
     # Drop unnecessary columns
     columns_to_drop = [

@@ -6,7 +6,6 @@ Covers:
 - ipko_import robustness to wrong column counts (M14).
 """
 
-import datetime
 import sys
 from pathlib import Path
 

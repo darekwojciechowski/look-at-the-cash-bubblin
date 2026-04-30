@@ -114,8 +114,10 @@ def export_cleaned_data(df: pd.DataFrame, output_file: Path | str = Path("data/p
     resolved = Path(output_file).resolve()
     try:
         resolved.relative_to(Path.cwd())
-    except ValueError:
-        raise ValueError(f"Output path {output_file!r} must resolve within the project directory {Path.cwd()!r}")
+    except ValueError as err:
+        raise ValueError(
+            f"Output path {output_file!r} must resolve within the project directory {Path.cwd()!r}"
+        ) from err
 
     sanitized = _sanitize_dataframe(df)
     sanitized.to_csv(

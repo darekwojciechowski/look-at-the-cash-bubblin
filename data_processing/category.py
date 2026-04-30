@@ -75,7 +75,7 @@ FASTFOOD = {
 # Sit-down restaurants and food delivery; distinct from FASTFOOD.
 GROCERIES = {
     "groceries", "restaurant", "restauracja", "restaurante", "pizza", "sushi", "sphinx", "fish", "seafood", "k-2",
-    "phenix", "pankejk", "nolita", "epoka", "rozbrat", "ale gloria", "charlotte","anatewka", "manekin", "andrus", 
+    "phenix", "pankejk", "nolita", "epoka", "rozbrat", "ale gloria", "charlotte","anatewka", "manekin", "andrus",
     "konspira", "weranda", "szajna", "piwnica świdnicka"
 }
 
