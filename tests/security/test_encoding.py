@@ -20,7 +20,7 @@ pytestmark = pytest.mark.security
 # Helpers
 # ---------------------------------------------------------------------------
 
-_MINIMAL_CSV = "data,price,month,year\ntest_value,-10.0,1,2023\n"
+_MINIMAL_CSV = "data,amount,month,year\ntest_value,-10.0,1,2023\n"
 
 
 def _write_text(path: Path, content: str, encoding: str) -> Path:
@@ -71,7 +71,7 @@ class TestEncodingFallback:
         then it falls back to a working encoding and logs a DEBUG record for 'utf-8'.
         """
         # Arrange — write cp1250 content with a Polish character that is invalid UTF-8
-        polish_csv = "data,price,month,year\nKsiążka,-10.0,1,2023\n"
+        polish_csv = "data,amount,month,year\nKsiążka,-10.0,1,2023\n"
         csv_file = tmp_path / "polish.csv"
         csv_file.write_bytes(polish_csv.encode("cp1250"))
 
@@ -120,7 +120,7 @@ class TestBomHandling:
         then the content is preserved without a stray BOM in the data column.
         """
         # Arrange — write with BOM
-        content_with_bom = "﻿data,price,month,year\nbom_test,-10.0,1,2023\n"
+        content_with_bom = "﻿data,amount,month,year\nbom_test,-10.0,1,2023\n"
         csv_file = write_csv_bytes(content_with_bom.encode("utf-8-sig"), "bom.csv")
 
         # Act
@@ -144,7 +144,7 @@ class TestPolishDiacritics:
         then the diacritics are correctly decoded.
         """
         # Arrange
-        polish_csv = "data,price,month,year\nŁódź café,-10.0,1,2023\n"
+        polish_csv = "data,amount,month,year\nŁódź café,-10.0,1,2023\n"
         csv_file = tmp_path / "pl.csv"
         csv_file.write_bytes(polish_csv.encode("cp1250"))
 
@@ -181,7 +181,7 @@ class TestUnicodeSpoof:
         then the content is byte-identical to what was written.
         """
         # Arrange — write using utf-8 which can represent all Unicode
-        csv_content = f"data,price,month,year\n{description},-10.0,1,2023\n"
+        csv_content = f"data,amount,month,year\n{description},-10.0,1,2023\n"
         csv_file = tmp_path / "spoof.csv"
         csv_file.write_text(csv_content, encoding="utf-8")
 
@@ -206,7 +206,7 @@ class TestLocaleDecimalSeparator:
         from data_processing.data_core import process_dataframe
 
         # Arrange
-        df = pd.DataFrame({"data": ["test"], "price": ["1,50"], "month": [1], "year": [2023]})
+        df = pd.DataFrame({"data": ["test"], "amount": ["1,50"], "month": [1], "year": [2023]})
 
         # Act + Assert — astype(float) does not accept commas
         with pytest.raises(ValueError):

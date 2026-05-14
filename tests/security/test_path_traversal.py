@@ -67,7 +67,7 @@ class TestPathTraversalOnExport:
         """
         df = pd.DataFrame({
             "data": ["test"],
-            "price": ["10.0"],
+            "amount": ["10.0"],
             "month": [1],
             "year": [2023],
             "category": ["MISC"],

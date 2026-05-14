@@ -182,3 +182,19 @@ SHOPPING = {"shopping", "allegro", "olx", "amazon", "empik"}
 # Empty set — used as the catch-all when no other keyword matches.
 # ``mappings()`` returns ``"MISC"`` for unrecognized transactions.
 MISC: set[str] = set()
+
+# ============================================================================
+# Income categories
+# ============================================================================
+# Consumed by ``lookup_income_category()`` in mappings.py — independent from
+# the expense ``all_category`` list above. Fill in employer names, payer
+# strings, and personal seeds as needed.
+
+# Regular employment income (salary, paycheck, employer-issued payments).
+INCOME_SALARY: frozenset[str] = frozenset({"wynagrodzenie", "pensja", "salary", "payroll"})
+
+# Freelance, consulting, side projects, marketplace payouts.
+INCOME_SIDE_HUSTLE: frozenset[str] = frozenset({"freelance", "consulting", "payout", "honorarium"})
+
+# Tax refunds, gifts, one-off transfers, bonuses, dividends.
+INCOME_EXTRA: frozenset[str] = frozenset({"zwrot podatku", "darowizna", "prezent", "bonus", "dividend"})

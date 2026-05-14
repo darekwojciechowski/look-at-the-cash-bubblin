@@ -8,7 +8,7 @@ import pandas as pd
 import pytest
 from pytest_mock import MockerFixture
 
-from data_processing.data_core import clean_descriptions, process_dataframe
+from data_processing.data_core import clean_descriptions, process_dataframe, process_income_dataframe
 
 
 @pytest.mark.unit
@@ -46,7 +46,7 @@ class TestCleanDescriptions:
         When:  clean_descriptions() is called
         Then:  the data cell equals the expected cleaned string
         """
-        df = pd.DataFrame({"data": [input_text], "price": ["-10.0"], "month": [1], "year": [2023]})
+        df = pd.DataFrame({"data": [input_text], "amount": ["-10.0"], "month": [1], "year": [2023]})
 
         result = clean_descriptions(df)
         assert result["data"].iloc[0] == expected_output
@@ -61,7 +61,7 @@ class TestCleanDescriptions:
         # Arrange — via sample_raw_dataframe fixture
         result = clean_descriptions(sample_raw_dataframe)
 
-        pd.testing.assert_series_equal(result["price"], sample_raw_dataframe["price"], check_dtype=False)
+        pd.testing.assert_series_equal(result["amount"], sample_raw_dataframe["amount"], check_dtype=False)
         pd.testing.assert_series_equal(result["month"], sample_raw_dataframe["month"], check_dtype=False)
         pd.testing.assert_series_equal(result["year"], sample_raw_dataframe["year"], check_dtype=False)
 
@@ -73,14 +73,14 @@ class TestCleanDescriptions:
         Then:  the result is empty with the same columns preserved
         """
         # Arrange
-        empty_df = pd.DataFrame(columns=["data", "price", "month", "year"])
+        empty_df = pd.DataFrame(columns=["data", "amount", "month", "year"])
 
         # Act
         result = clean_descriptions(empty_df)
 
         # Assert
         assert result.empty
-        assert list(result.columns) == ["data", "price", "month", "year"]
+        assert list(result.columns) == ["data", "amount", "month", "year"]
 
     def test_clean_descriptions_with_custom_replacements(self) -> None:
         """Test that a custom replacements dict is honoured (OCP injection point).
@@ -101,7 +101,7 @@ class TestCleanDescriptions:
         }
         df = pd.DataFrame({
             "data": ["pkt zakup sklep", "przel wychodzacy firma", "orlen"],
-            "price": ["-30.0", "-200.0", "-100.0"],
+            "amount": ["-30.0", "-200.0", "-100.0"],
             "month": [1, 1, 1],
             "year": [2023, 2023, 2023],
         })
@@ -132,7 +132,7 @@ class TestCleanDescriptions:
         When:  clean_descriptions() is called
         Then:  the data cell equals the expected transformed string
         """
-        df = pd.DataFrame({"data": [input_text], "price": ["-10.0"], "month": [1], "year": [2023]})
+        df = pd.DataFrame({"data": [input_text], "amount": ["-10.0"], "month": [1], "year": [2023]})
         result = clean_descriptions(df, replacements=replacements)
         assert result["data"].iloc[0] == expected
 
@@ -168,7 +168,7 @@ class TestProcessDataframe:
         assert processed_df["category"].tolist() == expected_categories
 
         # Verify column order
-        expected_columns = ["day", "month", "year", "price", "category", "data"]
+        expected_columns = ["day", "month", "year", "amount", "category", "data"]
         assert list(processed_df.columns) == expected_columns
 
     def test_process_dataframe_filters_positive_prices(
@@ -191,7 +191,7 @@ class TestProcessDataframe:
 
         # Assert
         # Verify prices are converted to absolute positive values
-        assert all(float(price) > 0 for price in processed_df["price"])
+        assert all(float(price) > 0 for price in processed_df["amount"])
         # Verify original positive price row was filtered out (4 rows remain)
         assert len(processed_df) == 4
 
@@ -207,7 +207,7 @@ class TestProcessDataframe:
         # Arrange
         df = pd.DataFrame({
             "data": ["terminal purchase"],
-            "price": ["-50.0"],
+            "amount": ["-50.0"],
             "month": [1],
             "year": [2023],
             "day": [1],
@@ -218,7 +218,7 @@ class TestProcessDataframe:
         result = process_dataframe(df)
 
         # Assert
-        assert float(result["price"].iloc[0]) == 50.0
+        assert float(result["amount"].iloc[0]) == 50.0
 
     def test_process_dataframe_column_order(
         self,
@@ -239,7 +239,7 @@ class TestProcessDataframe:
         result = process_dataframe(sample_raw_dataframe)
 
         # Assert
-        expected_columns = ["day", "month", "year", "price", "category", "data"]
+        expected_columns = ["day", "month", "year", "amount", "category", "data"]
         assert list(result.columns) == expected_columns
 
     def test_process_dataframe_with_empty_dataframe(
@@ -252,7 +252,7 @@ class TestProcessDataframe:
         Then:  the result is empty with columns in the expected order
         """
         # Arrange
-        empty_df = pd.DataFrame(columns=["data", "price", "month", "year", "day"])
+        empty_df = pd.DataFrame(columns=["data", "amount", "month", "year", "day"])
         mocker.patch("data_processing.data_core.mappings", mappings_mock)
 
         # Act
@@ -260,7 +260,7 @@ class TestProcessDataframe:
 
         # Assert
         assert result.empty
-        expected_columns = ["day", "month", "year", "price", "category", "data"]
+        expected_columns = ["day", "month", "year", "amount", "category", "data"]
         assert list(result.columns) == expected_columns
 
     def test_process_dataframe_removes_refund_entries(self, mocker: MockerFixture) -> None:
@@ -273,7 +273,7 @@ class TestProcessDataframe:
         # Arrange
         df = pd.DataFrame({
             "data": ["zwrot za zamowienie", "regular purchase", "refund processed"],
-            "price": ["-30.0", "-50.0", "-20.0"],
+            "amount": ["-30.0", "-50.0", "-20.0"],
             "month": [1, 1, 1],
             "year": [2023, 2023, 2023],
             "day": [1, 2, 3],
@@ -290,7 +290,7 @@ class TestProcessDataframe:
     def test_process_dataframe_with_invalid_columns(self, mocker: MockerFixture) -> None:
         """Test process_dataframe when required columns are missing.
 
-        Given: a DataFrame that lacks the expected 'data' and 'price' columns
+        Given: a DataFrame that lacks the expected 'data' and 'amount' columns
         When:  process_dataframe() is called
         Then:  a KeyError is raised
         """
@@ -319,7 +319,7 @@ class TestProcessDataframe:
         # Arrange
         df = pd.DataFrame({
             "data": ["terminal purchase", "web payment"],
-            "price": ["-50", "-20.50"],
+            "amount": ["-50", "-20.50"],
             "month": [1, 1],
             "year": [2023, 2023],
             "day": [1, 2],
@@ -331,8 +331,8 @@ class TestProcessDataframe:
 
         # Assert
         assert len(result) == 2
-        assert float(result["price"].iloc[0]) == 50.0
-        assert float(result["price"].iloc[1]) == 20.50
+        assert float(result["amount"].iloc[0]) == 50.0
+        assert float(result["amount"].iloc[1]) == 20.50
 
     @pytest.mark.parametrize(
         "price_value",
@@ -354,7 +354,7 @@ class TestProcessDataframe:
         # Arrange
         df = pd.DataFrame({
             "data": ["terminal purchase"],
-            "price": [price_value],
+            "amount": [price_value],
             "month": [1],
             "year": [2023],
             "day": [1],
@@ -366,4 +366,98 @@ class TestProcessDataframe:
 
         # Assert
         assert len(result) == 1
-        assert float(result["price"].iloc[0]) == abs(float(price_value))
+        assert float(result["amount"].iloc[0]) == abs(float(price_value))
+
+
+@pytest.mark.unit
+class TestProcessIncomeDataframe:
+    """Test suite for the income track of the processing pipeline."""
+
+    def test_keeps_only_positive_amounts(self, mocker: MockerFixture) -> None:
+        """Given: a mixed-sign DataFrame.
+        When:  process_income_dataframe() is called.
+        Then:  only rows with amount > 0 survive.
+        """
+        df = pd.DataFrame({
+            "data": ["salary jan", "biedronka", "freelance"],
+            "amount": ["5000.0", "-50.0", "1200.0"],
+            "month": [1, 1, 1],
+            "year": [2023, 2023, 2023],
+            "day": [1, 5, 10],
+        })
+
+        result = process_income_dataframe(df)
+
+        assert len(result) == 2
+        assert all(float(a) > 0 for a in result["amount"])
+
+    def test_does_not_apply_abs(self, mocker: MockerFixture) -> None:
+        """Income amounts are already positive — no abs() conversion."""
+        df = pd.DataFrame({
+            "data": ["salary"],
+            "amount": ["1234.56"],
+            "month": [1],
+            "year": [2023],
+            "day": [1],
+        })
+
+        result = process_income_dataframe(df)
+
+        assert result["amount"].iloc[0] == "1234.56"
+
+    def test_drops_nan_amounts(self) -> None:
+        """NaN-amount rows are dropped from the income track too."""
+        df = pd.DataFrame({
+            "data": ["salary", "broken"],
+            "amount": ["1000.0", "not-a-number"],
+            "month": [1, 1],
+            "year": [2023, 2023],
+            "day": [1, 2],
+        })
+
+        with pytest.raises(ValueError):
+            process_income_dataframe(df)
+
+    def test_remove_entry_rows_filtered(self) -> None:
+        """``zwrot``/refund rows are filtered out even on the income track."""
+        df = pd.DataFrame({
+            "data": ["zwrot za zakup", "salary"],
+            "amount": ["100.0", "5000.0"],
+            "month": [1, 1],
+            "year": [2023, 2023],
+            "day": [1, 2],
+        })
+
+        result = process_income_dataframe(df)
+
+        assert len(result) == 1
+        assert result["data"].iloc[0] == "salary"
+
+    def test_schema_matches_expense_track(self) -> None:
+        """Income output schema is identical to expense output schema."""
+        df = pd.DataFrame({
+            "data": ["salary"],
+            "amount": ["5000.0"],
+            "month": [1],
+            "year": [2023],
+            "day": [1],
+        })
+
+        result = process_income_dataframe(df)
+
+        assert list(result.columns) == ["day", "month", "year", "amount", "category", "data"]
+
+    def test_uses_income_category_lookup(self) -> None:
+        """Categorization should resolve to income labels, not expense labels."""
+        df = pd.DataFrame({
+            "data": ["wynagrodzenie monthly", "unknown deposit"],
+            "amount": ["5000.0", "200.0"],
+            "month": [1, 1],
+            "year": [2023, 2023],
+            "day": [1, 2],
+        })
+
+        result = process_income_dataframe(df)
+
+        assert "SALARY" in result["category"].values
+        assert "INCOME_MISC" in result["category"].values

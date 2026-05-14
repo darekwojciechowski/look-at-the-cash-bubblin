@@ -28,7 +28,7 @@ def raw_transaction_dfs(min_size: int = 1, max_size: int = 50) -> st.SearchStrat
                 ),
             ),
             column(
-                "price",
+                "amount",
                 dtype=str,
                 elements=st.from_regex(r"-\d+\.\d{2}", fullmatch=True),
             ),

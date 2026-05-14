@@ -16,7 +16,7 @@ def main_raw_dataframe() -> pd.DataFrame:
     """Fixture providing minimal raw transaction data for main() pipeline mocking."""
     return pd.DataFrame({
         "data": ["orlen fuel station", "starbucks coffee"],
-        "price": ["-100.0", "-15.0"],
+        "amount": ["-100.0", "-15.0"],
         "month": [1, 1],
         "year": [2023, 2023],
     })
@@ -28,7 +28,7 @@ def main_processed_dataframe() -> pd.DataFrame:
     return pd.DataFrame({
         "month": [1, 1],
         "year": [2023, 2023],
-        "price": [100.0, 15.0],
+        "amount": [100.0, 15.0],
         "category": ["FUEL", "COFFEE"],
         "data": ["orlen fuel station", "starbucks coffee"],
     })
@@ -55,13 +55,18 @@ class TestMainWorkflow:
         mock_read_csv = mocker.patch("main.read_transaction_csv")
         mock_ipko_import = mocker.patch("main.ipko_import")
         mock_process_df = mocker.patch("main.process_dataframe")
+        mock_process_income = mocker.patch("main.process_income_dataframe")
         mock_export_misc = mocker.patch("main.export_misc_transactions")
         mock_export_google = mocker.patch("main.export_for_google_sheets")
         mock_export_cleaned = mocker.patch("main.export_cleaned_data")
+        mocker.patch("main.export_unassigned_income")
+        mocker.patch("main.export_income_for_google_sheets")
+        mocker.patch("main.export_cleaned_income_data")
 
         mock_read_csv.return_value = main_raw_dataframe
         mock_ipko_import.return_value = main_raw_dataframe
         mock_process_df.return_value = main_processed_dataframe
+        mock_process_income.return_value = main_processed_dataframe
 
         # Act
         main()
@@ -95,14 +100,19 @@ class TestMainWorkflow:
         mock_read_csv = mocker.patch("main.read_transaction_csv")
         mock_ipko_import = mocker.patch("main.ipko_import")
         mock_process_df = mocker.patch("main.process_dataframe")
+        mock_process_income = mocker.patch("main.process_income_dataframe")
         mock_export_misc = mocker.patch("main.export_misc_transactions")
         mock_export_google = mocker.patch("main.export_for_google_sheets")
         mock_export_cleaned = mocker.patch("main.export_cleaned_data")
+        mocker.patch("main.export_unassigned_income")
+        mocker.patch("main.export_income_for_google_sheets")
+        mocker.patch("main.export_cleaned_income_data")
 
-        empty_df = pd.DataFrame(columns=["data", "price", "month", "year"])
+        empty_df = pd.DataFrame(columns=["data", "amount", "month", "year"])
         mock_read_csv.return_value = empty_df
         mock_ipko_import.return_value = empty_df
         mock_process_df.return_value = empty_df
+        mock_process_income.return_value = empty_df
 
         # Act
         main()

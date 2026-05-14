@@ -35,7 +35,7 @@ class TestCleanDescriptions:
             index=range_indexes(min_size=0, max_size=100),
             columns=[
                 column("data", dtype=str),
-                column("price", dtype=str),
+                column("amount", dtype=str),
                 column("month", dtype=int),
                 column("year", dtype=int),
             ],
@@ -75,7 +75,7 @@ class TestCleanDescriptions:
         Then:  it does not raise and the data cell remains a string
         """
         # Arrange
-        df = pd.DataFrame({"data": [text], "price": ["-10.0"], "month": [1], "year": [2023]})
+        df = pd.DataFrame({"data": [text], "amount": ["-10.0"], "month": [1], "year": [2023]})
 
         # Act
         result = clean_descriptions(df)

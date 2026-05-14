@@ -28,7 +28,7 @@ class TestIpkoImport:
 
         # Assert
         # Verify the expected columns are present
-        expected_columns = ["price", "data", "month", "year", "day"]
+        expected_columns = ["amount", "data", "month", "year", "day"]
         assert list(processed_df.columns) == expected_columns
 
         # Verify date conversion
@@ -68,9 +68,9 @@ class TestIpkoImport:
         processed_df = ipko_import(sample_ipko_dataframe)
 
         # Assert
-        assert "price" in processed_df.columns
-        assert processed_df["price"].iloc[0] == "-100.0"
-        assert processed_df["price"].iloc[1] == "-50.0"
+        assert "amount" in processed_df.columns
+        assert processed_df["amount"].iloc[0] == "-100.0"
+        assert processed_df["amount"].iloc[1] == "-50.0"
 
     def test_ipko_import_strips_nan_from_data_column(self) -> None:
         """Verify that NaN cells are excluded from the concatenated data column.
@@ -331,7 +331,7 @@ class TestReadTransactionCsv:
         """
         # Arrange
         csv_file = tmp_path / "bom.csv"
-        csv_file.write_bytes(b"\xef\xbb\xbfdata,price,month,year\norlen,-50.0,1,2024\n")
+        csv_file.write_bytes(b"\xef\xbb\xbfdata,amount,month,year\norlen,-50.0,1,2024\n")
 
         # Act
         df = read_transaction_csv(str(csv_file), "utf-8-sig")

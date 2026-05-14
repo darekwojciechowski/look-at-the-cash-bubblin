@@ -2,7 +2,7 @@
 
 import pandas as pd
 
-from data_processing.mappings import mappings
+from data_processing.mappings import lookup_income_category, mappings
 
 # Keyword replacements applied to IPKO transaction descriptions during cleaning.
 # Separated from the function so callers can inject a different mapping for other
@@ -51,41 +51,64 @@ def clean_descriptions(
     return df
 
 
+_PROCESSED_COLUMNS: list[str] = ["day", "month", "year", "amount", "category", "data"]
+
+
+def _prepare_common(df: pd.DataFrame) -> pd.DataFrame:
+    """Run the steps shared by the expense and income tracks.
+
+    Cleans descriptions, applies the expense keyword map to detect refund/
+    reversal rows (REMOVE_ENTRY), drops those, coerces ``amount`` to float,
+    and drops rows whose amount cannot be parsed. The provisional expense
+    ``category`` column is preserved on the returned DataFrame so the
+    expense track can reuse it without re-mapping; the income track
+    overwrites it via ``lookup_income_category``.
+    """
+    df = clean_descriptions(df)
+    df["category"] = df["data"].map(mappings)
+    df = df[df["category"] != "REMOVE_ENTRY"].reset_index(drop=True)
+    df["amount"] = df["amount"].astype(float)
+    df = df[df["amount"].notna()].reset_index(drop=True)
+    return df
+
+
 def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """Return a cleaned and categorized expense DataFrame ready for export.
 
-    Refunds, reversals, and income (positive prices) are excluded. Prices are
+    Refunds, reversals, and income (positive amounts) are excluded. Amounts are
     converted to absolute values. Output columns are
-    ``[day, month, year, price, category, data]``.
+    ``[day, month, year, amount, category, data]``.
 
     Args:
         df: DataFrame produced by ``ipko_import`` with columns
-            ``price``, ``data``, ``month``, ``year``, ``day``.
+            ``amount``, ``data``, ``month``, ``year``, ``day``.
 
     Returns:
         Cleaned and categorized DataFrame ready for export.
     """
-    # Clean transaction descriptions
-    df = clean_descriptions(df)
+    df = _prepare_common(df)
+    df = df[df["amount"] <= 0].reset_index(drop=True)
+    df["amount"] = df["amount"].abs().astype(str)
+    return df[_PROCESSED_COLUMNS]
 
-    # Map categories
-    df["category"] = df["data"].map(mappings)
 
-    # Remove refund/return entries
-    df = df[df["category"] != "REMOVE_ENTRY"].reset_index(drop=True)
+def process_income_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    """Return a cleaned and categorized income DataFrame ready for export.
 
-    # Remove income (positive prices) — filter directly before string conversion
-    df["price"] = df["price"].astype(float)
-    df = df[df["price"] <= 0].reset_index(drop=True)
+    Refunds and expenses (non-positive amounts) are excluded. Amounts are
+    stringified as-is — no absolute-value conversion, since income amounts
+    are already positive. Output columns match the expense schema:
+    ``[day, month, year, amount, category, data]``.
 
-    # Convert price to absolute string value
-    df["price"] = df["price"].abs().astype(str)
+    Args:
+        df: DataFrame produced by ``ipko_import`` with columns
+            ``amount``, ``data``, ``month``, ``year``, ``day``.
 
-    # Reorder columns
-    desired_columns = ["day", "month", "year", "price", "category", "data"]
-    df = df[desired_columns]
-
-    # Drop rows where price could not be parsed (safety net)
-    df = df[df["price"].notna()].reset_index(drop=True)
-
-    return df
+    Returns:
+        Cleaned and categorized income DataFrame ready for export.
+    """
+    df = _prepare_common(df)
+    df = df[df["amount"] > 0].reset_index(drop=True)
+    df["amount"] = df["amount"].astype(str)
+    df["category"] = df["data"].map(lookup_income_category)
+    return df[_PROCESSED_COLUMNS]

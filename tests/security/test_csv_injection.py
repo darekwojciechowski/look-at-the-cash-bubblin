@@ -13,7 +13,10 @@ import pytest
 
 from data_processing.exporter import (
     export_cleaned_data,
+    export_cleaned_income_data,
     export_for_google_sheets,
+    export_income_for_google_sheets,
+    export_unassigned_income,
     export_unassigned_transactions_to_csv,
 )
 
@@ -32,7 +35,7 @@ def _read_csv_raw(path: Path) -> str:
 def _make_df(data_values: list[str]) -> pd.DataFrame:
     return pd.DataFrame({
         "data": data_values,
-        "price": ["-10.0"] * len(data_values),
+        "amount": ["-10.0"] * len(data_values),
         "day": [15] * len(data_values),
         "month": [1] * len(data_values),
         "year": [2023] * len(data_values),
@@ -49,25 +52,25 @@ class TestFormulaInjectionOnExport:
     """All export functions must sanitize leading formula-injection characters."""
 
     @pytest.mark.parametrize(
-        "price",
+        "amount",
         ["-10.0", "-100.50", "-1.0"],
         ids=["minus", "minus_decimal", "minus_one"],
     )
     def test_export_for_google_sheets_escapes_formula_chars(
         self,
-        price: str,
+        amount: str,
         isolated_cwd: Path,
     ) -> None:
-        """Given a negative price, export_for_google_sheets must prefix the Amount
+        """Given a negative amount, export_for_google_sheets must prefix the Amount
         column with a literal quote so spreadsheets treat it as plain text.
 
-        When:  export_for_google_sheets() is called with a negative price
+        When:  export_for_google_sheets() is called with a negative amount
         Then:  the Amount column in the written CSV starts with a quote prefix
         """
         # Arrange
         df = pd.DataFrame({
             "data": ["some description"],
-            "price": [price],
+            "amount": [amount],
             "day": [15],
             "month": [1],
             "year": [2023],
@@ -81,7 +84,7 @@ class TestFormulaInjectionOnExport:
         result_df = pd.read_csv(output, sep="\t")
         sanitized_value = result_df["Amount"].iloc[0]
         assert isinstance(sanitized_value, str) and sanitized_value.startswith("'"), (
-            f'Expected negative Amount {price!r} to be prefixed with "\'" but cell value was {sanitized_value!r}'
+            f'Expected negative Amount {amount!r} to be prefixed with "\'" but cell value was {sanitized_value!r}'
         )
 
     @pytest.mark.parametrize(
@@ -103,7 +106,7 @@ class TestFormulaInjectionOnExport:
         # Arrange
         df = pd.DataFrame({
             "data": ["safe description"],
-            "price": ["10.0"],
+            "amount": ["10.0"],
             "day": [1],
             "month": [1],
             "year": [2023],
@@ -137,7 +140,7 @@ class TestFormulaInjectionOnExport:
         # Arrange
         df = pd.DataFrame({
             "data": [payload],
-            "price": ["10.0"],
+            "amount": ["10.0"],
             "month": [1],
             "year": [2023],
             "category": ["MISC"],
@@ -161,7 +164,7 @@ class TestFormulaInjectionOnExport:
         # Arrange — positive price and a known-safe category produce benign output values
         df = pd.DataFrame({
             "data": ["regular description"],
-            "price": ["100.0"],
+            "amount": ["100.0"],
             "day": [15],
             "month": [1],
             "year": [2023],
@@ -193,3 +196,51 @@ class TestFormulaInjectionOnExport:
         # Assert — CSV is still parseable and has the right row count
         result = pd.read_csv(output)
         assert len(result) == len(df)
+
+
+@pytest.mark.parametrize(
+    "payload",
+    ["=A1", "+SUM(1,2)", "-1", "@cmd"],
+    ids=["eq", "plus", "minus", "at"],
+)
+class TestFormulaInjectionOnIncomeExports:
+    """Income exporters must apply the same sanitisation as the expense path."""
+
+    def _income_df(self, payload: str) -> pd.DataFrame:
+        return pd.DataFrame({
+            "day": [1],
+            "month": [1],
+            "year": [2023],
+            "amount": ["1000.0"],
+            "category": ["INCOME_MISC"],
+            "data": [payload],
+        })
+
+    def test_export_income_for_google_sheets_sanitizes(self, payload: str, isolated_cwd: Path) -> None:
+        # Item column carries the category, not the data — so to exercise the
+        # sanitisation, drive the payload through the category column too.
+        df = self._income_df(payload)
+        df["category"] = [payload]
+
+        export_income_for_google_sheets(df)
+
+        content = _read_csv_raw(isolated_cwd / "for_google_spreadsheet_income.csv")
+        assert "'" + payload[0] in content, f"Income Sheets payload {payload!r} was not sanitised:\n{content}"
+
+    def test_export_cleaned_income_data_sanitizes(self, payload: str, isolated_cwd: Path) -> None:
+        df = self._income_df(payload)
+        df["category"] = [payload]
+        output = isolated_cwd / "income.csv"
+
+        export_cleaned_income_data(df, output_file=output)
+
+        content = _read_csv_raw(output)
+        assert "'" + payload[0] in content, f"Cleaned income payload {payload!r} not sanitised:\n{content}"
+
+    def test_export_unassigned_income_sanitizes(self, payload: str, isolated_cwd: Path) -> None:
+        df = self._income_df(payload)
+
+        export_unassigned_income(df)
+
+        content = _read_csv_raw(isolated_cwd / "unassigned_income.csv")
+        assert "'" + payload[0] in content, f"Unassigned income payload {payload!r} not sanitised:\n{content}"

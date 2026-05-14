@@ -1,4 +1,4 @@
-﻿day,month,year,category,price
+﻿day,month,year,category,amount
 1,9,2025,FOOD,50.0
 2,3,2025,GREENFOOD,30.0
 3,5,2025,TRANSPORTATION,15.0

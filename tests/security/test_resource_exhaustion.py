@@ -35,7 +35,7 @@ class TestLargeFileHandling:
         # Arrange
         large_csv = tmp_path / "large.csv"
         with open(large_csv, "w", encoding="utf-8") as fh:
-            fh.write("data,price,month,year\n")
+            fh.write("data,amount,month,year\n")
             for i in range(100_000):
                 fh.write(f"transaction{i},-{i % 100 + 1}.0,1,2023\n")
 
@@ -64,7 +64,7 @@ class TestDecompressionBomb:
         repeated = (row * 5_000).encode("utf-8")
         bomb_path = tmp_path / "bomb.csv.gz"
         with gzip.open(bomb_path, "wb") as gz:
-            gz.write(b"data,price,month,year\n")
+            gz.write(b"data,amount,month,year\n")
             gz.write(repeated)
 
         # Assert — must raise rather than inflating unbounded
@@ -90,7 +90,7 @@ class TestPathologicalInputStrings:
 
         # Arrange
         nested = "(" * 1_000 + "data" + ")" * 1_000
-        df = pd.DataFrame({"data": [nested], "price": ["-10.0"], "month": [1], "year": [2023]})
+        df = pd.DataFrame({"data": [nested], "amount": ["-10.0"], "month": [1], "year": [2023]})
 
         # Act
         result = clean_descriptions(df)
@@ -111,7 +111,7 @@ class TestPathologicalInputStrings:
 
         # Arrange — classic ReDoS pattern for (a+)+ style engines
         evil_regex_input = "a" * 30 + "!"  # triggers backtracking in vulnerable engines
-        df = pd.DataFrame({"data": [evil_regex_input], "price": ["-10.0"], "month": [1], "year": [2023]})
+        df = pd.DataFrame({"data": [evil_regex_input], "amount": ["-10.0"], "month": [1], "year": [2023]})
 
         # Act
         result = clean_descriptions(df)

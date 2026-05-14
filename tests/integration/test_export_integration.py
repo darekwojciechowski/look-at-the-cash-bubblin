@@ -7,7 +7,14 @@ import pytest
 from pytest_mock import MockerFixture
 
 from config.logging_setup import setup_logging
-from data_processing.exporter import export_for_google_sheets, export_unassigned_transactions_to_csv
+from data_processing.data_core import process_dataframe, process_income_dataframe
+from data_processing.exporter import (
+    export_cleaned_income_data,
+    export_for_google_sheets,
+    export_income_for_google_sheets,
+    export_unassigned_income,
+    export_unassigned_transactions_to_csv,
+)
 
 
 @pytest.mark.integration
@@ -59,7 +66,7 @@ class TestDataExportIntegration:
 
         # Assert
         result_df = pd.read_csv(output_file)
-        assert list(result_df.columns) == ["category", "price", "day", "month", "year", "data"]
+        assert list(result_df.columns) == ["category", "amount", "day", "month", "year", "data"]
         assert len(result_df) == len(sample_dataframe_with_categories)
         assert result_df.isna().sum().sum() == 0  # No NaN values
 
@@ -99,7 +106,7 @@ class TestDataExportIntegration:
         Given: a DataFrame with MISC transactions in the canonical column order
         When:  export_unassigned_transactions_to_csv() writes the file
         Then:  the first line of the file is exactly
-               'day,month,year,price,category,data,extracted_location,google_maps_link'
+               'day,month,year,amount,category,data,extracted_location,google_maps_link'
                with comma characters as separators (not tabs or semicolons)
         """
         # Arrange
@@ -108,11 +115,11 @@ class TestDataExportIntegration:
             "day": [1],
             "month": [1],
             "year": [2025],
-            "price": [100.0],
+            "amount": [100.0],
             "category": ["MISC"],
             "data": ["test transaction"],
         })
-        expected_header = "day,month,year,price,category,data,extracted_location,google_maps_link"
+        expected_header = "day,month,year,amount,category,data,extracted_location,google_maps_link"
 
         # Act
         export_unassigned_transactions_to_csv(misc_df)
@@ -143,3 +150,76 @@ class TestDataExportIntegration:
 
         # Assert
         assert (tmp_path / "app.log").exists()
+
+
+@pytest.mark.integration
+class TestIncomeExportEndToEnd:
+    """End-to-end: mixed-sign DataFrame → both tracks → all six income/expense files."""
+
+    def test_three_income_files_produced(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """Given a mixed-sign DataFrame, the income track produces three files with
+        the expected headers, separators, and row counts."""
+        monkeypatch.chdir(tmp_path)
+
+        mixed_df = pd.DataFrame({
+            "data": [
+                "wynagrodzenie january",
+                "biedronka groceries",
+                "freelance payout",
+                "unknown deposit",
+                "zwrot za zakup",
+            ],
+            "amount": ["5000.0", "-50.0", "1200.0", "300.0", "100.0"],
+            "month": [1, 1, 1, 1, 1],
+            "year": [2023, 2023, 2023, 2023, 2023],
+            "day": [1, 2, 3, 4, 5],
+        })
+
+        income_df = process_income_dataframe(mixed_df.copy())
+
+        (tmp_path / "data").mkdir()
+        export_income_for_google_sheets(income_df)
+        export_cleaned_income_data(income_df, tmp_path / "data" / "processed_income.csv")
+        export_unassigned_income(income_df)
+
+        # Google Sheets file: 3 income rows survive (refund is filtered as REMOVE_ENTRY)
+        gs = pd.read_csv(tmp_path / "for_google_spreadsheet_income.csv", sep="\t")
+        assert list(gs.columns) == ["Day", "Month", "Year", "Item", "Category", "Amount", "Importance"]
+        assert len(gs) == 3
+
+        # Cleaned file: 3 rows, comma-separated, utf-8-sig
+        cleaned = pd.read_csv(tmp_path / "data" / "processed_income.csv", encoding="utf-8-sig")
+        assert list(cleaned.columns) == ["day", "month", "year", "category", "amount"]
+        assert len(cleaned) == 3
+
+        # Unassigned file: only INCOME_MISC rows, no location columns
+        unassigned = pd.read_csv(tmp_path / "unassigned_income.csv", encoding="utf-8-sig")
+        assert "google_maps_link" not in unassigned.columns
+        assert len(unassigned) == 1
+        assert unassigned["category"].iloc[0] == "INCOME_MISC"
+
+    def test_expense_and_income_tracks_partition_input(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """The expense and income tracks must not double-count any row."""
+        monkeypatch.chdir(tmp_path)
+
+        mixed_df = pd.DataFrame({
+            "data": ["salary", "biedronka", "freelance"],
+            "amount": ["5000.0", "-50.0", "1200.0"],
+            "month": [1, 1, 1],
+            "year": [2023, 2023, 2023],
+            "day": [1, 2, 3],
+        })
+
+        expense = process_dataframe(mixed_df.copy())
+        income = process_income_dataframe(mixed_df.copy())
+
+        assert len(expense) == 1
+        assert len(income) == 2

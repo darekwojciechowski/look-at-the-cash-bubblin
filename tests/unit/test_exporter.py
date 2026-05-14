@@ -10,8 +10,11 @@ import pytest
 from pytest_mock import MockerFixture
 
 from data_processing.exporter import (
+    export_cleaned_income_data,
     export_for_google_sheets,
+    export_income_for_google_sheets,
     export_misc_transactions,
+    export_unassigned_income,
     export_unassigned_transactions_to_csv,
     get_data,
 )
@@ -52,7 +55,7 @@ class TestExportForGoogleSheets:
         # Arrange
         mock_to_csv = mocker.patch("pandas.DataFrame.to_csv")
         mocker.patch.object(Path, "chmod")
-        empty_df = pd.DataFrame(columns=["category", "price", "month", "year", "data"])
+        empty_df = pd.DataFrame(columns=["category", "amount", "month", "year", "data"])
 
         # Act
         export_for_google_sheets(empty_df)
@@ -101,7 +104,7 @@ class TestExportMiscTransactions:
         mock_to_csv = mocker.patch("pandas.DataFrame.to_csv")
         df = pd.DataFrame({
             "category": ["FOOD", "FUEL"],
-            "price": [100.0, 50.0],
+            "amount": [100.0, 50.0],
             "month": [1, 1],
             "year": [2023, 2023],
             "data": ["groceries", "fuel"],
@@ -122,7 +125,7 @@ class TestExportMiscTransactions:
         """
         # Arrange
         mock_to_csv = mocker.patch("pandas.DataFrame.to_csv")
-        empty_df = pd.DataFrame(columns=["category", "price", "month", "year", "data"])
+        empty_df = pd.DataFrame(columns=["category", "amount", "month", "year", "data"])
 
         # Act
         export_misc_transactions(empty_df)
@@ -323,3 +326,80 @@ class TestExporterModuleImport:
         for func_name in expected_functions:
             assert hasattr(data_processing.exporter, func_name)
             assert callable(getattr(data_processing.exporter, func_name))
+
+
+@pytest.fixture
+def sample_income_dataframe() -> pd.DataFrame:
+    return pd.DataFrame({
+        "day": [1, 15],
+        "month": [1, 1],
+        "year": [2023, 2023],
+        "amount": ["5000.0", "200.0"],
+        "category": ["SALARY", "INCOME_MISC"],
+        "data": ["wynagrodzenie january", "unknown deposit"],
+    })
+
+
+@pytest.mark.unit
+class TestExportIncomeForGoogleSheets:
+    def test_writes_expected_headers_and_separator(
+        self, sample_income_dataframe: pd.DataFrame, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+
+        out = export_income_for_google_sheets(sample_income_dataframe)
+
+        assert out.name == "for_google_spreadsheet_income.csv"
+        result = pd.read_csv(out, sep="\t")
+        assert list(result.columns) == ["Day", "Month", "Year", "Item", "Category", "Amount", "Importance"]
+        assert len(result) == 2
+
+    def test_amount_uses_comma_decimal(
+        self, sample_income_dataframe: pd.DataFrame, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+        out = export_income_for_google_sheets(sample_income_dataframe)
+        content = out.read_text(encoding="utf-8")
+        assert "5000,0" in content
+
+
+@pytest.mark.unit
+class TestExportCleanedIncomeData:
+    def test_writes_utf8_sig_with_income_schema(
+        self, sample_income_dataframe: pd.DataFrame, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+        target = tmp_path / "income.csv"
+
+        export_cleaned_income_data(sample_income_dataframe, output_file=target)
+
+        raw = target.read_bytes()
+        assert raw.startswith(b"\xef\xbb\xbf"), "expected utf-8-sig BOM"
+        result = pd.read_csv(target, encoding="utf-8-sig")
+        assert list(result.columns) == ["day", "month", "year", "category", "amount"]
+
+
+@pytest.mark.unit
+class TestExportUnassignedIncome:
+    def test_filters_on_income_misc(
+        self, sample_income_dataframe: pd.DataFrame, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+
+        export_unassigned_income(sample_income_dataframe)
+
+        result = pd.read_csv(tmp_path / "unassigned_income.csv", encoding="utf-8-sig")
+        assert len(result) == 1
+        assert result["category"].iloc[0] == "INCOME_MISC"
+
+    def test_no_location_columns(
+        self, sample_income_dataframe: pd.DataFrame, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+
+        export_unassigned_income(sample_income_dataframe)
+
+        result = pd.read_csv(tmp_path / "unassigned_income.csv", encoding="utf-8-sig")
+        assert "extracted_location" not in result.columns
+        assert "google_maps_link" not in result.columns
+        assert list(result.columns) == ["day", "month", "year", "amount", "category", "data"]
