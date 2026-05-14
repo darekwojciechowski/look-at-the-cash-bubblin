@@ -224,7 +224,7 @@ class TestFormulaInjectionOnIncomeExports:
 
         export_income_for_google_sheets(df)
 
-        content = _read_csv_raw(isolated_cwd / "for_google_spreadsheet_income.csv")
+        content = _read_csv_raw(isolated_cwd / "google_sheets_income.csv")
         assert "'" + payload[0] in content, f"Income Sheets payload {payload!r} was not sanitised:\n{content}"
 
     def test_export_cleaned_income_data_sanitizes(self, payload: str, isolated_cwd: Path) -> None:

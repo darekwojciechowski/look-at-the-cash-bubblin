@@ -49,7 +49,7 @@ class TestPathTraversalOnRead:
         symlink = tmp_path / "evil.csv"
         try:
             symlink.symlink_to("/etc/hosts")
-        except OSError, NotImplementedError:
+        except (OSError, NotImplementedError):
             pytest.skip("Cannot create symlink on this platform")
 
         with pytest.raises((OSError, PermissionError, ValueError)):

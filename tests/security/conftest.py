@@ -148,7 +148,7 @@ def isolated_cwd(tmp_path: Path) -> Generator[Path]:
     """Change the process CWD to *tmp_path* for the duration of the test.
 
     Prevents exporter functions that write to relative paths (e.g.
-    ``for_google_spreadsheet.csv``) from polluting the repository root.
+    ``google_sheets_expenses.csv``) from polluting the repository root.
     Yields the tmp_path so callers can build expected output paths.
     """
     original = Path.cwd()

@@ -31,12 +31,12 @@ def main() -> None:
     income tracks:
 
     Expenses:
-    - ``for_google_spreadsheet.csv`` — full expense export for Google Sheets
+    - ``google_sheets_expenses.csv`` — full expense export for Google Sheets
     - ``data/processed_transactions.csv`` — all categorized expenses
     - ``unassigned_transactions.csv`` — MISC expense rows with Google Maps links
 
     Income:
-    - ``for_google_spreadsheet_income.csv`` — full income export for Google Sheets
+    - ``google_sheets_income.csv`` — full income export for Google Sheets
     - ``data/processed_income.csv`` — all categorized income
     - ``unassigned_income.csv`` — INCOME_MISC rows for manual review
     """

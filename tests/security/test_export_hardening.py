@@ -52,16 +52,16 @@ def _make_export_df() -> pd.DataFrame:
 class TestSymlinkToctou:
     @pytest.mark.skipif(sys.platform == "win32", reason="symlinks require elevated privileges on Windows")
     def test_export_refuses_symlink_target(self, isolated_cwd: Path) -> None:
-        """Given that for_google_spreadsheet.csv already exists as a symlink
+        """Given that google_sheets_expenses.csv already exists as a symlink
         pointing at a victim file, export_for_google_sheets must refuse to follow it.
         """
         # Arrange — create the symlink before the export call
         victim = isolated_cwd / "victim.txt"
         victim.write_text("SENSITIVE DATA", encoding="utf-8")
-        symlink = isolated_cwd / "for_google_spreadsheet.csv"
+        symlink = isolated_cwd / "google_sheets_expenses.csv"
         try:
             symlink.symlink_to(victim)
-        except OSError, NotImplementedError:
+        except (OSError, NotImplementedError):
             pytest.skip("Cannot create symlink on this platform")
 
         with pytest.raises((OSError, PermissionError)):

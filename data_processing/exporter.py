@@ -79,7 +79,7 @@ def _write_cleaned_csv(df: pd.DataFrame, columns: list[str], output_path: Path |
 
 
 def export_for_google_sheets(processed_df: pd.DataFrame) -> Path:
-    """Write the processed expense DataFrame to ``for_google_spreadsheet.csv``.
+    """Write the processed expense DataFrame to ``google_sheets_expenses.csv``.
 
     Columns: ``Day, Month, Year, Item, Category, Amount, Importance``.
     ``Amount`` uses a comma as the decimal separator (European format).
@@ -108,7 +108,7 @@ def export_for_google_sheets(processed_df: pd.DataFrame) -> Path:
         })
 
     output_df = pd.DataFrame(rows, columns=_GOOGLE_SHEETS_COLUMNS)
-    output_file = _write_google_sheets_csv(output_df, Path("for_google_spreadsheet.csv"))
+    output_file = _write_google_sheets_csv(output_df, Path("google_sheets_expenses.csv"))
 
     logger.info(f"Exported data for Google Sheets to '{output_file}'.")
     return output_file
@@ -164,7 +164,7 @@ def export_unassigned_transactions_to_csv(df: pd.DataFrame) -> None:
 
 
 def export_income_for_google_sheets(income_df: pd.DataFrame) -> Path:
-    """Write the processed income DataFrame to ``for_google_spreadsheet_income.csv``.
+    """Write the processed income DataFrame to ``google_sheets_income.csv``.
 
     Columns mirror the expense export schema:
     ``Day, Month, Year, Item, Category, Amount, Importance``. ``Item`` and
@@ -194,7 +194,7 @@ def export_income_for_google_sheets(income_df: pd.DataFrame) -> Path:
         })
 
     output_df = pd.DataFrame(rows, columns=_GOOGLE_SHEETS_COLUMNS)
-    output_file = _write_google_sheets_csv(output_df, Path("for_google_spreadsheet_income.csv"))
+    output_file = _write_google_sheets_csv(output_df, Path("google_sheets_income.csv"))
 
     logger.info(f"Exported income data for Google Sheets to '{output_file}'.")
     return output_file

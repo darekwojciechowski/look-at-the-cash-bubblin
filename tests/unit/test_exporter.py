@@ -43,7 +43,7 @@ class TestExportForGoogleSheets:
 
         # Assert
         mock_logger.info.assert_called()
-        mock_to_csv.assert_called_once_with(Path("for_google_spreadsheet.csv"), sep="\t", index=False)
+        mock_to_csv.assert_called_once_with(Path("google_sheets_expenses.csv"), sep="\t", index=False)
 
     def test_export_for_google_sheets_empty_dataframe(self, mocker: MockerFixture) -> None:
         """Test export with empty DataFrame.
@@ -61,7 +61,7 @@ class TestExportForGoogleSheets:
         export_for_google_sheets(empty_df)
 
         # Assert
-        mock_to_csv.assert_called_once_with(Path("for_google_spreadsheet.csv"), sep="\t", index=False)
+        mock_to_csv.assert_called_once_with(Path("google_sheets_expenses.csv"), sep="\t", index=False)
 
 
 @pytest.mark.unit
@@ -349,7 +349,7 @@ class TestExportIncomeForGoogleSheets:
 
         out = export_income_for_google_sheets(sample_income_dataframe)
 
-        assert out.name == "for_google_spreadsheet_income.csv"
+        assert out.name == "google_sheets_income.csv"
         result = pd.read_csv(out, sep="\t")
         assert list(result.columns) == ["Day", "Month", "Year", "Item", "Category", "Amount", "Importance"]
         assert len(result) == 2

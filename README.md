@@ -1,4 +1,4 @@
-# 💰 Look at the cash bubblin
+# Look at the cash bubblin
 
 [![CI Pipeline](https://github.com/darekwojciechowski/look-at-the-cash-bubblin/actions/workflows/ci.yml/badge.svg)](https://github.com/darekwojciechowski/look-at-the-cash-bubblin/actions)
 ![Coverage](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/darekwojciechowski/look-at-the-cash-bubblin/main/coverage.json&query=$.totals.percent_covered_display&label=Coverage&suffix=%25&style=flat-square&color=success)
@@ -8,9 +8,9 @@
 ![Pytest](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/darekwojciechowski/look-at-the-cash-bubblin/main/pyproject.toml&query=$.tool.poetry.group.dev.dependencies.pytest&label=Pytest&style=flat-square&logo=pytest&logoColor=white&color=0A9EDC)
 ![License](https://img.shields.io/badge/dynamic/toml?url=https://raw.githubusercontent.com/darekwojciechowski/look-at-the-cash-bubblin/main/pyproject.toml&query=$.tool.poetry.license&label=License&style=flat-square&color=green)
 
-## 🌟 Overview
+## Overview
 
-💰✨ Getting that financial flow just right...
+Getting that financial flow just right...
 
 > *One in the hand, one in the bag, bubblin' (look at you go)*
 >
@@ -18,23 +18,23 @@
 >
 > -- *Anderson .Paak - Bubblin'*
 
-## ✨ Key Features
+## Key Features
 - **Automated Categorization**: Classifies transactions into predefined categories.
 - **Data Cleaning**: Standardizes and cleans transaction descriptions.
 - **Google Sheets Export**: Prepares and exports data in a format compatible with Google Sheets.
 - **Unassigned Transactions**: Identifies and exports uncategorized transactions for manual review.
 - **Location Processing**: Integrates with Google Maps for transaction location data.
 
-## 🛠️ Tech Stack
+## Tech Stack
 - **Language**: Python 3.14
 - **Libraries**: pandas, numpy, loguru
 - **Testing**: pytest, hypothesis, mypy
 - **Tools**: ruff, pre-commit
 
-## 🏦 Supported Banks
+## Supported Banks
 - **PKO**: Fully supported for importing and categorizing transactions.
 
-## 📊 System Architecture
+## System Architecture
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://mermaid.ink/svg/JSV7aW5pdDogeyd0aGVtZSc6ICdkYXJrJywgJ3RoZW1lVmFyaWFibGVzJzogeyAncHJpbWFyeUNvbG9yJzogJyMxZjI5MzcnLCAnbWFpbkJrZyc6ICcjMWYyOTM3JywgJ2NsdXN0ZXJCa2cnOiAnIzExMTgyNycsICdjbHVzdGVyQm9yZGVyJzogJyMzNzQxNTEnLCAnbGluZUNvbG9yJzogJyM5Y2EzYWYnLCAnZm9udEZhbWlseSc6ICdTZWdvZSBVSSwgc2Fucy1zZXJpZicsICdlZGdlTGFiZWxCYWNrZ3JvdW5kJzogJyMxMTE4MjcnIH19fSUlCmdyYXBoIExSCiAgICBzdWJncmFwaCBJbnB1dCBbIiZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwO0RhdGEgSW5wdXQmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsiXQogICAgICAgIGRpcmVjdGlvbiBUQgogICAgICAgIEFbQmFuayBDU1ZdOjo6aW5wdXQKICAgIGVuZAoKICAgIHN1YmdyYXBoIFByb2Nlc3MgWyImbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDtQcm9jZXNzaW5nIFBpcGVsaW5lJm5ic3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7Il0KICAgICAgICBkaXJlY3Rpb24gVEIKICAgICAgICBCKERhdGEgSW1wb3J0ZXIpOjo6cHJvY2VzcwogICAgICAgIEN7UGFuZGFzIERhdGFGcmFtZX06Ojpwcm9jZXNzCiAgICAgICAgRFtEYXRhIENsZWFuZXJdOjo6cHJvY2VzcwogICAgICAgIEVbQ2F0ZWdvcnkgTWFwcGVyXTo6OnByb2Nlc3MKICAgICAgICBGW0xvY2F0aW9uIFByb2Nlc3Nvcl06Ojpwcm9jZXNzCiAgICBlbmQKCiAgICBzdWJncmFwaCBPdXRwdXQgWyImbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDtEYXRhIE91dHB1dCZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyJdCiAgICAgICAgZGlyZWN0aW9uIFRCCiAgICAgICAgR1tHb29nbGUgU2hlZXRzIENTVl06OjpvdXRwdXQKICAgICAgICBIW1VuYXNzaWduZWQgVHJhbnNhY3Rpb25zXTo6Om91dHB1dAogICAgICAgIElbR29vZ2xlIE1hcHMgTGlua3NdOjo6b3V0cHV0CiAgICBlbmQKCiAgICBBIC0tPnxSZWFkfCBCCiAgICBCIC0tPnxQYXJzZXwgQwogICAgQyAtLT58Q2xlYW58IEQKICAgIEQgLS0-fENhdGVnb3JpemV8IEUKICAgIEUgLS0-fExvY2F0aW9ufCBGCiAgICBGIC0tPnxFeHBvcnR8IEcKICAgIEUgLS4tPnxGaWx0ZXJ8IEgKICAgIEYgLS0-fEdlbmVyYXRlfCBJCgogICAgY2xhc3NEZWYgaW5wdXQgZmlsbDojMTcyNTU0LHN0cm9rZTojNjBhNWZhLHN0cm9rZS13aWR0aDoycHgsY29sb3I6I2RiZWFmZSxyeDo4LHJ5Ojg7CiAgICBjbGFzc0RlZiBwcm9jZXNzIGZpbGw6IzJlMTA2NSxzdHJva2U6I2E3OGJmYSxzdHJva2Utd2lkdGg6MnB4LGNvbG9yOiNmM2U4ZmYscng6OCxyeTo4OwogICAgY2xhc3NEZWYgb3V0cHV0IGZpbGw6IzA2NGUzYixzdHJva2U6IzM0ZDM5OSxzdHJva2Utd2lkdGg6MnB4LGNvbG9yOiNkMWZhZTUscng6OCxyeTo4OwogICAgc3R5bGUgSW5wdXQgZmlsbDojMTExODI3LHN0cm9rZTojMzc0MTUxLHN0cm9rZS13aWR0aDoxcHgscng6MTAscnk6MTAKICAgIHN0eWxlIFByb2Nlc3MgZmlsbDojMTExODI3LHN0cm9rZTojMzc0MTUxLHN0cm9rZS13aWR0aDoxcHgscng6MTAscnk6MTAKICAgIHN0eWxlIE91dHB1dCBmaWxsOiMxMTE4Mjcsc3Ryb2tlOiMzNzQxNTEsc3Ryb2tlLXdpZHRoOjFweCxyeDoxMCxyeToxMA==">
@@ -46,7 +46,7 @@ The system follows a three-layer architecture:
 - **Processing Pipeline**: Cleans data → Maps categories → Processes locations → Generates maps links
 - **Data Output**: Exports to Google Sheets format, identifies unassigned transactions, and creates location links
 
-## 🧪 Testing & Quality Assurance
+## Testing & Quality Assurance
 This project maintains high code quality through comprehensive testing practices and automated CI/CD:
 
 ### Testing Framework
@@ -63,15 +63,15 @@ This project maintains high code quality through comprehensive testing practices
   - **Stage 2**: Parallel test execution (unit, integration, security, performance tests)
   - **Stage 3**: Coverage reporting and artifact archival
 
-## 🚀 How to Use
+## How to Use
 1. Place your transaction CSV file in the `data/` directory.
 2. Fill the `data_processing/category.py` file with your personal category data.
 3. Run the main script:
    ```bash
    python main.py
    ```
-4. Processed data will be available in `for_google_spreadsheet.csv`.
+4. Processed data will be available in `google_sheets_expenses.csv` (and `google_sheets_income.csv` for the income track).
 
-## 🤔 Why I Built This
+## Why I Built This
 
 We all want a clearer picture of our finances. I created this project to simplify that process. By automatically categorizing your bank transactions, it gives you effortless insights into your spending habits. This means you can stop guessing, start seeing patterns, and make better choices that improve your financial health.

@@ -8,6 +8,8 @@
 # Custom project-specific patterns
 *unassigned_transactions*
 *unassigned_income*
+google_sheets_expenses.csv
+google_sheets_income.csv
 *for_google_spreadsheet*
 *zestawienie*
 *history*

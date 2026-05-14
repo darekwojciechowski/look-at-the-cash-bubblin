@@ -76,7 +76,7 @@ class TestDataExportIntegration:
         monkeypatch: pytest.MonkeyPatch,
         tmp_path: Path,
     ) -> None:
-        """Test that for_google_spreadsheet.csv has the exact header with tab separators.
+        """Test that google_sheets_expenses.csv has the exact header with tab separators.
 
         Given: a processed transaction DataFrame
         When:  export_for_google_sheets() writes the file
@@ -92,7 +92,7 @@ class TestDataExportIntegration:
         export_for_google_sheets(sample_dataframe_with_categories)
 
         # Assert
-        output_file = tmp_path / "for_google_spreadsheet.csv"
+        output_file = tmp_path / "google_sheets_expenses.csv"
         first_line = output_file.read_text(encoding="utf-8").splitlines()[0]
         assert first_line == expected_header
 
@@ -187,7 +187,7 @@ class TestIncomeExportEndToEnd:
         export_unassigned_income(income_df)
 
         # Google Sheets file: 3 income rows survive (refund is filtered as REMOVE_ENTRY)
-        gs = pd.read_csv(tmp_path / "for_google_spreadsheet_income.csv", sep="\t")
+        gs = pd.read_csv(tmp_path / "google_sheets_income.csv", sep="\t")
         assert list(gs.columns) == ["Day", "Month", "Year", "Item", "Category", "Amount", "Importance"]
         assert len(gs) == 3
 

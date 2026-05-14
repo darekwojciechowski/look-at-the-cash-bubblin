@@ -135,13 +135,13 @@ class TestExporterAuditLogs:
 
         Given: a minimal processed DataFrame and a loguru sink
         When:  export_for_google_sheets() is called
-        Then:  at least one log record mentions 'for_google_spreadsheet.csv'
+        Then:  at least one log record mentions 'google_sheets_expenses.csv'
         """
         # Act
         export_for_google_sheets(minimal_export_df)
 
         # Assert
-        assert any("for_google_spreadsheet" in msg for msg in loguru_sink)
+        assert any("google_sheets_expenses" in msg for msg in loguru_sink)
 
     def test_misc_completion_is_logged_by_export_misc_transactions(
         self, loguru_sink: list[str], minimal_export_df: pd.DataFrame
