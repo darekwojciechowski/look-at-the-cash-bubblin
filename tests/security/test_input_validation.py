@@ -74,7 +74,7 @@ class TestPayloadPreservation:
         then the data column value is preserved exactly (no silent transformation).
         """
         # Arrange
-        df = make_transaction_dataframe([{"data": payload, "price": "-10.0", "month": 1, "year": 2023}])
+        df = make_transaction_dataframe([{"data": payload, "amount": "-10.0", "month": 1, "year": 2023}])
 
         # Act
         with patch("data_processing.data_core.mappings", _mock_mappings):
@@ -96,7 +96,7 @@ class TestPayloadPreservation:
         # Arrange
         null_byte_inputs = ["test\x00malicious", "file.csv\x00.txt", "data\x00\x00\x00"]
         df = make_transaction_dataframe([
-            {"data": v, "price": "-10.0", "month": 1, "year": 2023} for v in null_byte_inputs
+            {"data": v, "amount": "-10.0", "month": 1, "year": 2023} for v in null_byte_inputs
         ])
 
         # Act
@@ -130,7 +130,7 @@ class TestPriceValidation:
         then ValueError is raised (locked behaviour — astype(float) contract).
         """
         # Arrange
-        df = make_transaction_dataframe([{"data": "test", "price": bad_price, "month": 1, "year": 2023}])
+        df = make_transaction_dataframe([{"data": "test", "amount": bad_price, "month": 1, "year": 2023}])
 
         # Act + Assert
         with patch("data_processing.data_core.mappings", _mock_mappings), pytest.raises(ValueError):
@@ -158,7 +158,7 @@ class TestPriceValidation:
         Negative inf passes the guard and is kept — this is a known gap (M11).
         """
         # Arrange
-        df = make_transaction_dataframe([{"data": "test", "price": price, "month": 1, "year": 2023}])
+        df = make_transaction_dataframe([{"data": "test", "amount": price, "month": 1, "year": 2023}])
 
         # Act
         with patch("data_processing.data_core.mappings", _mock_mappings):
@@ -185,7 +185,7 @@ class TestLongInputHandling:
         """
         # Arrange
         long_string = "A" * 1_000_000
-        df = make_transaction_dataframe([{"data": long_string, "price": "-10.0", "month": 1, "year": 2023}])
+        df = make_transaction_dataframe([{"data": long_string, "amount": "-10.0", "month": 1, "year": 2023}])
 
         # Act
         with patch("data_processing.data_core.mappings", _mock_mappings):
@@ -213,9 +213,9 @@ class TestMonthYearDocumentedBehavior:
         """
         # Arrange
         df = make_transaction_dataframe([
-            {"data": "test_a", "price": "-10.0", "month": 13, "year": 1800},
-            {"data": "test_b", "price": "-20.0", "month": -1, "year": 3000},
-            {"data": "test_c", "price": "-30.0", "month": 0, "year": -1},
+            {"data": "test_a", "amount": "-10.0", "month": 13, "year": 1800},
+            {"data": "test_b", "amount": "-20.0", "month": -1, "year": 3000},
+            {"data": "test_c", "amount": "-30.0", "month": 0, "year": -1},
         ])
 
         # Act

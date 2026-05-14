@@ -48,7 +48,7 @@ def ipko_import(df: pd.DataFrame) -> pd.DataFrame:
             no header).
 
     Returns:
-        DataFrame with columns: ``price``, ``data``, ``month``, ``year``, ``day``.
+        DataFrame with columns: ``amount``, ``data``, ``month``, ``year``, ``day``.
     """
     # Rename columns for consistency
     df = df.rename(
@@ -56,7 +56,7 @@ def ipko_import(df: pd.DataFrame) -> pd.DataFrame:
             df.columns[0]: "transaction_date",
             df.columns[1]: "currency_data",
             df.columns[2]: "transaction_type",
-            df.columns[3]: "price",
+            df.columns[3]: "amount",
             df.columns[4]: "currency",
             df.columns[5]: "transaction_description",
             df.columns[6]: "unnamed_6",
@@ -170,7 +170,7 @@ def read_transaction_csv(file_path: str | Path, encoding: str) -> pd.DataFrame:
                 )
                 logger.info(f"[SUCCESS] Loaded CSV file: {file_path} with encoding: {enc}")
                 return df
-            except UnicodeDecodeError, UnicodeError:
+            except UnicodeError:
                 logger.debug(f"[ENCODING] Failed with encoding: {enc}")
                 continue
             except FileNotFoundError as e:

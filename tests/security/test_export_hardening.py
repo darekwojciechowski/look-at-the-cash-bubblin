@@ -36,7 +36,7 @@ def _make_raw_ipko_df(n_cols: int) -> pd.DataFrame:
 def _make_export_df() -> pd.DataFrame:
     return pd.DataFrame({
         "data": ["regular description"],
-        "price": ["-10.0"],
+        "amount": ["-10.0"],
         "day": [15],
         "month": [1],
         "year": [2023],
@@ -118,4 +118,4 @@ class TestIpkoImportColumnCounts:
         result = ipko_import(df)
 
         # Assert — pipeline still produces the required output columns
-        assert {"price", "data", "month", "year"}.issubset(result.columns)
+        assert {"amount", "data", "month", "year"}.issubset(result.columns)

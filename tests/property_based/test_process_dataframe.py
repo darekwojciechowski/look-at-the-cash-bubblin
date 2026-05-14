@@ -36,7 +36,7 @@ class TestProcessDataframe:
         count = len(prices)
         df = pd.DataFrame({
             "data": [f"transaction {i}" for i in range(count)],
-            "price": [str(p) for p in prices],
+            "amount": [str(p) for p in prices],
             "day": [1] * count,
             "month": [1] * count,
             "year": [2023] * count,
@@ -49,7 +49,7 @@ class TestProcessDataframe:
         assert isinstance(result, pd.DataFrame)
         assert len(result) <= len(df)
         assert "category" in result.columns
-        assert "price" in result.columns
+        assert "amount" in result.columns
 
     @given(
         prices=st.lists(
@@ -73,7 +73,7 @@ class TestProcessDataframe:
         # Arrange
         df = pd.DataFrame({
             "data": [f"test {i}" for i in range(len(prices))],
-            "price": [str(p) for p in prices],
+            "amount": [str(p) for p in prices],
             "day": [1] * len(prices),
             "month": [1] * len(prices),
             "year": [2023] * len(prices),
@@ -83,7 +83,7 @@ class TestProcessDataframe:
         result = process_dataframe(df)
 
         # Assert
-        for price in result["price"]:
+        for price in result["amount"]:
             assert float(price) > 0
 
     @given(count=st.integers(min_value=1, max_value=50))
@@ -102,7 +102,7 @@ class TestProcessDataframe:
         # Arrange
         df = pd.DataFrame({
             "data": [f"test {i}" for i in range(count)],
-            "price": ["-10.0"] * count,
+            "amount": ["-10.0"] * count,
             "day": [1] * count,
             "month": [1] * count,
             "year": [2023] * count,
@@ -112,7 +112,7 @@ class TestProcessDataframe:
         result = process_dataframe(df)
 
         # Assert
-        assert list(result.columns) == ["day", "month", "year", "price", "category", "data"]
+        assert list(result.columns) == ["day", "month", "year", "amount", "category", "data"]
 
     @given(
         month=st.integers(min_value=1, max_value=12),
@@ -131,7 +131,7 @@ class TestProcessDataframe:
         Then:  the output row retains the original month and year values
         """
         # Arrange
-        df = pd.DataFrame({"data": ["test"], "price": ["-10.0"], "day": [1], "month": [month], "year": [year]})
+        df = pd.DataFrame({"data": ["test"], "amount": ["-10.0"], "day": [1], "month": [month], "year": [year]})
 
         # Act
         result = process_dataframe(df)
@@ -155,11 +155,11 @@ class TestProcessDataframe:
         Then:  the result price equals the absolute value of the input within 0.01 tolerance
         """
         # Arrange
-        df = pd.DataFrame({"data": ["test"], "price": [price_str], "day": [1], "month": [1], "year": [2023]})
+        df = pd.DataFrame({"data": ["test"], "amount": [price_str], "day": [1], "month": [1], "year": [2023]})
 
         # Act
         result = process_dataframe(df)
 
         # Assert — skip examples where the row was filtered out
         assume(len(result) > 0)
-        assert abs(float(result["price"].iloc[0]) - abs(float(price_str))) < 0.01
+        assert abs(float(result["amount"].iloc[0]) - abs(float(price_str))) < 0.01

@@ -32,8 +32,8 @@ class PipelineState(StrEnum):
 
 
 # Column sets per pipeline stage — used to enforce strict structural invariants.
-_RAW_COLUMNS: frozenset[str] = frozenset({"data", "price", "day", "month", "year"})
-_PROCESSED_COLUMNS: list[str] = ["day", "month", "year", "price", "category", "data"]
+_RAW_COLUMNS: frozenset[str] = frozenset({"data", "amount", "day", "month", "year"})
+_PROCESSED_COLUMNS: list[str] = ["day", "month", "year", "amount", "category", "data"]
 
 _SAMPLE_PRICES: list[str] = ["-100.0", "-50.0", "-200.0", "-15.0", "-30.0"]
 
@@ -78,7 +78,7 @@ class TransactionPipelineMachine(RuleBasedStateMachine):
         """Transition any → LOADED by creating a raw transaction DataFrame."""
         self.buffer = pd.DataFrame({
             "data": [description],
-            "price": [price],
+            "amount": [price],
             "day": [1],
             "month": [month],
             "year": [year],
@@ -139,9 +139,9 @@ class TransactionPipelineMachine(RuleBasedStateMachine):
         """
         if self._state != PipelineState.PROCESSED:
             return
-        if "price" not in self.buffer.columns or len(self.buffer) == 0:
+        if "amount" not in self.buffer.columns or len(self.buffer) == 0:
             return
-        prices = self.buffer["price"].astype(float)
+        prices = self.buffer["amount"].astype(float)
         assert (prices >= 0).all(), f"Negative prices after processing: {prices[prices < 0].tolist()}"
 
     @invariant()

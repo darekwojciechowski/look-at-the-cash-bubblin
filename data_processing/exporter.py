@@ -18,6 +18,9 @@ from data_processing.location_processor import (
 # start of a cell value. Prefix them with a single quote to neutralise the risk.
 _FORMULA_INJECTION_CHARS: frozenset[str] = frozenset("=+-@\t\r")
 
+_GOOGLE_SHEETS_COLUMNS: list[str] = ["Day", "Month", "Year", "Item", "Category", "Amount", "Importance"]
+_CLEANED_COLUMNS: list[str] = ["day", "month", "year", "category", "amount"]
+
 
 def _today_str() -> str:
     return datetime.date.today().strftime("%Y-%m-%d")
@@ -38,8 +41,45 @@ def _sanitize_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _write_google_sheets_csv(output_df: pd.DataFrame, output_path: Path) -> Path:
+    """Write *output_df* as a tab-separated Google Sheets export.
+
+    Sanitizes cells against formula injection, refuses to overwrite a symlink
+    (TOCTOU guard), writes with a tab separator, and restricts file permissions
+    to owner-only read/write on POSIX (PII protection).
+    """
+    output_df = _sanitize_dataframe(output_df)
+
+    if output_path.is_symlink():
+        raise OSError(f"Refusing to write to symlink: {output_path}")
+
+    output_df.to_csv(output_path, sep="\t", index=False)
+
+    if sys.platform != "win32":
+        output_path.chmod(0o600)
+
+    return output_path
+
+
+def _write_cleaned_csv(df: pd.DataFrame, columns: list[str], output_path: Path | str) -> None:
+    """Write *df* as a comma-separated utf-8-sig CSV restricted to *columns*.
+
+    Refuses to write outside the project directory (path-traversal guard).
+    """
+    resolved = Path(output_path).resolve()
+    try:
+        resolved.relative_to(Path.cwd())
+    except ValueError as err:
+        raise ValueError(
+            f"Output path {output_path!r} must resolve within the project directory {Path.cwd()!r}"
+        ) from err
+
+    sanitized = _sanitize_dataframe(df)
+    sanitized.to_csv(output_path, columns=columns, index=False, encoding="utf-8-sig")
+
+
 def export_for_google_sheets(processed_df: pd.DataFrame) -> Path:
-    """Write the processed DataFrame to ``for_google_spreadsheet.csv``.
+    """Write the processed expense DataFrame to ``for_google_spreadsheet.csv``.
 
     Columns: ``Day, Month, Year, Item, Category, Amount, Importance``.
     ``Amount`` uses a comma as the decimal separator (European format).
@@ -56,31 +96,19 @@ def export_for_google_sheets(processed_df: pd.DataFrame) -> Path:
 
     rows = []
     for row in processed_df.itertuples(index=False):
-        expense = Expense(str(row.month), str(row.year), str(row.category), str(row.price))
+        expense = Expense(str(row.month), str(row.year), str(row.category), str(row.amount))
         rows.append({
             "Day": row.day,
             "Month": row.month,
             "Year": row.year,
             "Item": row.category,
             "Category": expense.category.value,
-            "Amount": str(row.price).replace(".", ","),
+            "Amount": str(row.amount).replace(".", ","),
             "Importance": expense.importance.value,
         })
 
-    output_df = pd.DataFrame(rows, columns=["Day", "Month", "Year", "Item", "Category", "Amount", "Importance"])
-    output_df = _sanitize_dataframe(output_df)
-
-    output_file = Path("for_google_spreadsheet.csv")
-
-    # Guard against symlink TOCTOU: refuse to overwrite a symlink target
-    if output_file.is_symlink():
-        raise OSError(f"Refusing to write to symlink: {output_file}")
-
-    output_df.to_csv(output_file, sep="\t", index=False)
-
-    # Restrict file permissions to owner-only read/write (PII protection)
-    if sys.platform != "win32":
-        output_file.chmod(0o600)
+    output_df = pd.DataFrame(rows, columns=_GOOGLE_SHEETS_COLUMNS)
+    output_file = _write_google_sheets_csv(output_df, Path("for_google_spreadsheet.csv"))
 
     logger.info(f"Exported data for Google Sheets to '{output_file}'.")
     return output_file
@@ -98,7 +126,7 @@ def export_misc_transactions(df: pd.DataFrame) -> None:
 
 
 def export_cleaned_data(df: pd.DataFrame, output_file: Path | str = Path("data/processed_transactions.csv")) -> None:
-    """Write the ``[day, month, year, category, price]`` columns to a CSV file.
+    """Write the ``[day, month, year, category, amount]`` columns to a CSV file.
 
     Uses ``utf-8-sig`` encoding so the file opens correctly in Windows Excel.
 
@@ -110,22 +138,7 @@ def export_cleaned_data(df: pd.DataFrame, output_file: Path | str = Path("data/p
     Raises:
         ValueError: If ``output_file`` resolves outside the current working directory.
     """
-    # Guard against path traversal: output must resolve within the project directory
-    resolved = Path(output_file).resolve()
-    try:
-        resolved.relative_to(Path.cwd())
-    except ValueError as err:
-        raise ValueError(
-            f"Output path {output_file!r} must resolve within the project directory {Path.cwd()!r}"
-        ) from err
-
-    sanitized = _sanitize_dataframe(df)
-    sanitized.to_csv(
-        output_file,
-        columns=["day", "month", "year", "category", "price"],
-        index=False,
-        encoding="utf-8-sig",
-    )
+    _write_cleaned_csv(df, _CLEANED_COLUMNS, output_file)
     logger.info(f"[EXPORT] Cleaned data saved to {output_file}")
 
 
@@ -148,6 +161,83 @@ def export_unassigned_transactions_to_csv(df: pd.DataFrame) -> None:
     # Keep BOM for Windows Excel when exporting unassigned transactions
     df_copy.to_csv(output_file, index=False, encoding="utf-8-sig")
     logger.info(f"[EXPORT] Unassigned transactions with location data saved to {output_file}")
+
+
+def export_income_for_google_sheets(income_df: pd.DataFrame) -> Path:
+    """Write the processed income DataFrame to ``for_google_spreadsheet_income.csv``.
+
+    Columns mirror the expense export schema:
+    ``Day, Month, Year, Item, Category, Amount, Importance``. ``Item`` and
+    ``Category`` both carry the income label (SALARY, SIDE_HUSTLE,
+    EXTRA_INCOME, INCOME_MISC) since income has no separate display taxonomy.
+    ``Importance`` is left blank — the expense importance scale does not apply
+    to income.
+
+    Args:
+        income_df: Processed income transaction DataFrame.
+
+    Returns:
+        Path to the written CSV file.
+    """
+    logger.info("Exporting {} income rows for Google Sheets", len(income_df))
+
+    rows = []
+    for row in income_df.itertuples(index=False):
+        rows.append({
+            "Day": row.day,
+            "Month": row.month,
+            "Year": row.year,
+            "Item": row.category,
+            "Category": row.category,
+            "Amount": str(row.amount).replace(".", ","),
+            "Importance": "",
+        })
+
+    output_df = pd.DataFrame(rows, columns=_GOOGLE_SHEETS_COLUMNS)
+    output_file = _write_google_sheets_csv(output_df, Path("for_google_spreadsheet_income.csv"))
+
+    logger.info(f"Exported income data for Google Sheets to '{output_file}'.")
+    return output_file
+
+
+def export_cleaned_income_data(df: pd.DataFrame, output_file: Path | str = Path("data/processed_income.csv")) -> None:
+    """Write the ``[day, month, year, category, amount]`` columns to a CSV file.
+
+    Mirrors ``export_cleaned_data`` for income — same schema, same encoding,
+    same path-traversal guard, different destination.
+
+    Args:
+        df: Processed income DataFrame.
+        output_file: Destination path. Defaults to ``data/processed_income.csv``.
+
+    Raises:
+        ValueError: If ``output_file`` resolves outside the current working directory.
+    """
+    _write_cleaned_csv(df, _CLEANED_COLUMNS, output_file)
+    logger.info(f"[EXPORT] Cleaned income data saved to {output_file}")
+
+
+def export_unassigned_income(df: pd.DataFrame) -> None:
+    """Write INCOME_MISC rows to ``unassigned_income.csv`` for manual review.
+
+    Unlike the expense MISC export, income unassigned rows carry **no**
+    ``extracted_location`` or ``google_maps_link`` columns: paychecks,
+    transfers, and refunds are not place-bound.
+
+    Args:
+        df: DataFrame containing all categorized income transactions.
+    """
+    unassigned_df = df[df["category"] == "INCOME_MISC"]
+
+    sanitized = _sanitize_dataframe(unassigned_df)
+    output_file = Path("unassigned_income.csv")
+    sanitized.to_csv(
+        output_file,
+        columns=["day", "month", "year", "amount", "category", "data"],
+        index=False,
+        encoding="utf-8-sig",
+    )
+    logger.info(f"[EXPORT] Unassigned income saved to {output_file}")
 
 
 def get_data(path: Path = Path("data/processed_transactions.csv")) -> list[Expense]:

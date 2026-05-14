@@ -21,7 +21,7 @@ from loguru import logger
 from data_processing.data_loader import Expense
 
 # Canonical schema for transaction DataFrames used throughout the test suite.
-_TRANSACTION_COLUMNS: list[str] = ["data", "price", "day", "month", "year"]
+_TRANSACTION_COLUMNS: list[str] = ["data", "amount", "day", "month", "year"]
 
 # Type alias used by the make_transaction_dataframe factory fixture.
 type TransactionRow = dict[str, str | int | float]
@@ -71,7 +71,7 @@ def sample_raw_dataframe() -> pd.DataFrame:
             "starbucks",
             "piotrkowska 157a",
         ],
-        "price": ["-50.0", "-20.0", "-100.0", "-15.0", "200.0"],
+        "amount": ["-50.0", "-20.0", "-100.0", "-15.0", "200.0"],
         "month": [1, 1, 1, 1, 1],
         "year": [2023, 2023, 2023, 2023, 2023],
         "day": [1, 2, 3, 4, 5],
@@ -84,7 +84,7 @@ def sample_processed_dataframe() -> pd.DataFrame:
     return pd.DataFrame({
         "month": [1, 1, 2, 2],
         "year": [2023, 2023, 2023, 2023],
-        "price": [100.0, 200.0, 300.0, 50.0],
+        "amount": [100.0, 200.0, 300.0, 50.0],
         "category": ["MISC", "FOOD", "MISC", "FUEL"],
         "data": [
             "unknown transaction",
@@ -100,7 +100,7 @@ def sample_dataframe_with_categories() -> pd.DataFrame:
     """Provides realistic transaction DataFrame with categories."""
     return pd.DataFrame({
         "category": ["MISC", "FOOD", "MISC", "FUEL"],
-        "price": [100.0, 200.0, 300.0, 50.0],
+        "amount": [100.0, 200.0, 300.0, 50.0],
         "day": [1, 5, 10, 15],
         "month": [1, 1, 2, 2],
         "year": [2023, 2023, 2023, 2023],
@@ -144,7 +144,7 @@ def expected_cleaned_data() -> pd.DataFrame:
             "Starbucks coffee shop",
             "Biedronka - Piotrkowska 157a",
         ],
-        "price": ["-50.0", "-20.0", "-100.0", "-15.0", "200.0"],
+        "amount": ["-50.0", "-20.0", "-100.0", "-15.0", "200.0"],
         "month": [1, 1, 1, 1, 1],
         "year": [2023, 2023, 2023, 2023, 2023],
         "day": [1, 2, 3, 4, 5],
@@ -173,7 +173,7 @@ def make_transaction_dataframe() -> Callable[[list[TransactionRow]], pd.DataFram
 
         def test_something(make_transaction_dataframe):
             df = make_transaction_dataframe(
-                [{"data": "orlen", "price": "-100.0", "month": 1, "year": 2023}]
+                [{"data": "orlen", "amount": "-100.0", "month": 1, "year": 2023}]
             )
             result = clean_descriptions(df)
             assert result["data"].iloc[0] == "Orlen gas station"
@@ -339,7 +339,7 @@ def test_data_dir(tmp_path: Path) -> Path:
 def sample_csv_file(test_data_dir: Path) -> Path:
     """Creates a sample CSV file for testing."""
     csv_path = test_data_dir / "test_transactions.csv"
-    csv_content = """data,price,month,year,day
+    csv_content = """data,amount,month,year,day
 orlen,-100.0,1,2023,1
 biedronka,-50.0,1,2023,2
 """

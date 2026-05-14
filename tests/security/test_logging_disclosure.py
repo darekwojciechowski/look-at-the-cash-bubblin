@@ -22,7 +22,7 @@ _SENTINEL = "SECRET_TOKEN_zQ9xKpL2mN7vR4wT"
 def _make_export_df(extra_data: str = "regular description") -> pd.DataFrame:
     return pd.DataFrame({
         "data": [extra_data],
-        "price": ["-10.0"],
+        "amount": ["-10.0"],
         "day": [15],
         "month": [1],
         "year": [2023],
@@ -72,7 +72,7 @@ class TestPiiNotLeakedToLogs:
         # Arrange
         df = pd.DataFrame({
             "data": ["desc_a", "desc_b", "desc_c"],
-            "price": ["-10.0", "-20.0", "-30.0"],
+            "amount": ["-10.0", "-20.0", "-30.0"],
             "day": [1, 2, 3],
             "month": [1, 1, 1],
             "year": [2023, 2023, 2023],
@@ -107,7 +107,7 @@ class TestBadLineLogging:
         """
         # Arrange — header has 4 fields; bad row has 6
         csv_content = (
-            "data,price,month,year\n"
+            "data,amount,month,year\n"
             "good_row,-10.0,1,2023\n"
             "bad_row,-20.0,1,2023,EXTRA,FIELD\n"  # too many fields → bad line
             "another_good,-30.0,2,2023\n"

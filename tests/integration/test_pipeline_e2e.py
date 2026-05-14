@@ -71,7 +71,7 @@ class TestEndToEndDataProcessing:
 
         # Act — Import IPKO data
         imported_df = ipko_import(sample_ipko_dataframe)
-        assert "price" in imported_df.columns
+        assert "amount" in imported_df.columns
         assert "data" in imported_df.columns
 
         # Act — Process imported data

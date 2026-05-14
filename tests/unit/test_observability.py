@@ -110,7 +110,7 @@ class TestExporterAuditLogs:
             "day": [15],
             "month": [1],
             "year": [2023],
-            "price": ["100.0"],
+            "amount": ["100.0"],
             "category": ["MISC"],
             "data": ["test transaction"],
         })
@@ -179,7 +179,7 @@ class TestDataImportsAuditLogs:
         """
         # Arrange
         csv_file = tmp_path / "transactions.csv"
-        csv_file.write_text("data,price,month,year\norlen,-100.0,1,2023\n", encoding="utf-8")
+        csv_file.write_text("data,amount,month,year\norlen,-100.0,1,2023\n", encoding="utf-8")
 
         # Act
         read_transaction_csv(csv_file, "utf-8")
@@ -209,7 +209,7 @@ class TestDataImportsAuditLogs:
         Then:  at least one log record contains '[DATA]'
         """
         # Arrange
-        df = pd.DataFrame({"month": [1], "price": ["100.0"]})
+        df = pd.DataFrame({"month": [1], "amount": ["100.0"]})
 
         # Act
         log_dataframe_preview(df)

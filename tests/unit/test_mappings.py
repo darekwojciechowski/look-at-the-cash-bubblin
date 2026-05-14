@@ -9,10 +9,13 @@ from data_processing.category import (
     COFFEE,
     ENTERTAINMENT,
     FOOD,
+    INCOME_EXTRA,
+    INCOME_SALARY,
+    INCOME_SIDE_HUSTLE,
     TRANSPORTATION,
     all_category,
 )
-from data_processing.mappings import mappings
+from data_processing.mappings import DEFAULT_INCOME_CATEGORY, lookup_income_category, mappings
 
 
 @pytest.mark.unit
@@ -488,3 +491,39 @@ class TestCategorySetIntegrity:
             first_keyword = list(cat_set)[0]
             result = mappings(first_keyword)
             assert result in all_category, f"mappings() returned invalid category: {result}"
+
+
+@pytest.mark.unit
+class TestIncomeCategorySets:
+    """Sanity checks for the income keyword sets."""
+
+    @pytest.mark.parametrize("kw_set", [INCOME_SALARY, INCOME_SIDE_HUSTLE, INCOME_EXTRA])
+    def test_income_sets_are_non_empty_frozensets(self, kw_set: frozenset[str]) -> None:
+        assert isinstance(kw_set, frozenset)
+        assert len(kw_set) > 0
+        assert all(isinstance(k, str) for k in kw_set)
+
+
+@pytest.mark.unit
+class TestLookupIncomeCategory:
+    """Test suite for lookup_income_category."""
+
+    @pytest.mark.parametrize(
+        "description,expected",
+        [
+            ("Wynagrodzenie za styczeń", "SALARY"),
+            ("monthly PAYROLL deposit", "SALARY"),
+            ("freelance consulting fee", "SIDE_HUSTLE"),
+            ("marketplace payout", "SIDE_HUSTLE"),
+            ("zwrot podatku 2023", "EXTRA_INCOME"),
+            ("urodzinowy prezent od babci", "EXTRA_INCOME"),
+            ("year-end bonus", "EXTRA_INCOME"),
+            ("random unknown transfer", "INCOME_MISC"),
+            ("", "INCOME_MISC"),
+        ],
+    )
+    def test_returns_expected_label(self, description: str, expected: str) -> None:
+        assert lookup_income_category(description) == expected
+
+    def test_default_constant_is_income_misc(self) -> None:
+        assert DEFAULT_INCOME_CATEGORY == "INCOME_MISC"

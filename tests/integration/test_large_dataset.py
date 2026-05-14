@@ -25,7 +25,7 @@ class TestLargeDatasetProcessing:
         # Arrange
         large_df = pd.DataFrame({
             "data": [f"transaction {i}" for i in range(1000)],
-            "price": [f"-{i % 100 + 10}.0" for i in range(1000)],
+            "amount": [f"-{i % 100 + 10}.0" for i in range(1000)],
             "month": [i % 12 + 1 for i in range(1000)],
             "year": [2023] * 1000,
             "day": [i % 28 + 1 for i in range(1000)],

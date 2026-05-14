@@ -33,7 +33,7 @@ def make_large_transaction_df() -> Callable[[int, str], pd.DataFrame]:
 
         return pd.DataFrame({
             "data": data,
-            "price": price,
+            "amount": price,
             "month": [i % 12 + 1 for i in range(size)],
             "year": [2023] * size,
         })

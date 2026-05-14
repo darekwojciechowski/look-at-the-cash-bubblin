@@ -20,8 +20,8 @@ from data_processing.location_processor import extract_location_from_data
 # ─────────────────────────────────────────────────────────────────────────────
 
 _IPKO_RAW_COLUMNS = {0, 1, 2, 3, 4, 5, 6, 7, 8}
-_IPKO_OUTPUT_COLUMNS = {"price", "data", "month", "year", "day"}
-_PROCESSED_COLUMNS = ["day", "month", "year", "price", "category", "data"]
+_IPKO_OUTPUT_COLUMNS = {"amount", "data", "month", "year", "day"}
+_PROCESSED_COLUMNS = ["day", "month", "year", "amount", "category", "data"]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -135,7 +135,7 @@ class TestProcessDataframeOutputContract:
         # Arrange — mixed-sign prices
         df = pd.DataFrame({
             "data": ["orlen", "salary income"],
-            "price": ["-100.0", "3000.0"],
+            "amount": ["-100.0", "3000.0"],
             "month": [1, 1],
             "year": [2023, 2023],
             "day": [1, 2],
@@ -146,7 +146,7 @@ class TestProcessDataframeOutputContract:
 
         # Assert — only expense row survives
         assert len(result) == 1
-        assert float(result["price"].iloc[0]) > 0  # stored as absolute value
+        assert float(result["amount"].iloc[0]) > 0  # stored as absolute value
 
     def test_price_column_dtype_is_object_string(self, sample_raw_dataframe: pd.DataFrame) -> None:
         """Price must be stored as a string dtype after processing.
@@ -157,7 +157,7 @@ class TestProcessDataframeOutputContract:
         """
         result = process_dataframe(sample_raw_dataframe)
 
-        assert pd.api.types.is_string_dtype(result["price"])
+        assert pd.api.types.is_string_dtype(result["amount"])
 
     def test_row_count_does_not_exceed_input(self, sample_raw_dataframe: pd.DataFrame) -> None:
         """Processing can only remove rows, never add them.
@@ -191,7 +191,7 @@ class TestCleanDescriptionsContract:
         # Arrange
         df = pd.DataFrame({
             "data": ["foo bar"],
-            "price": ["-50.0"],
+            "amount": ["-50.0"],
             "month": [1],
             "year": [2023],
         })
