@@ -61,7 +61,7 @@ class TestSymlinkToctou:
         symlink = isolated_cwd / "google_sheets_expenses.csv"
         try:
             symlink.symlink_to(victim)
-        except (OSError, NotImplementedError):
+        except OSError, NotImplementedError:
             pytest.skip("Cannot create symlink on this platform")
 
         with pytest.raises((OSError, PermissionError)):

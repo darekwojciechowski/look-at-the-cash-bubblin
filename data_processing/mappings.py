@@ -5,6 +5,8 @@ Exports ``mappings()`` (expense categorization) and
 ``DEFAULT_CATEGORY`` and ``DEFAULT_INCOME_CATEGORY`` fallback strings.
 """
 
+from collections.abc import Iterable, Mapping
+
 from data_processing import category
 
 # Fallback value returned by mappings() when no keyword in _CATEGORY_MAP matches.
@@ -26,6 +28,24 @@ _INCOME_MAP: dict[str, frozenset[str]] = {
 }
 
 
+def _match_category(text: str, table: Mapping[str, Iterable[str]], default: str) -> str:
+    """Return the first label in *table* whose keywords substring-match *text*.
+
+    Args:
+        text: Transaction description to classify (matched case-insensitively).
+        table: Ordered label-to-keywords mapping; the first matching label wins.
+        default: Fallback label returned when no keyword matches.
+
+    Returns:
+        The matching label, or *default* when nothing matches.
+    """
+    lowered = text.lower()
+    for label, keywords in table.items():
+        if any(keyword in lowered for keyword in keywords):
+            return label
+    return default
+
+
 def mappings(data: str) -> str:
     """
     Categorize transaction data by matching keywords.
@@ -44,11 +64,7 @@ def mappings(data: str) -> str:
         >>> mappings("unknown transaction")
         'MISC'
     """
-    for cat_name, keywords in _CATEGORY_MAP.items():
-        if any(keyword in data.lower() for keyword in keywords):
-            return cat_name
-
-    return DEFAULT_CATEGORY
+    return _match_category(data, _CATEGORY_MAP, DEFAULT_CATEGORY)
 
 
 def lookup_income_category(description: str) -> str:
@@ -61,8 +77,4 @@ def lookup_income_category(description: str) -> str:
         One of ``"SALARY"``, ``"SIDE_HUSTLE"``, ``"EXTRA_INCOME"`` when a
         keyword matches, or ``"INCOME_MISC"`` as the fallback for manual review.
     """
-    lowered = description.lower()
-    for label, keywords in _INCOME_MAP.items():
-        if any(keyword in lowered for keyword in keywords):
-            return label
-    return DEFAULT_INCOME_CATEGORY
+    return _match_category(description, _INCOME_MAP, DEFAULT_INCOME_CATEGORY)

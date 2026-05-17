@@ -1,11 +1,14 @@
-"""Tests for data_processing.data_loader module.
-Covers Expense categorization, importance assignment, and CSV representation.
+"""Tests for data_processing.expense module.
+Covers Expense categorization, importance assignment, the ExpenseClassifier,
+the CATEGORY_DISPLAY bridge, and CSV representation.
 """
 
 import pytest
 
+from data_processing import category
 from data_processing.category import all_category
-from data_processing.data_loader import CATEGORY, IMPORTANCE, Expense
+from data_processing.expense import CATEGORY, CATEGORY_DISPLAY, IMPORTANCE, Expense, ExpenseClassifier
+from data_processing.mappings import DEFAULT_CATEGORY, mappings
 
 
 @pytest.mark.unit
@@ -93,90 +96,6 @@ class TestExpenseCategorization:
 class TestExpenseRepresentation:
     """Test suite for Expense string representation."""
 
-    def test_expense_to_csv_row_basic(self):
-        """Test to_csv_row method produces correct CSV-formatted output.
-
-        Given: an Expense for apartment rent at 1200
-        When:  to_csv_row() is called
-        Then:  the result equals the expected comma-separated string
-        """
-        # Arrange
-        expense = Expense(1, 2023, "apartment rent", 1200)
-        expected = "1,2023,apartment rent,🏯 Apartment,1200,Essential"
-
-        # Act + Assert
-        assert expense.to_csv_row() == expected
-
-    @pytest.mark.parametrize(
-        "month,year,item,price,expected_csv",
-        [
-            (
-                1,
-                2023,
-                "apartment rent",
-                1200,
-                "1,2023,apartment rent,🏯 Apartment,1200,Essential",
-            ),
-            (
-                2,
-                2023,
-                "groceries",
-                150,
-                "2,2023,groceries,🦞 Eating Out,150,Nice to Have",
-            ),
-            (3, 2023, "fuel", 100, "3,2023,fuel,🚗 Car,100,Have to Have"),
-            (
-                5,
-                2023,
-                "investment",
-                500,
-                "5,2023,investment,💸 Investments,500,Nice to Have",
-            ),
-            (7, 2023, "travel", 800, "7,2023,travel,🗺️ Travel,800,Nice to Have"),
-            (9, 2023, "unknown", 100, "9,2023,unknown,Misc,100,Needs Review"),
-        ],
-    )
-    def test_expense_to_csv_row_multiple_categories(self, month, year, item, price, expected_csv):
-        """Test to_csv_row output for different expense categories.
-
-        Given: parametrized expense fields covering multiple categories
-        When:  to_csv_row() is called
-        Then:  the output matches the expected CSV string for each category
-        """
-        expense = Expense(month, year, item, price)
-        assert expense.to_csv_row() == expected_csv
-
-    def test_expense_to_csv_row_includes_emoji(self):
-        """Verify that to_csv_row includes category emoji.
-
-        Given: an Expense categorised as APARTMENT
-        When:  to_csv_row() is called
-        Then:  the result contains the apartment emoji '🏯'
-        """
-        # Arrange
-        expense = Expense(1, 2023, "apartment rent", 1200)
-
-        # Act + Assert
-        assert "🏯" in expense.to_csv_row()
-
-    def test_expense_to_csv_row_csv_format(self):
-        """Verify to_csv_row produces valid CSV format with comma separation.
-
-        Given: an Expense for a generic test item
-        When:  to_csv_row() is called and the result is split on commas
-        Then:  there are at least five parts and the first two are month and year
-        """
-        # Arrange
-        expense = Expense(1, 2023, "test item", 100)
-
-        # Act
-        parts = expense.to_csv_row().split(",")
-
-        # Assert
-        assert len(parts) >= 5
-        assert parts[0] == "1"
-        assert parts[1] == "2023"
-
     def test_expense_repr_is_developer_readable(self):
         """Verify __repr__ returns dataclass representation, not CSV format.
 
@@ -200,20 +119,35 @@ class TestExpenseAttributes:
     """Test suite for Expense object attributes."""
 
     def test_expense_initialization(self):
-        """Test Expense object is initialized with correct attributes.
+        """Test Expense normalizes numeric fields to str on construction.
 
-        Given: month=1, year=2023, item='test item', price=100
+        Given: month=1, year=2023, item='test item', price=100 (ints)
         When:  Expense is instantiated with those values
-        Then:  each attribute equals the supplied value
+        Then:  month/year/price are coerced to str; item is stored verbatim
         """
         # Arrange + Act
         expense = Expense(1, 2023, "test item", 100)
 
         # Assert
-        assert expense.month == 1
-        assert expense.year == 2023
+        assert expense.month == "1"
+        assert expense.year == "2023"
         assert expense.item == "test item"
-        assert expense.price == 100
+        assert expense.price == "100"
+
+    def test_expense_int_fields_normalized_to_str(self):
+        """Verify int month/year/price are coerced to str and repr reflects it.
+
+        Given: Expense(1, 2023, "rent", 1200) with int numeric fields
+        When:  the instance is constructed and repr() is taken
+        Then:  month is "1" and the repr renders the string-typed values
+        """
+        expense = Expense(1, 2023, "rent", 1200)
+
+        assert expense.month == "1"
+        assert expense.year == "2023"
+        assert expense.price == "1200"
+        assert "month='1'" in repr(expense)
+        assert "price='1200'" in repr(expense)
 
     def test_expense_has_category_attribute(self):
         """Verify Expense object has category attribute.
@@ -281,13 +215,13 @@ class TestExpenseEdgeCases:
 
         Given: price is zero
         When:  Expense is instantiated
-        Then:  price is stored as zero and category/importance are assigned
+        Then:  price is normalized to "0" and category/importance are assigned
         """
         # Arrange + Act
         expense = Expense(1, 2023, "free item", 0)
 
         # Assert
-        assert expense.price == 0
+        assert expense.price == "0"
         assert expense.category is not None
         assert expense.importance is not None
 
@@ -296,13 +230,13 @@ class TestExpenseEdgeCases:
 
         Given: price is -100 representing a refund
         When:  Expense is instantiated
-        Then:  price is stored as-is and a category is assigned
+        Then:  price is normalized to "-100" and a category is assigned
         """
         # Arrange + Act
         expense = Expense(1, 2023, "refund", -100)
 
         # Assert
-        assert expense.price == -100
+        assert expense.price == "-100"
         assert expense.category is not None
 
     def test_expense_with_empty_item_description(self):
@@ -432,3 +366,107 @@ class TestAllCategoriesCoverage:
         assert expense.category != CATEGORY.MISC, (
             f"Category '{category_name}' is not handled in _determine_category_and_importance and falls back to MISC"
         )
+
+
+@pytest.mark.unit
+class TestExpenseClassifier:
+    """Test suite for the stateless ExpenseClassifier."""
+
+    @pytest.mark.parametrize(
+        "text,expected_category,expected_importance",
+        [
+            # One keyword hit per rule in _CATEGORY_RULES (order matters).
+            ("apartment", CATEGORY.APARTMENT, IMPORTANCE.ESSENTIAL),
+            ("food", CATEGORY.FOOD, IMPORTANCE.ESSENTIAL),
+            ("fuel", CATEGORY.CAR, IMPORTANCE.HAVE_TO_HAVE),
+            ("transportation", CATEGORY.TRANSPORTATION, IMPORTANCE.HAVE_TO_HAVE),
+            ("groceries", CATEGORY.EATING_OUT, IMPORTANCE.NICE_TO_HAVE),
+            ("animals", CATEGORY.ANIMALS, IMPORTANCE.HAVE_TO_HAVE),
+            ("self_development", CATEGORY.SELF_DEVELOPMENT, IMPORTANCE.NICE_TO_HAVE),
+            ("clothes", CATEGORY.CLOTHES, IMPORTANCE.NICE_TO_HAVE),
+            ("entertainment", CATEGORY.ENTERTAINMENT, IMPORTANCE.NICE_TO_HAVE),
+            ("shopping", CATEGORY.SHOPPING, IMPORTANCE.NICE_TO_HAVE),
+            ("investment", CATEGORY.INVESTMENTS, IMPORTANCE.NICE_TO_HAVE),
+            ("pharmacy", CATEGORY.CARE, IMPORTANCE.NICE_TO_HAVE),
+            ("travel", CATEGORY.TRAVEL, IMPORTANCE.NICE_TO_HAVE),
+            ("alcohol", CATEGORY.SELF_DESTRUCTION, IMPORTANCE.SHOULDNT_HAVE),
+            ("kids", CATEGORY.KIDS, IMPORTANCE.HAVE_TO_HAVE),
+        ],
+    )
+    def test_classify_one_keyword_per_rule(self, text, expected_category, expected_importance):
+        """Verify classify() returns the correct pair for one keyword per rule.
+
+        Given: a keyword that matches exactly one rule in _CATEGORY_RULES
+        When:  ExpenseClassifier().classify() is called with that keyword
+        Then:  the returned (category, importance) pair matches the rule
+        """
+        classifier = ExpenseClassifier()
+
+        category, importance = classifier.classify(text)
+
+        assert category == expected_category
+        assert importance == expected_importance
+
+    def test_classify_unmatched_falls_back_to_misc(self):
+        """Verify classify() falls back to MISC / NEEDS_REVIEW for unmatched text.
+
+        Given: text containing no rule keyword
+        When:  classify() is called
+        Then:  the result is (CATEGORY.MISC, IMPORTANCE.NEEDS_REVIEW)
+        """
+        category, importance = ExpenseClassifier().classify("totally unknown vendor xyz")
+
+        assert category == CATEGORY.MISC
+        assert importance == IMPORTANCE.NEEDS_REVIEW
+
+    def test_classify_is_case_insensitive(self):
+        """Verify classify() lowercases input before matching.
+
+        Given: an uppercase keyword
+        When:  classify() is called
+        Then:  the keyword still matches its rule
+        """
+        result_category, _ = ExpenseClassifier().classify("APARTMENT RENT")
+
+        assert result_category == CATEGORY.APARTMENT
+
+
+@pytest.mark.unit
+class TestCategoryDisplayMap:
+    """Guards the explicit bridge between mappings() output and display categories."""
+
+    def test_domain_equals_mappings_codomain(self):
+        """Verify CATEGORY_DISPLAY's domain exactly equals the mappings() codomain.
+
+        Given: the CATEGORY_DISPLAY map and category.all_category
+        When:  the key set is compared to all_category plus the default fallback
+        Then:  they are exactly equal, so a future category.py rename fails loudly
+        """
+        assert set(CATEGORY_DISPLAY) == set(category.all_category) | {DEFAULT_CATEGORY}
+
+    def test_every_mappings_output_is_a_map_key(self):
+        """Verify every label mappings() can return is a CATEGORY_DISPLAY key.
+
+        Given: each category name's first keyword and an unknown string
+        When:  mappings() classifies each one
+        Then:  every returned label is present in CATEGORY_DISPLAY
+        """
+        produced = {mappings("totally unknown vendor xyz")}
+        for cat_name in category.all_category:
+            cat_set = getattr(category, cat_name)
+            if cat_set:
+                produced.add(mappings(next(iter(cat_set))))
+
+        assert produced <= set(CATEGORY_DISPLAY)
+
+    def test_map_values_match_classifier(self):
+        """Verify each map value equals a fresh classify() call for that key.
+
+        Given: every key in CATEGORY_DISPLAY
+        When:  the stored value is compared to ExpenseClassifier().classify(key)
+        Then:  they are identical (the map is a precomputed cache, not a divergent path)
+        """
+        classifier = ExpenseClassifier()
+
+        for key, value in CATEGORY_DISPLAY.items():
+            assert value == classifier.classify(key)

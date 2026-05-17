@@ -9,6 +9,7 @@ import pandas as pd
 import pytest
 from pytest_mock import MockerFixture
 
+from data_processing.expense import get_data
 from data_processing.exporter import (
     export_cleaned_income_data,
     export_for_google_sheets,
@@ -16,7 +17,6 @@ from data_processing.exporter import (
     export_misc_transactions,
     export_unassigned_income,
     export_unassigned_transactions_to_csv,
-    get_data,
 )
 
 
@@ -227,7 +227,7 @@ class TestGetData:
         # Arrange
         mocker.patch("builtins.open", new_callable=mock_open)
         mock_csv_reader = mocker.patch("csv.reader")
-        mock_expense = mocker.patch("data_processing.exporter.Expense")
+        mock_expense = mocker.patch("data_processing.expense.Expense")
         mock_csv_reader.return_value = iter([
             ["month", "year", "item", "price"],
             ["1", "2023", "item1", "100"],
@@ -258,7 +258,7 @@ class TestGetData:
         # Arrange
         mocker.patch("builtins.open", new_callable=mock_open)
         mock_csv_reader = mocker.patch("csv.reader")
-        mock_expense = mocker.patch("data_processing.exporter.Expense")
+        mock_expense = mocker.patch("data_processing.expense.Expense")
         mock_csv_reader.return_value = iter([
             ["month", "year", "item", "price"],
         ])
@@ -291,7 +291,7 @@ class TestExporterModuleImport:
     def test_get_data_accepts_path_parameter(self) -> None:
         """Verify get_data has a path parameter with the expected default.
 
-        Given: the data_processing.exporter module is imported
+        Given: get_data imported from data_processing.expense
         When:  the signature of get_data is inspected
         Then:  a 'path' parameter exists with default Path('data/processed_transactions.csv')
         """
@@ -306,26 +306,29 @@ class TestExporterModuleImport:
         assert sig.parameters["path"].default == Path("data/processed_transactions.csv")
 
     def test_module_has_expected_functions(self) -> None:
-        """Verify the exporter module exposes the four expected public functions.
+        """Verify the exporter exposes its export functions and get_data lives in expense.
 
-        Given: the data_processing.exporter module is imported
+        Given: the data_processing.exporter and data_processing.expense modules
         When:  each expected function name is checked with hasattr and callable
-        Then:  all four functions exist and are callable
+        Then:  the export functions live in exporter and get_data lives in expense
         """
         # Arrange
+        import data_processing.expense
         import data_processing.exporter
 
         expected_functions = [
             "export_for_google_sheets",
             "export_misc_transactions",
             "export_unassigned_transactions_to_csv",
-            "get_data",
         ]
 
         # Act + Assert
         for func_name in expected_functions:
             assert hasattr(data_processing.exporter, func_name)
             assert callable(getattr(data_processing.exporter, func_name))
+
+        assert callable(data_processing.expense.get_data)
+        assert not hasattr(data_processing.exporter, "get_data")
 
 
 @pytest.fixture

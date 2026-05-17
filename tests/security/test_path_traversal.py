@@ -10,7 +10,8 @@ import pandas as pd
 import pytest
 
 from data_processing.data_imports import read_transaction_csv
-from data_processing.exporter import export_cleaned_data, get_data
+from data_processing.expense import get_data
+from data_processing.exporter import export_cleaned_data
 
 pytestmark = pytest.mark.security
 
@@ -49,7 +50,7 @@ class TestPathTraversalOnRead:
         symlink = tmp_path / "evil.csv"
         try:
             symlink.symlink_to("/etc/hosts")
-        except (OSError, NotImplementedError):
+        except OSError, NotImplementedError:
             pytest.skip("Cannot create symlink on this platform")
 
         with pytest.raises((OSError, PermissionError, ValueError)):

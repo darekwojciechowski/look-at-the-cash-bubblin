@@ -1,6 +1,5 @@
 """CSV export functions for processed and unassigned transactions."""
 
-import csv
 import datetime
 import sys
 from pathlib import Path
@@ -8,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 from loguru import logger
 
-from data_processing.data_loader import Expense
+from data_processing.expense import CATEGORY_DISPLAY
 from data_processing.location_processor import (
     create_google_maps_link,
     extract_location_from_data,
@@ -96,15 +95,15 @@ def export_for_google_sheets(processed_df: pd.DataFrame) -> Path:
 
     rows = []
     for row in processed_df.itertuples(index=False):
-        expense = Expense(str(row.month), str(row.year), str(row.category), str(row.amount))
+        cat, imp = CATEGORY_DISPLAY[str(row.category)]
         rows.append({
             "Day": row.day,
             "Month": row.month,
             "Year": row.year,
             "Item": row.category,
-            "Category": expense.category.value,
+            "Category": cat.value,
             "Amount": str(row.amount).replace(".", ","),
-            "Importance": expense.importance.value,
+            "Importance": imp.value,
         })
 
     output_df = pd.DataFrame(rows, columns=_GOOGLE_SHEETS_COLUMNS)
@@ -238,24 +237,3 @@ def export_unassigned_income(df: pd.DataFrame) -> None:
         encoding="utf-8-sig",
     )
     logger.info(f"[EXPORT] Unassigned income saved to {output_file}")
-
-
-def get_data(path: Path = Path("data/processed_transactions.csv")) -> list[Expense]:
-    """Read a processed transactions CSV and return a list of Expense objects.
-
-    Columns must be in the order ``month, year, category, price``.
-
-    Args:
-        path: Path to the CSV file. Defaults to
-            ``data/processed_transactions.csv``.
-
-    Returns:
-        List of ``Expense`` objects, one per row in the CSV.
-    """
-    expenses: list[Expense] = []
-    with open(path, newline="", encoding="utf-8-sig") as csvfile:
-        reader = csv.reader(csvfile, delimiter=",")
-        next(reader)  # Skip the header row
-        for row in reader:
-            expenses.append(Expense(row[0], row[1], row[2], row[3]))
-    return expenses

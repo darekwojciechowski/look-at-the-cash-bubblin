@@ -18,7 +18,7 @@ import pandas as pd
 import pytest
 from loguru import logger
 
-from data_processing.data_loader import Expense
+from data_processing.expense import Expense
 
 # Canonical schema for transaction DataFrames used throughout the test suite.
 _TRANSACTION_COLUMNS: list[str] = ["data", "amount", "day", "month", "year"]
