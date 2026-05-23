@@ -6,6 +6,9 @@ import pytest
 from data_processing.transaction_id import (
     ALGORITHM_VERSION,
     TXN_ID_LENGTH,
+    _iso_date,
+    _normalize_description,
+    _to_minor_units,
     assign_txn_ids,
     compute_txn_id,
 )
@@ -212,3 +215,89 @@ class TestAssignTxnIds:
         assign_txn_ids(df)
 
         assert any("[TXN_ID]" in msg and "occurrence_index" in msg for msg in loguru_sink)
+
+    def test_assign_txn_ids_without_value_date_column(self) -> None:
+        df = pd.DataFrame([
+            {
+                "booking_date": pd.Timestamp("2025-01-15"),
+                "amount": "-50.00",
+                "data": "biedronka",
+                "currency": "PLN",
+                "txn_type": "zakup",
+            }
+        ])
+
+        result = assign_txn_ids(df)
+
+        assert result["txn_id"].iloc[0].startswith("v1:")
+
+    def test_assign_txn_ids_without_currency_column(self) -> None:
+        df = pd.DataFrame([
+            {
+                "booking_date": pd.Timestamp("2025-01-15"),
+                "value_date": pd.Timestamp("2025-01-15"),
+                "amount": "-50.00",
+                "data": "biedronka",
+                "txn_type": "zakup",
+            }
+        ])
+
+        result = assign_txn_ids(df)
+
+        assert result["txn_id"].iloc[0].startswith("v1:")
+
+    def test_assign_txn_ids_without_txn_type_column(self) -> None:
+        df = pd.DataFrame([
+            {
+                "booking_date": pd.Timestamp("2025-01-15"),
+                "value_date": pd.Timestamp("2025-01-15"),
+                "amount": "-50.00",
+                "data": "biedronka",
+                "currency": "PLN",
+            }
+        ])
+
+        result = assign_txn_ids(df)
+
+        assert result["txn_id"].iloc[0].startswith("v1:")
+
+
+@pytest.mark.unit
+class TestNormalizeDescriptionEdgeCases:
+    def test_returns_empty_string_for_none(self) -> None:
+        assert _normalize_description(None) == ""
+
+    def test_returns_empty_string_for_float_nan(self) -> None:
+        assert _normalize_description(float("nan")) == ""
+
+
+@pytest.mark.unit
+class TestToMinorUnitsEdgeCases:
+    def test_raises_for_none(self) -> None:
+        with pytest.raises(ValueError, match="amount is missing"):
+            _to_minor_units(None)
+
+    def test_raises_for_float_nan(self) -> None:
+        with pytest.raises(ValueError, match="amount is missing"):
+            _to_minor_units(float("nan"))
+
+
+@pytest.mark.unit
+class TestIsoDateEdgeCases:
+    def test_returns_empty_for_none(self) -> None:
+        assert _iso_date(None) == ""
+
+    def test_returns_empty_for_empty_string(self) -> None:
+        assert _iso_date("") == ""
+
+    def test_returns_empty_for_float_nan(self) -> None:
+        assert _iso_date(float("nan")) == ""
+
+    def test_returns_empty_for_nat_timestamp(self) -> None:
+        assert _iso_date(pd.NaT) == ""
+
+    def test_returns_empty_for_unparseable_string(self) -> None:
+        assert _iso_date("not-a-date") == ""
+
+    def test_returns_formatted_date_for_parseable_string(self) -> None:
+        assert _iso_date("2025-01-15") == "2025-01-15"

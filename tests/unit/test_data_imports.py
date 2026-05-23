@@ -9,7 +9,7 @@ import pandas as pd
 import pytest
 from pytest_mock import MockerFixture
 
-from data_processing.data_imports import ipko_import, read_transaction_csv
+from data_processing.data_imports import _check_gzip_bomb, ipko_import, read_transaction_csv
 
 
 @pytest.mark.unit
@@ -380,3 +380,40 @@ class TestReadTransactionCsv:
         # Assert
         assert not df.empty
         assert call_count == 2  # First failed with codec error, second succeeded
+
+
+@pytest.mark.unit
+class TestCheckGzipBomb:
+    """Tests for the _check_gzip_bomb defensive guard."""
+
+    def test_returns_silently_for_zero_byte_file(self, tmp_path: Path) -> None:
+        gz_file = tmp_path / "empty.gz"
+        gz_file.write_bytes(b"")
+
+        _check_gzip_bomb(gz_file)  # must not raise
+
+    def test_returns_silently_for_safe_ratio(self, tmp_path: Path) -> None:
+        import gzip as _gzip
+
+        gz_file = tmp_path / "safe.gz"
+        gz_file.write_bytes(_gzip.compress(b"test data " * 100))
+
+        _check_gzip_bomb(gz_file)  # must not raise
+
+
+@pytest.mark.unit
+class TestReadTransactionCsvSymlink:
+    """Symlink safety tests for read_transaction_csv."""
+
+    def test_allows_safe_symlink_within_parent(self, tmp_path: Path) -> None:
+        data_dir = tmp_path / "data"
+        data_dir.mkdir()
+        real_csv = data_dir / "real.csv"
+        real_csv.write_text("col1,col2\nval1,val2\n", encoding="utf-8")
+        symlink_path = data_dir / "link.csv"
+        symlink_path.symlink_to(real_csv)
+
+        result = read_transaction_csv(symlink_path, "utf-8")
+
+        assert not result.empty
+        assert "col1" in result.columns

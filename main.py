@@ -65,5 +65,5 @@ def main() -> None:
     export_cleaned_income_data(income_df, CSV_INCOME_OUT_FILE)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()

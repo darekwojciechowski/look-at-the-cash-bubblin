@@ -1,6 +1,5 @@
 """CSV export functions for processed and unassigned transactions."""
 
-import datetime
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -35,10 +34,6 @@ _UNASSIGNED_EXPENSE_COLUMNS: list[str] = [
 _UNASSIGNED_INCOME_COLUMNS: list[str] = ["txn_id", "day", "month", "year", "amount", "category", "data"]
 
 
-def _today_str() -> str:
-    return datetime.date.today().strftime("%Y-%m-%d")
-
-
 def _sanitize_cell(value: object) -> object:
     """Prefix formula-injection chars with a literal quote so spreadsheets treat the cell as text."""
     if isinstance(value, str) and value and value[0] in _FORMULA_INJECTION_CHARS:
@@ -68,7 +63,7 @@ def _write_google_sheets_csv(output_df: pd.DataFrame, output_path: Path) -> Path
 
     output_df.to_csv(output_path, sep="\t", index=False)
 
-    if sys.platform != "win32":
+    if sys.platform != "win32":  # pragma: no cover
         output_path.chmod(0o600)
 
     return output_path

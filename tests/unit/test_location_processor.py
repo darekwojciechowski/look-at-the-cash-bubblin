@@ -7,7 +7,9 @@ import urllib.parse
 import numpy as np
 import pytest
 
+import data_processing.location_processor as _lp
 from data_processing.location_processor import (
+    _extract_address_payload,
     clean_location_text,
     create_google_maps_link,
     extract_location_from_data,
@@ -370,3 +372,25 @@ class TestExtractLocationNanInputs:
 
         assert result == ""
         assert isinstance(result, str)
+
+
+@pytest.mark.unit
+class TestCreateGoogleMapsLinkEmptyAfterCleanup:
+    """Covers the `if not trimmed: return ""` branch after the final cleanup pass."""
+
+    def test_returns_empty_string_when_trimmed_result_is_empty(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(_lp, "_normalize_separators", lambda _: "")
+
+        result = create_google_maps_link("ul. Testowa 12, Warszawa")
+
+        assert result == ""
+
+
+@pytest.mark.unit
+class TestExtractAddressPayloadColonCityEmpty:
+    """Covers the branch in `_extract_address_payload` where city is empty after colon split."""
+
+    def test_returns_without_country_when_city_is_empty(self) -> None:
+        result = _extract_address_payload("ul. Testowa 1:")
+
+        assert result == "ul. Testowa 1:"

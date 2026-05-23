@@ -186,6 +186,25 @@ class TestExportUnassignedTransactions:
             encoding="utf-8-sig",
         )
 
+    def test_export_unassigned_transactions_does_not_duplicate_txn_id_column(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+        df = pd.DataFrame({
+            "txn_id": ["v1:abc123"],
+            "day": [1],
+            "month": [1],
+            "year": [2025],
+            "amount": ["-50.00"],
+            "category": ["MISC"],
+            "data": ["biedronka"],
+        })
+
+        export_unassigned_transactions_to_csv(df)
+
+        result = pd.read_csv(tmp_path / "unassigned_transactions.csv", encoding="utf-8-sig")
+        assert list(result.columns).count("txn_id") == 1
+
 
 @pytest.mark.unit
 class TestExportFinalData:

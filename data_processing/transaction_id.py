@@ -66,7 +66,7 @@ def _iso_date(value: object) -> str:
     if value is None or value == "" or (isinstance(value, float) and pd.isna(value)):
         return ""
     if isinstance(value, pd.Timestamp):
-        if pd.isna(value):
+        if pd.isna(value):  # pragma: no cover
             return ""
         return str(value.strftime("%Y-%m-%d"))
     parsed = pd.to_datetime(value, errors="coerce")
