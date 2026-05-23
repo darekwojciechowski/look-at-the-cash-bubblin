@@ -194,17 +194,16 @@ class TestExportFinalData:
     def test_get_data_success(self, mocker: MockerFixture, csv_data_mock: str) -> None:
         """Test successful parsing of final data from CSV.
 
-        Given: a mocked CSV reader that returns a header row and two data rows
+        Given: a mocked DictReader that returns two row dicts
         When:  get_data() is called
         Then:  two Expense-like objects are returned with the correct field values
         """
         # Arrange
         mocker.patch("builtins.open", new_callable=mock_open)
-        mock_csv_reader = mocker.patch("csv.reader")
-        mock_csv_reader.return_value = iter([
-            ["month", "year", "item", "price"],
-            ["1", "2023", "item1", "100"],
-            ["2", "2023", "item2", "200"],
+        mock_dict_reader = mocker.patch("csv.DictReader")
+        mock_dict_reader.return_value = iter([
+            {"month": "1", "year": "2023", "category": "item1", "amount": "100"},
+            {"month": "2", "year": "2023", "category": "item2", "amount": "200"},
         ])
 
         # Act
@@ -215,23 +214,21 @@ class TestExportFinalData:
         assert expenses[0].month == "1"
         assert expenses[0].year == "2023"
         assert expenses[0].item == "item1"
-        assert expenses[0].price == "100"
+        assert expenses[0].amount == "100"
         assert expenses[1].month == "2"
         assert expenses[1].year == "2023"
 
     def test_get_data_empty_csv(self, mocker: MockerFixture) -> None:
         """Test parsing empty CSV file.
 
-        Given: a mocked CSV reader that returns only a header row
+        Given: a mocked DictReader that yields no rows
         When:  get_data() is called
         Then:  an empty list is returned
         """
         # Arrange
         mocker.patch("builtins.open", new_callable=mock_open)
-        mock_csv_reader = mocker.patch("csv.reader")
-        mock_csv_reader.return_value = iter([
-            ["month", "year", "item", "price"],
-        ])
+        mock_dict_reader = mocker.patch("csv.DictReader")
+        mock_dict_reader.return_value = iter([])
 
         # Act
         expenses = get_data()
@@ -248,20 +245,17 @@ class TestGetData:
         """
         Test get_data creates Expense objects from CSV.
 
-        Given: a mocked CSV reader with two data rows and a patched Expense constructor
+        Given: a mocked DictReader with two row dicts and a patched Expense constructor
         When:  get_data() is called
-        Then:  the Expense constructor is called twice with the correct four arguments
-
-        Fixed: get_data now properly passes all 4 arguments to Expense constructor.
+        Then:  the Expense constructor is called twice with the expected keyword arguments
         """
         # Arrange
         mocker.patch("builtins.open", new_callable=mock_open)
-        mock_csv_reader = mocker.patch("csv.reader")
+        mock_dict_reader = mocker.patch("csv.DictReader")
         mock_expense = mocker.patch("data_processing.expense.Expense")
-        mock_csv_reader.return_value = iter([
-            ["month", "year", "item", "price"],
-            ["1", "2023", "item1", "100"],
-            ["2", "2023", "item2", "200"],
+        mock_dict_reader.return_value = iter([
+            {"month": "1", "year": "2023", "category": "item1", "amount": "100"},
+            {"month": "2", "year": "2023", "category": "item2", "amount": "200"},
         ])
         mock_expense_instance = MagicMock()
         mock_expense.return_value = mock_expense_instance
@@ -271,27 +265,24 @@ class TestGetData:
 
         # Assert
         assert len(expenses) == 2
-        # Verify Expense constructor calls with all 4 arguments
         expected_calls = [
-            call("1", "2023", "item1", "100"),
-            call("2", "2023", "item2", "200"),
+            call(month="1", year="2023", item="item1", amount="100"),
+            call(month="2", year="2023", item="item2", amount="200"),
         ]
         mock_expense.assert_has_calls(expected_calls)
 
     def test_get_data_empty_csv(self, mocker: MockerFixture) -> None:
         """Test get_data with empty CSV file.
 
-        Given: a mocked CSV reader with only a header row
+        Given: a mocked DictReader yielding no rows
         When:  get_data() is called
         Then:  an empty list is returned and Expense is never called
         """
         # Arrange
         mocker.patch("builtins.open", new_callable=mock_open)
-        mock_csv_reader = mocker.patch("csv.reader")
+        mock_dict_reader = mocker.patch("csv.DictReader")
         mock_expense = mocker.patch("data_processing.expense.Expense")
-        mock_csv_reader.return_value = iter([
-            ["month", "year", "item", "price"],
-        ])
+        mock_dict_reader.return_value = iter([])
         mock_expense_instance = MagicMock()
         mock_expense.return_value = mock_expense_instance
 

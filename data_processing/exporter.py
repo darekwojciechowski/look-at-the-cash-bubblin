@@ -2,7 +2,9 @@
 
 import datetime
 import sys
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 from loguru import logger
@@ -92,6 +94,49 @@ def _write_cleaned_csv(df: pd.DataFrame, columns: list[str], output_path: Path |
     sanitized.to_csv(output_path, columns=columns, index=False, encoding="utf-8-sig")
 
 
+def _build_expense_row(row: Any) -> dict[str, object]:
+    """Build one Google Sheets export row from an expense DataFrame row."""
+    cat, imp = CATEGORY_DISPLAY[str(row.category)]
+    return {
+        "Txn_Id": getattr(row, "txn_id", ""),
+        "Day": row.day,
+        "Month": row.month,
+        "Year": row.year,
+        "Item": row.category,
+        "Category": cat.value,
+        "Amount": str(row.amount).replace(".", ","),
+        "Importance": imp.value,
+    }
+
+
+def _build_income_row(row: Any) -> dict[str, object]:
+    """Build one Google Sheets export row from an income DataFrame row."""
+    return {
+        "Txn_Id": getattr(row, "txn_id", ""),
+        "Day": row.day,
+        "Month": row.month,
+        "Year": row.year,
+        "Item": row.category,
+        "Category": row.category,
+        "Amount": str(row.amount).replace(".", ","),
+        "Importance": "",
+    }
+
+
+def _export_google_sheets(
+    df: pd.DataFrame,
+    path: Path,
+    row_builder: Callable[[Any], dict[str, object]],
+) -> Path:
+    """Shared Google Sheets export template parameterised by *row_builder*."""
+    logger.info("Exporting {} rows for Google Sheets", len(df))
+    rows = [row_builder(row) for row in df.itertuples(index=False)]
+    output_df = pd.DataFrame(rows, columns=_GOOGLE_SHEETS_COLUMNS)
+    output_file = _write_google_sheets_csv(output_df, path)
+    logger.info(f"Exported data for Google Sheets to '{output_file}'.")
+    return output_file
+
+
 def export_for_google_sheets(processed_df: pd.DataFrame) -> Path:
     """Write the processed expense DataFrame to ``google_sheets_expenses.csv``.
 
@@ -106,27 +151,7 @@ def export_for_google_sheets(processed_df: pd.DataFrame) -> Path:
     Returns:
         Path to the written CSV file.
     """
-    logger.info("Exporting {} rows for Google Sheets", len(processed_df))
-
-    rows = []
-    for row in processed_df.itertuples(index=False):
-        cat, imp = CATEGORY_DISPLAY[str(row.category)]
-        rows.append({
-            "Txn_Id": getattr(row, "txn_id", ""),
-            "Day": row.day,
-            "Month": row.month,
-            "Year": row.year,
-            "Item": row.category,
-            "Category": cat.value,
-            "Amount": str(row.amount).replace(".", ","),
-            "Importance": imp.value,
-        })
-
-    output_df = pd.DataFrame(rows, columns=_GOOGLE_SHEETS_COLUMNS)
-    output_file = _write_google_sheets_csv(output_df, Path("google_sheets_expenses.csv"))
-
-    logger.info(f"Exported data for Google Sheets to '{output_file}'.")
-    return output_file
+    return _export_google_sheets(processed_df, Path("google_sheets_expenses.csv"), _build_expense_row)
 
 
 def export_misc_transactions(df: pd.DataFrame) -> None:
@@ -198,26 +223,7 @@ def export_income_for_google_sheets(income_df: pd.DataFrame) -> Path:
     Returns:
         Path to the written CSV file.
     """
-    logger.info("Exporting {} income rows for Google Sheets", len(income_df))
-
-    rows = []
-    for row in income_df.itertuples(index=False):
-        rows.append({
-            "Txn_Id": getattr(row, "txn_id", ""),
-            "Day": row.day,
-            "Month": row.month,
-            "Year": row.year,
-            "Item": row.category,
-            "Category": row.category,
-            "Amount": str(row.amount).replace(".", ","),
-            "Importance": "",
-        })
-
-    output_df = pd.DataFrame(rows, columns=_GOOGLE_SHEETS_COLUMNS)
-    output_file = _write_google_sheets_csv(output_df, Path("google_sheets_income.csv"))
-
-    logger.info(f"Exported income data for Google Sheets to '{output_file}'.")
-    return output_file
+    return _export_google_sheets(income_df, Path("google_sheets_income.csv"), _build_income_row)
 
 
 def export_cleaned_income_data(df: pd.DataFrame, output_file: Path | str = Path("data/processed_income.csv")) -> None:

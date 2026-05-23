@@ -205,5 +205,6 @@ coverage.json
 .claude/
 plans/
 .agent/plans/
+.agent/audits/
 CLAUDE.md
 PROGRESS.md

@@ -8,15 +8,13 @@ Exports ``mappings()`` (expense categorization) and
 from collections.abc import Iterable, Mapping
 
 from data_processing import category
+from data_processing.category import EXPENSE_CATEGORIES as _CATEGORY_MAP
 
 # Fallback value returned by mappings() when no keyword in _CATEGORY_MAP matches.
 DEFAULT_CATEGORY = "MISC"
 
 # Fallback value returned by lookup_income_category() when no income keyword matches.
 DEFAULT_INCOME_CATEGORY = "INCOME_MISC"
-
-# Built once at import time — avoids rebuilding on every mappings() call.
-_CATEGORY_MAP: dict[str, set[str]] = {cat_name: getattr(category, cat_name) for cat_name in category.all_category}
 
 # Income lookup map. Distinct from expense _CATEGORY_MAP so the two tracks
 # never cross-contaminate (e.g. an expense row never resolves to "SALARY").

@@ -333,7 +333,7 @@ def csv_data_mock() -> str:
     object cannot be mutated by any test, and sharing it avoids repeated
     allocation for every test function.
     """
-    return "month,year,item,price\n1,2023,item1,100\n2,2023,item2,200\n"
+    return "month,year,category,amount\n1,2023,item1,100\n2,2023,item2,200\n"
 
 
 # ============================================================================

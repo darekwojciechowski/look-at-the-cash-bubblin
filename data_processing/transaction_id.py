@@ -150,19 +150,27 @@ def assign_txn_ids(df: pd.DataFrame) -> pd.DataFrame:
     })
     occurrence = group_key.groupby(list(group_key.columns), sort=False).cumcount()
 
-    txn_ids: list[str] = []
-    for i in range(len(df)):
-        txn_ids.append(
-            compute_txn_id(
-                booking_date=booking_dates.iloc[i],
-                value_date=value_dates.iloc[i],
-                amount_minor=int(amount_minors.iloc[i]),
-                currency=str(currencies.iloc[i]),
-                txn_type=str(df["txn_type"].iloc[i]) if "txn_type" in df.columns else "",
-                description=str(df["data"].iloc[i]),
-                occurrence_index=int(occurrence.iloc[i]),
-            )
+    txn_ids: list[str] = [
+        compute_txn_id(
+            booking_date=bd,
+            value_date=vd,
+            amount_minor=int(am),
+            currency=str(cu),
+            txn_type=str(tt),
+            description=str(desc),
+            occurrence_index=int(occ),
         )
+        for bd, vd, am, cu, tt, desc, occ in zip(
+            booking_dates,
+            value_dates,
+            amount_minors,
+            currencies,
+            txn_types_norm,
+            df["data"],
+            occurrence,
+            strict=True,
+        )
+    ]
 
     duplicates = int((occurrence > 0).sum())
     if duplicates > 0:

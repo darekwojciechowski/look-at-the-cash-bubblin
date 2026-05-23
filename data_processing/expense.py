@@ -1,6 +1,7 @@
 """Domain model: the ``Expense`` dataclass, the ``CATEGORY``/``IMPORTANCE``
-enumerations, the ``ExpenseClassifier``, and the ``get_data`` CSV loader that
-reconstructs ``Expense`` objects from a processed transactions file.
+enumerations, the ``_classify_expense`` keyword classifier, and the
+``get_data`` CSV loader that reconstructs ``Expense`` objects from a
+processed transactions file.
 """
 
 import csv
@@ -43,65 +44,88 @@ class IMPORTANCE(Enum):
     NEEDS_REVIEW = "Needs Review"
 
 
-# Each rule groups all keywords that map to the same (CATEGORY, IMPORTANCE) pair.
-# Order is significant: the first matching rule wins.
-_CATEGORY_RULES: list[tuple[CATEGORY, IMPORTANCE, frozenset[str]]] = [
-    (CATEGORY.APARTMENT, IMPORTANCE.ESSENTIAL, frozenset({"apartment", "bills", "renovation"})),
-    (CATEGORY.FOOD, IMPORTANCE.ESSENTIAL, frozenset({"food", "greenfood"})),
-    (CATEGORY.CAR, IMPORTANCE.HAVE_TO_HAVE, frozenset({"fuel", "repairs", "car", "leasing"})),
-    (CATEGORY.TRANSPORTATION, IMPORTANCE.HAVE_TO_HAVE, frozenset({"transportation"})),
-    (CATEGORY.EATING_OUT, IMPORTANCE.NICE_TO_HAVE, frozenset({"groceries", "coffee", "catering"})),
-    (CATEGORY.ANIMALS, IMPORTANCE.HAVE_TO_HAVE, frozenset({"animals"})),
-    (CATEGORY.SELF_DEVELOPMENT, IMPORTANCE.NICE_TO_HAVE, frozenset({"self_development", "book"})),
-    (CATEGORY.CLOTHES, IMPORTANCE.NICE_TO_HAVE, frozenset({"clothes", "jewelry"})),
-    (CATEGORY.ENTERTAINMENT, IMPORTANCE.NICE_TO_HAVE, frozenset({"entertainment", "subscriptions", "pcgames"})),
-    (CATEGORY.SHOPPING, IMPORTANCE.NICE_TO_HAVE, frozenset({"shopping", "electronic"})),
-    (CATEGORY.INVESTMENTS, IMPORTANCE.NICE_TO_HAVE, frozenset({"investment"})),
-    (CATEGORY.CARE, IMPORTANCE.NICE_TO_HAVE, frozenset({"pharmacy", "cosmetics", "insurance", "sport", "bike"})),
-    (CATEGORY.TRAVEL, IMPORTANCE.NICE_TO_HAVE, frozenset({"travel"})),
-    (CATEGORY.SELF_DESTRUCTION, IMPORTANCE.SHOULDNT_HAVE, frozenset({"alcohol", "fastfood"})),
-    (CATEGORY.KIDS, IMPORTANCE.HAVE_TO_HAVE, frozenset({"kids"})),
+# Each rule groups the ``category.py`` constant names that map to the same
+# ``(CATEGORY, IMPORTANCE)`` display pair. Order is significant: the first
+# matching rule wins. By referencing constant names rather than inlined
+# keyword sets, a new vendor added to ``category.py`` is automatically picked
+# up by classification, and the bridge to ``CATEGORY_DISPLAY`` stays in sync.
+_CATEGORY_RULES_BY_NAME: list[tuple[CATEGORY, IMPORTANCE, tuple[str, ...]]] = [
+    (CATEGORY.APARTMENT, IMPORTANCE.ESSENTIAL, ("APARTMENT", "BILLS", "RENOVATION")),
+    (CATEGORY.FOOD, IMPORTANCE.ESSENTIAL, ("FOOD", "GREENFOOD")),
+    (CATEGORY.CAR, IMPORTANCE.HAVE_TO_HAVE, ("CAR", "LEASING", "FUEL", "REPAIRS")),
+    (CATEGORY.TRANSPORTATION, IMPORTANCE.HAVE_TO_HAVE, ("TRANSPORTATION",)),
+    (CATEGORY.EATING_OUT, IMPORTANCE.NICE_TO_HAVE, ("GROCERIES", "COFFEE", "CATERING")),
+    (CATEGORY.ANIMALS, IMPORTANCE.HAVE_TO_HAVE, ("ANIMALS",)),
+    (CATEGORY.SELF_DEVELOPMENT, IMPORTANCE.NICE_TO_HAVE, ("SELF_DEVELOPMENT", "BOOKS")),
+    (CATEGORY.CLOTHES, IMPORTANCE.NICE_TO_HAVE, ("CLOTHES", "JEWELRY")),
+    (CATEGORY.ENTERTAINMENT, IMPORTANCE.NICE_TO_HAVE, ("ENTERTAINMENT", "SUBSCRIPTIONS", "PCGAMES")),
+    (CATEGORY.SHOPPING, IMPORTANCE.NICE_TO_HAVE, ("SHOPPING", "ELECTRONIC")),
+    (CATEGORY.INVESTMENTS, IMPORTANCE.NICE_TO_HAVE, ("INVESTMENTS",)),
+    (CATEGORY.CARE, IMPORTANCE.NICE_TO_HAVE, ("PHARMACY", "COSMETICS", "INSURANCE", "SPORT", "BIKE", "SELF_CARE")),
+    (CATEGORY.TRAVEL, IMPORTANCE.NICE_TO_HAVE, ("TRAVEL",)),
+    (CATEGORY.SELF_DESTRUCTION, IMPORTANCE.SHOULDNT_HAVE, ("ALCOHOL", "FASTFOOD")),
+    (CATEGORY.KIDS, IMPORTANCE.HAVE_TO_HAVE, ("KIDS",)),
 ]
 
 
-class ExpenseClassifier:
-    """Stateless keyword classifier: maps free-text to ``(CATEGORY, IMPORTANCE)``.
+def _keywords_for(names: tuple[str, ...]) -> frozenset[str]:
+    """Union the ``category.py`` keyword sets named in *names*.
 
-    Wraps ``_CATEGORY_RULES``. The first rule with a keyword substring-matching
-    the (lowercased) text wins; unmatched text falls back to
-    ``CATEGORY.MISC`` / ``IMPORTANCE.NEEDS_REVIEW``.
+    Each constant name is also added (lowercased) as a synthetic keyword so
+    that free-text descriptions like ``"car maintenance"`` or
+    ``"investment deposit"`` still classify even when the brand-based set
+    (e.g. ``category.CAR``) does not literally contain the label.
     """
-
-    def classify(self, text: str) -> tuple[CATEGORY, IMPORTANCE]:
-        """Return the ``(CATEGORY, IMPORTANCE)`` pair for *text*.
-
-        Args:
-            text: Free-text transaction description or category label.
-
-        Returns:
-            Two-tuple of ``(CATEGORY, IMPORTANCE)``; the MISC/NEEDS_REVIEW
-            fallback when no rule matches.
-        """
-        lowered = text.lower()
-        for rule_category, rule_importance, keywords in _CATEGORY_RULES:
-            if any(kw in lowered for kw in keywords):
-                return rule_category, rule_importance
-        return CATEGORY.MISC, IMPORTANCE.NEEDS_REVIEW
+    union: frozenset[str] = frozenset().union(*(getattr(category, n) for n in names))
+    synthetic = frozenset(n.lower() for n in names)
+    return union | synthetic
 
 
-# Built once at import — the classifier is stateless, so a single shared
-# instance serves every Expense construction and the CATEGORY_DISPLAY map.
-_DEFAULT_CLASSIFIER = ExpenseClassifier()
+# Resolved keyword frozensets used by the substring classifier. Derived once
+# from ``_CATEGORY_RULES_BY_NAME`` so the two views can never drift.
+_CATEGORY_RULES: list[tuple[CATEGORY, IMPORTANCE, frozenset[str]]] = [
+    (cat_enum, imp_enum, _keywords_for(names)) for cat_enum, imp_enum, names in _CATEGORY_RULES_BY_NAME
+]
+
+
+def _classify_expense(text: str) -> tuple[CATEGORY, IMPORTANCE]:
+    """Return the ``(CATEGORY, IMPORTANCE)`` pair for *text*.
+
+    Substring-matches the (lowercased) text against ``_CATEGORY_RULES`` in
+    declaration order; the first matching rule wins. Unmatched text falls
+    back to ``(CATEGORY.MISC, IMPORTANCE.NEEDS_REVIEW)``.
+    """
+    lowered = text.lower()
+    for rule_category, rule_importance, keywords in _CATEGORY_RULES:
+        if any(kw in lowered for kw in keywords):
+            return rule_category, rule_importance
+    return CATEGORY.MISC, IMPORTANCE.NEEDS_REVIEW
+
+
+def _build_category_display() -> dict[str, tuple[CATEGORY, IMPORTANCE]]:
+    """Map every ``mappings()`` output label to its display ``(CATEGORY, IMPORTANCE)``.
+
+    Built directly from ``_CATEGORY_RULES_BY_NAME`` so each ``category.py``
+    constant name resolves to a deterministic display pair, independent of
+    whether its keyword set happens to contain the lowercased label as a
+    substring. Labels not covered by any rule (``REMOVE_ENTRY``, ``MISC``,
+    ``DEFAULT_CATEGORY``) fall through to the MISC/NEEDS_REVIEW pair.
+    """
+    display: dict[str, tuple[CATEGORY, IMPORTANCE]] = dict.fromkeys(
+        set(category.all_category) | {DEFAULT_CATEGORY},
+        (CATEGORY.MISC, IMPORTANCE.NEEDS_REVIEW),
+    )
+    for cat_enum, imp_enum, names in _CATEGORY_RULES_BY_NAME:
+        for name in names:
+            display[name] = (cat_enum, imp_enum)
+    return display
 
 
 # The single authoritative bridge between the pipeline's classification output
-# (the string labels mappings() returns) and the display CATEGORY/IMPORTANCE.
-# Domain = every value mappings() can produce: the names in category.all_category
-# plus the DEFAULT_CATEGORY fallback. Precomputing it makes the contract explicit
-# and mypy-checked instead of relying on label/keyword coincidence at export time.
-CATEGORY_DISPLAY: dict[str, tuple[CATEGORY, IMPORTANCE]] = {
-    name: _DEFAULT_CLASSIFIER.classify(name) for name in sorted(set(category.all_category) | {DEFAULT_CATEGORY})
-}
+# (the string labels ``mappings()`` returns) and the display CATEGORY/IMPORTANCE.
+# Domain = every value ``mappings()`` can produce: the names in
+# ``category.all_category`` plus the ``DEFAULT_CATEGORY`` fallback.
+CATEGORY_DISPLAY: dict[str, tuple[CATEGORY, IMPORTANCE]] = _build_category_display()
 
 
 @dataclass
@@ -109,33 +133,46 @@ class Expense:
     """Single classified transaction read from ``data/processed_transactions.csv``.
 
     On construction, ``category`` and ``importance`` are computed from
-    ``item`` by keyword matching via ``_DEFAULT_CLASSIFIER``.
+    ``item`` by keyword matching via ``_classify_expense``.
     """
 
     month: int | str
     year: int | str
     item: str
-    price: int | str
+    amount: int | str
     category: CATEGORY = field(init=False, repr=True)
     importance: IMPORTANCE = field(init=False, repr=True)
 
     def __post_init__(self) -> None:
         """Normalize numeric fields to ``str`` and derive category/importance.
 
-        Callers (CSV rows, test fixtures) pass ``month``/``year``/``price`` as
+        Callers (CSV rows, test fixtures) pass ``month``/``year``/``amount`` as
         either ``int`` or ``str``; they are coerced to ``str`` here so every
         ``Expense`` instance has homogeneous string fields.
+
+        ``category``/``importance`` are derived from ``item``. If ``item`` is
+        already a known category label (e.g. ``"FOOD"`` written by the
+        pipeline's CSV export), the display pair is looked up directly via
+        ``CATEGORY_DISPLAY``; otherwise the substring-based
+        ``_classify_expense`` fallback runs against free-text descriptions.
         """
         self.month = str(self.month)
         self.year = str(self.year)
-        self.price = str(self.price)
-        self.category, self.importance = _DEFAULT_CLASSIFIER.classify(self.item)
+        self.amount = str(self.amount)
+        label = self.item.strip().upper()
+        if label in CATEGORY_DISPLAY:
+            self.category, self.importance = CATEGORY_DISPLAY[label]
+        else:
+            self.category, self.importance = _classify_expense(self.item)
 
 
 def get_data(path: Path = Path("data/processed_transactions.csv")) -> list[Expense]:
     """Read a processed transactions CSV and return a list of Expense objects.
 
-    Columns must be in the order ``month, year, category, price``.
+    Reads the CSV by header name, so column order in the file is irrelevant.
+    Required headers: ``month``, ``year``, ``category``, ``amount``. The
+    ``category`` column populates ``Expense.item`` — it is the keyword the
+    classifier uses to derive ``CATEGORY`` and ``IMPORTANCE``.
 
     Args:
         path: Path to the CSV file. Defaults to
@@ -146,8 +183,14 @@ def get_data(path: Path = Path("data/processed_transactions.csv")) -> list[Expen
     """
     expenses: list[Expense] = []
     with open(path, newline="", encoding="utf-8-sig") as csvfile:
-        reader = csv.reader(csvfile, delimiter=",")
-        next(reader)  # Skip the header row
+        reader = csv.DictReader(csvfile)
         for row in reader:
-            expenses.append(Expense(row[0], row[1], row[2], row[3]))
+            expenses.append(
+                Expense(
+                    month=row["month"],
+                    year=row["year"],
+                    item=row["category"],
+                    amount=row["amount"],
+                )
+            )
     return expenses

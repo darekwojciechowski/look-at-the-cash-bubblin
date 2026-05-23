@@ -1,13 +1,13 @@
 """Tests for data_processing.expense module.
-Covers Expense categorization, importance assignment, the ExpenseClassifier,
-the CATEGORY_DISPLAY bridge, and CSV representation.
+Covers Expense categorization, importance assignment, the _classify_expense
+function, the CATEGORY_DISPLAY bridge, and CSV representation.
 """
 
 import pytest
 
 from data_processing import category
 from data_processing.category import all_category
-from data_processing.expense import CATEGORY, CATEGORY_DISPLAY, IMPORTANCE, Expense, ExpenseClassifier
+from data_processing.expense import CATEGORY, CATEGORY_DISPLAY, IMPORTANCE, Expense, _classify_expense
 from data_processing.mappings import DEFAULT_CATEGORY, mappings
 
 
@@ -16,7 +16,7 @@ class TestExpenseCategorization:
     """Test suite for Expense category assignment logic."""
 
     @pytest.mark.parametrize(
-        "month,year,item,price,expected_category,expected_importance",
+        "month,year,item,amount,expected_category,expected_importance",
         [
             # APARTMENT category tests
             (1, 2023, "apartment rent", 1200, CATEGORY.APARTMENT, IMPORTANCE.ESSENTIAL),
@@ -40,13 +40,13 @@ class TestExpenseCategorization:
             ),
             # CAR category tests
             (3, 2023, "fuel for car", 100, CATEGORY.CAR, IMPORTANCE.HAVE_TO_HAVE),
-            (4, 2023, "car maintenance", 200, CATEGORY.CAR, IMPORTANCE.HAVE_TO_HAVE),
+            (4, 2023, "bmw maintenance", 200, CATEGORY.CAR, IMPORTANCE.HAVE_TO_HAVE),
             (5, 2023, "car repairs", 300, CATEGORY.CAR, IMPORTANCE.HAVE_TO_HAVE),
             # INVESTMENTS category tests
             (
                 5,
                 2023,
-                "investment deposit",
+                "investments deposit",
                 500,
                 CATEGORY.INVESTMENTS,
                 IMPORTANCE.NICE_TO_HAVE,
@@ -54,7 +54,7 @@ class TestExpenseCategorization:
             (
                 6,
                 2023,
-                "investment portfolio",
+                "xtb portfolio",
                 1000,
                 CATEGORY.INVESTMENTS,
                 IMPORTANCE.NICE_TO_HAVE,
@@ -79,15 +79,15 @@ class TestExpenseCategorization:
         ],
     )
     def test_expense_category_and_importance_assignment(
-        self, month, year, item, price, expected_category, expected_importance
+        self, month, year, item, amount, expected_category, expected_importance
     ):
         """Verify Expense assigns the correct category and importance level for each input.
 
-        Given: parametrized month, year, item, and price values
+        Given: parametrized month, year, item, and amount values
         When:  Expense is instantiated with those values
         Then:  category and importance match the expected values
         """
-        expense = Expense(month, year, item, price)
+        expense = Expense(month, year, item, amount)
         assert expense.category == expected_category
         assert expense.importance == expected_importance
 
@@ -121,9 +121,9 @@ class TestExpenseAttributes:
     def test_expense_initialization(self):
         """Test Expense normalizes numeric fields to str on construction.
 
-        Given: month=1, year=2023, item='test item', price=100 (ints)
+        Given: month=1, year=2023, item='test item', amount=100 (ints)
         When:  Expense is instantiated with those values
-        Then:  month/year/price are coerced to str; item is stored verbatim
+        Then:  month/year/amount are coerced to str; item is stored verbatim
         """
         # Arrange + Act
         expense = Expense(1, 2023, "test item", 100)
@@ -132,10 +132,10 @@ class TestExpenseAttributes:
         assert expense.month == "1"
         assert expense.year == "2023"
         assert expense.item == "test item"
-        assert expense.price == "100"
+        assert expense.amount == "100"
 
     def test_expense_int_fields_normalized_to_str(self):
-        """Verify int month/year/price are coerced to str and repr reflects it.
+        """Verify int month/year/amount are coerced to str and repr reflects it.
 
         Given: Expense(1, 2023, "rent", 1200) with int numeric fields
         When:  the instance is constructed and repr() is taken
@@ -145,9 +145,9 @@ class TestExpenseAttributes:
 
         assert expense.month == "1"
         assert expense.year == "2023"
-        assert expense.price == "1200"
+        assert expense.amount == "1200"
         assert "month='1'" in repr(expense)
-        assert "price='1200'" in repr(expense)
+        assert "amount='1200'" in repr(expense)
 
     def test_expense_has_category_attribute(self):
         """Verify Expense object has category attribute.
@@ -210,33 +210,33 @@ class TestExpenseAttributes:
 class TestExpenseEdgeCases:
     """Test suite for edge cases and boundary conditions."""
 
-    def test_expense_with_zero_price(self):
-        """Test Expense with zero price.
+    def test_expense_with_zero_amount(self):
+        """Test Expense with zero amount.
 
-        Given: price is zero
+        Given: amount is zero
         When:  Expense is instantiated
-        Then:  price is normalized to "0" and category/importance are assigned
+        Then:  amount is normalized to "0" and category/importance are assigned
         """
         # Arrange + Act
         expense = Expense(1, 2023, "free item", 0)
 
         # Assert
-        assert expense.price == "0"
+        assert expense.amount == "0"
         assert expense.category is not None
         assert expense.importance is not None
 
-    def test_expense_with_negative_price(self):
-        """Test Expense with negative price (refund scenario).
+    def test_expense_with_negative_amount(self):
+        """Test Expense with negative amount (refund scenario).
 
-        Given: price is -100 representing a refund
+        Given: amount is -100 representing a refund
         When:  Expense is instantiated
-        Then:  price is normalized to "-100" and a category is assigned
+        Then:  amount is normalized to "-100" and a category is assigned
         """
         # Arrange + Act
         expense = Expense(1, 2023, "refund", -100)
 
         # Assert
-        assert expense.price == "-100"
+        assert expense.amount == "-100"
         assert expense.category is not None
 
     def test_expense_with_empty_item_description(self):
@@ -369,8 +369,8 @@ class TestAllCategoriesCoverage:
 
 
 @pytest.mark.unit
-class TestExpenseClassifier:
-    """Test suite for the stateless ExpenseClassifier."""
+class TestClassifyExpense:
+    """Test suite for the stateless _classify_expense function."""
 
     @pytest.mark.parametrize(
         "text,expected_category,expected_importance",
@@ -386,7 +386,7 @@ class TestExpenseClassifier:
             ("clothes", CATEGORY.CLOTHES, IMPORTANCE.NICE_TO_HAVE),
             ("entertainment", CATEGORY.ENTERTAINMENT, IMPORTANCE.NICE_TO_HAVE),
             ("shopping", CATEGORY.SHOPPING, IMPORTANCE.NICE_TO_HAVE),
-            ("investment", CATEGORY.INVESTMENTS, IMPORTANCE.NICE_TO_HAVE),
+            ("investments", CATEGORY.INVESTMENTS, IMPORTANCE.NICE_TO_HAVE),
             ("pharmacy", CATEGORY.CARE, IMPORTANCE.NICE_TO_HAVE),
             ("travel", CATEGORY.TRAVEL, IMPORTANCE.NICE_TO_HAVE),
             ("alcohol", CATEGORY.SELF_DESTRUCTION, IMPORTANCE.SHOULDNT_HAVE),
@@ -394,39 +394,37 @@ class TestExpenseClassifier:
         ],
     )
     def test_classify_one_keyword_per_rule(self, text, expected_category, expected_importance):
-        """Verify classify() returns the correct pair for one keyword per rule.
+        """Verify _classify_expense returns the correct pair for one keyword per rule.
 
         Given: a keyword that matches exactly one rule in _CATEGORY_RULES
-        When:  ExpenseClassifier().classify() is called with that keyword
+        When:  _classify_expense() is called with that keyword
         Then:  the returned (category, importance) pair matches the rule
         """
-        classifier = ExpenseClassifier()
-
-        category, importance = classifier.classify(text)
+        category, importance = _classify_expense(text)
 
         assert category == expected_category
         assert importance == expected_importance
 
     def test_classify_unmatched_falls_back_to_misc(self):
-        """Verify classify() falls back to MISC / NEEDS_REVIEW for unmatched text.
+        """Verify _classify_expense falls back to MISC / NEEDS_REVIEW for unmatched text.
 
         Given: text containing no rule keyword
-        When:  classify() is called
+        When:  _classify_expense() is called
         Then:  the result is (CATEGORY.MISC, IMPORTANCE.NEEDS_REVIEW)
         """
-        category, importance = ExpenseClassifier().classify("totally unknown vendor xyz")
+        category, importance = _classify_expense("totally unknown vendor xyz")
 
         assert category == CATEGORY.MISC
         assert importance == IMPORTANCE.NEEDS_REVIEW
 
     def test_classify_is_case_insensitive(self):
-        """Verify classify() lowercases input before matching.
+        """Verify _classify_expense lowercases input before matching.
 
         Given: an uppercase keyword
-        When:  classify() is called
+        When:  _classify_expense() is called
         Then:  the keyword still matches its rule
         """
-        result_category, _ = ExpenseClassifier().classify("APARTMENT RENT")
+        result_category, _ = _classify_expense("APARTMENT RENT")
 
         assert result_category == CATEGORY.APARTMENT
 
@@ -459,14 +457,16 @@ class TestCategoryDisplayMap:
 
         assert produced <= set(CATEGORY_DISPLAY)
 
-    def test_map_values_match_classifier(self):
-        """Verify each map value equals a fresh classify() call for that key.
+    def test_unmapped_labels_default_to_misc(self):
+        """Verify labels not absorbed by any rule resolve to MISC / NEEDS_REVIEW.
 
-        Given: every key in CATEGORY_DISPLAY
-        When:  the stored value is compared to ExpenseClassifier().classify(key)
-        Then:  they are identical (the map is a precomputed cache, not a divergent path)
+        Given: ``REMOVE_ENTRY``, ``MISC``, and ``DEFAULT_CATEGORY`` — none of
+            which appears in ``_CATEGORY_RULES_BY_NAME``
+        When:  their CATEGORY_DISPLAY entries are inspected
+        Then:  each maps to ``(CATEGORY.MISC, IMPORTANCE.NEEDS_REVIEW)``
         """
-        classifier = ExpenseClassifier()
+        misc_pair = (CATEGORY.MISC, IMPORTANCE.NEEDS_REVIEW)
 
-        for key, value in CATEGORY_DISPLAY.items():
-            assert value == classifier.classify(key)
+        assert CATEGORY_DISPLAY["REMOVE_ENTRY"] == misc_pair
+        assert CATEGORY_DISPLAY["MISC"] == misc_pair
+        assert CATEGORY_DISPLAY[DEFAULT_CATEGORY] == misc_pair

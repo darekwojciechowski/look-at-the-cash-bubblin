@@ -198,3 +198,12 @@ INCOME_SIDE_HUSTLE: frozenset[str] = frozenset({"freelance", "consulting", "payo
 
 # Tax refunds, gifts, one-off transfers, bonuses, dividends.
 INCOME_EXTRA: frozenset[str] = frozenset({"zwrot podatku", "darowizna", "prezent", "bonus", "dividend"})
+
+# ============================================================================
+# Priority-ordered expense category map
+# ============================================================================
+# Single source of truth: ordered ``label -> keyword set`` mapping. Built from
+# the constants above so each entry stays a live view of its set. ``mappings()``
+# in ``mappings.py`` iterates this dict directly — replacing the older pattern
+# of zipping ``all_category`` with ``getattr`` lookups.
+EXPENSE_CATEGORIES: dict[str, set[str]] = {name: globals()[name] for name in all_category}
