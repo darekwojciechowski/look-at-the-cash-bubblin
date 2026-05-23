@@ -168,7 +168,7 @@ class TestProcessDataframe:
         assert processed_df["category"].tolist() == expected_categories
 
         # Verify column order
-        expected_columns = ["day", "month", "year", "amount", "category", "data"]
+        expected_columns = ["txn_id", "day", "month", "year", "amount", "category", "data"]
         assert list(processed_df.columns) == expected_columns
 
     def test_process_dataframe_filters_positive_prices(
@@ -206,6 +206,7 @@ class TestProcessDataframe:
         """
         # Arrange
         df = pd.DataFrame({
+            "txn_id": ["v1:" + "a" * 64],
             "data": ["terminal purchase"],
             "amount": ["-50.0"],
             "month": [1],
@@ -239,7 +240,7 @@ class TestProcessDataframe:
         result = process_dataframe(sample_raw_dataframe)
 
         # Assert
-        expected_columns = ["day", "month", "year", "amount", "category", "data"]
+        expected_columns = ["txn_id", "day", "month", "year", "amount", "category", "data"]
         assert list(result.columns) == expected_columns
 
     def test_process_dataframe_with_empty_dataframe(
@@ -260,7 +261,7 @@ class TestProcessDataframe:
 
         # Assert
         assert result.empty
-        expected_columns = ["day", "month", "year", "amount", "category", "data"]
+        expected_columns = ["txn_id", "day", "month", "year", "amount", "category", "data"]
         assert list(result.columns) == expected_columns
 
     def test_process_dataframe_removes_refund_entries(self, mocker: MockerFixture) -> None:
@@ -445,7 +446,7 @@ class TestProcessIncomeDataframe:
 
         result = process_income_dataframe(df)
 
-        assert list(result.columns) == ["day", "month", "year", "amount", "category", "data"]
+        assert list(result.columns) == ["txn_id", "day", "month", "year", "amount", "category", "data"]
 
     def test_uses_income_category_lookup(self) -> None:
         """Categorization should resolve to income labels, not expense labels."""

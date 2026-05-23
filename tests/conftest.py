@@ -64,6 +64,13 @@ def sample_raw_dataframe() -> pd.DataFrame:
     ``expected_cleaned_data``.  Recreated per test so mutations are isolated.
     """
     return pd.DataFrame({
+        "txn_id": [
+            "v1:" + "a" * 64,
+            "v1:" + "b" * 64,
+            "v1:" + "c" * 64,
+            "v1:" + "d" * 64,
+            "v1:" + "e" * 64,
+        ],
         "data": [
             "purchase in terminal - mobile code",
             "web payment - mobile code",
@@ -137,6 +144,13 @@ def expected_cleaned_data() -> pd.DataFrame:
     tests.  Recreated per test so mutations are isolated.
     """
     return pd.DataFrame({
+        "txn_id": [
+            "v1:" + "a" * 64,
+            "v1:" + "b" * 64,
+            "v1:" + "c" * 64,
+            "v1:" + "d" * 64,
+            "v1:" + "e" * 64,
+        ],
         "data": [
             "terminal purchase",
             "web payment",

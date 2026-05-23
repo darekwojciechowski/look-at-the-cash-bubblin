@@ -86,7 +86,7 @@ class TestDataExportIntegration:
         """
         # Arrange
         monkeypatch.chdir(tmp_path)
-        expected_header = "Day\tMonth\tYear\tItem\tCategory\tAmount\tImportance"
+        expected_header = "Txn_Id\tDay\tMonth\tYear\tItem\tCategory\tAmount\tImportance"
 
         # Act
         export_for_google_sheets(sample_dataframe_with_categories)
@@ -119,7 +119,7 @@ class TestDataExportIntegration:
             "category": ["MISC"],
             "data": ["test transaction"],
         })
-        expected_header = "day,month,year,amount,category,data,extracted_location,google_maps_link"
+        expected_header = "txn_id,day,month,year,amount,category,data,extracted_location,google_maps_link"
 
         # Act
         export_unassigned_transactions_to_csv(misc_df)
@@ -188,12 +188,12 @@ class TestIncomeExportEndToEnd:
 
         # Google Sheets file: 3 income rows survive (refund is filtered as REMOVE_ENTRY)
         gs = pd.read_csv(tmp_path / "google_sheets_income.csv", sep="\t")
-        assert list(gs.columns) == ["Day", "Month", "Year", "Item", "Category", "Amount", "Importance"]
+        assert list(gs.columns) == ["Txn_Id", "Day", "Month", "Year", "Item", "Category", "Amount", "Importance"]
         assert len(gs) == 3
 
         # Cleaned file: 3 rows, comma-separated, utf-8-sig
         cleaned = pd.read_csv(tmp_path / "data" / "processed_income.csv", encoding="utf-8-sig")
-        assert list(cleaned.columns) == ["day", "month", "year", "category", "amount"]
+        assert list(cleaned.columns) == ["txn_id", "day", "month", "year", "category", "amount"]
         assert len(cleaned) == 3
 
         # Unassigned file: only INCOME_MISC rows, no location columns

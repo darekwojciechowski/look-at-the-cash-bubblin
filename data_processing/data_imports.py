@@ -40,44 +40,51 @@ def ipko_import(df: pd.DataFrame) -> pd.DataFrame:
     """Normalize a raw IPKO CSV DataFrame into the standard pipeline format.
 
     Renames the nine unnamed columns, extracts month and year from the
-    transaction date, lowercases all text columns, and concatenates them
-    into a single ``data`` column separated by ``//``.
+    transaction date, lowercases the text columns used downstream for
+    categorization, and concatenates them into a single ``data`` column
+    separated by ``//``. Source columns required for stable ``txn_id``
+    computation (``booking_date``, ``value_date``, ``currency``, ``txn_type``,
+    ``description``) are retained as separate columns alongside the merged
+    ``data`` column.
 
     Args:
         df: Raw DataFrame loaded from an IPKO CSV export (nine columns,
             no header).
 
     Returns:
-        DataFrame with columns: ``amount``, ``data``, ``month``, ``year``, ``day``.
+        DataFrame with columns: ``booking_date``, ``value_date``, ``txn_type``,
+        ``amount``, ``currency``, ``description``, ``data``, ``month``,
+        ``year``, ``day``.
     """
     # Rename columns for consistency
     df = df.rename(
         columns={
-            df.columns[0]: "transaction_date",
-            df.columns[1]: "currency_data",
-            df.columns[2]: "transaction_type",
+            df.columns[0]: "booking_date",
+            df.columns[1]: "value_date",
+            df.columns[2]: "txn_type",
             df.columns[3]: "amount",
             df.columns[4]: "currency",
-            df.columns[5]: "transaction_description",
+            df.columns[5]: "description",
             df.columns[6]: "unnamed_6",
             df.columns[7]: "data",
             df.columns[8]: "unnamed_8",
         },
     )
 
-    # Convert 'transaction_date' to datetime format
-    df["transaction_date"] = pd.to_datetime(df["transaction_date"])
+    # Convert dates to datetime
+    df["booking_date"] = pd.to_datetime(df["booking_date"])
+    df["value_date"] = pd.to_datetime(df["value_date"], errors="coerce")
 
-    # Extract day, month and year from 'transaction_date'
-    df["month"] = df["transaction_date"].dt.month
-    df["year"] = df["transaction_date"].dt.year
-    df["day"] = df["transaction_date"].dt.day
+    # Extract day, month and year from booking_date
+    df["month"] = df["booking_date"].dt.month
+    df["year"] = df["booking_date"].dt.year
+    df["day"] = df["booking_date"].dt.day
 
     # Convert specified columns to lowercase safely
     columns_to_lower = [
         "data",
-        "transaction_type",
-        "transaction_description",
+        "txn_type",
+        "description",
         "unnamed_6",
         "unnamed_8",
     ]
@@ -87,25 +94,16 @@ def ipko_import(df: pd.DataFrame) -> pd.DataFrame:
     # Combine multiple columns into a single 'data' column
     df["data"] = df[
         [
-            "transaction_type",
-            "transaction_description",
+            "txn_type",
+            "description",
             "unnamed_6",
             "unnamed_8",
             "data",
         ]
     ].apply(lambda row: "//".join(s for s in map(str, row) if s != "nan"), axis=1)
 
-    # Drop unnecessary columns
-    columns_to_drop = [
-        "transaction_date",
-        "currency_data",
-        "currency",
-        "transaction_type",
-        "unnamed_6",
-        "unnamed_8",
-        "transaction_description",
-    ]
-    df = df.drop(columns=columns_to_drop)
+    # Drop helper columns; retain source columns needed for txn_id
+    df = df.drop(columns=["unnamed_6", "unnamed_8"])
 
     return df
 

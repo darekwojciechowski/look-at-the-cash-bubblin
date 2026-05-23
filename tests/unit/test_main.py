@@ -54,6 +54,8 @@ class TestMainWorkflow:
         mock_setup_logging = mocker.patch("main.setup_logging")
         mock_read_csv = mocker.patch("main.read_transaction_csv")
         mock_ipko_import = mocker.patch("main.ipko_import")
+        mock_assign_txn_ids = mocker.patch("main.assign_txn_ids", side_effect=lambda df: df)
+        _ = mock_assign_txn_ids
         mock_process_df = mocker.patch("main.process_dataframe")
         mock_process_income = mocker.patch("main.process_income_dataframe")
         mock_export_misc = mocker.patch("main.export_misc_transactions")
@@ -99,6 +101,8 @@ class TestMainWorkflow:
         mock_setup_logging = mocker.patch("main.setup_logging")
         mock_read_csv = mocker.patch("main.read_transaction_csv")
         mock_ipko_import = mocker.patch("main.ipko_import")
+        mock_assign_txn_ids = mocker.patch("main.assign_txn_ids", side_effect=lambda df: df)
+        _ = mock_assign_txn_ids
         mock_process_df = mocker.patch("main.process_dataframe")
         mock_process_income = mocker.patch("main.process_income_dataframe")
         mock_export_misc = mocker.patch("main.export_misc_transactions")
@@ -157,6 +161,8 @@ class TestMainWorkflow:
         mock_setup_logging = mocker.patch("main.setup_logging")
         mock_read_csv = mocker.patch("main.read_transaction_csv")
         mock_ipko_import = mocker.patch("main.ipko_import")
+        mock_assign_txn_ids = mocker.patch("main.assign_txn_ids", side_effect=lambda df: df)
+        _ = mock_assign_txn_ids
         mock_process_df = mocker.patch("main.process_dataframe")
 
         mock_read_csv.return_value = main_raw_dataframe

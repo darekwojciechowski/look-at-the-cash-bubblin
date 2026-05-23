@@ -5,6 +5,18 @@
 # - Editor and IDE-specific files (e.g., PyCharm, Jupyter, Spyder).
 # - Files related to Python packaging and testing tools.
 
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+
+# ToDo files
+ToDo.mc
+
 # Custom project-specific patterns
 *unassigned_transactions*
 *unassigned_income*
@@ -17,8 +29,6 @@ google_sheets_income.csv
 
 # Ensure example_for_google_spreadsheet.csv is not ignored
 !assets/example_for_google_spreadsheet.csv
-
-.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

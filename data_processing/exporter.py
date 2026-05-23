@@ -17,8 +17,20 @@ from data_processing.location_processor import (
 # start of a cell value. Prefix them with a single quote to neutralise the risk.
 _FORMULA_INJECTION_CHARS: frozenset[str] = frozenset("=+-@\t\r")
 
-_GOOGLE_SHEETS_COLUMNS: list[str] = ["Day", "Month", "Year", "Item", "Category", "Amount", "Importance"]
-_CLEANED_COLUMNS: list[str] = ["day", "month", "year", "category", "amount"]
+_GOOGLE_SHEETS_COLUMNS: list[str] = ["Txn_Id", "Day", "Month", "Year", "Item", "Category", "Amount", "Importance"]
+_CLEANED_COLUMNS: list[str] = ["txn_id", "day", "month", "year", "category", "amount"]
+_UNASSIGNED_EXPENSE_COLUMNS: list[str] = [
+    "txn_id",
+    "day",
+    "month",
+    "year",
+    "amount",
+    "category",
+    "data",
+    "extracted_location",
+    "google_maps_link",
+]
+_UNASSIGNED_INCOME_COLUMNS: list[str] = ["txn_id", "day", "month", "year", "amount", "category", "data"]
 
 
 def _today_str() -> str:
@@ -73,6 +85,9 @@ def _write_cleaned_csv(df: pd.DataFrame, columns: list[str], output_path: Path |
             f"Output path {output_path!r} must resolve within the project directory {Path.cwd()!r}"
         ) from err
 
+    df = df.copy()
+    if "txn_id" in columns and "txn_id" not in df.columns:
+        df["txn_id"] = ""
     sanitized = _sanitize_dataframe(df)
     sanitized.to_csv(output_path, columns=columns, index=False, encoding="utf-8-sig")
 
@@ -97,6 +112,7 @@ def export_for_google_sheets(processed_df: pd.DataFrame) -> Path:
     for row in processed_df.itertuples(index=False):
         cat, imp = CATEGORY_DISPLAY[str(row.category)]
         rows.append({
+            "Txn_Id": getattr(row, "txn_id", ""),
             "Day": row.day,
             "Month": row.month,
             "Year": row.year,
@@ -152,13 +168,17 @@ def export_unassigned_transactions_to_csv(df: pd.DataFrame) -> None:
     """
     # Add location processing only for unassigned transactions
     df_copy = df.copy()
+    if "txn_id" not in df_copy.columns:
+        df_copy["txn_id"] = ""
     df_copy["extracted_location"] = df_copy["data"].apply(extract_location_from_data)
     df_copy["google_maps_link"] = df_copy["extracted_location"].apply(create_google_maps_link)
 
     df_copy = _sanitize_dataframe(df_copy)
     output_file = Path("unassigned_transactions.csv")
-    # Keep BOM for Windows Excel when exporting unassigned transactions
-    df_copy.to_csv(output_file, index=False, encoding="utf-8-sig")
+    # Keep BOM for Windows Excel when exporting unassigned transactions.
+    # Explicit columns= guarantees txn_id is first and the header is stable
+    # against any DataFrame column-order drift.
+    df_copy.to_csv(output_file, columns=_UNASSIGNED_EXPENSE_COLUMNS, index=False, encoding="utf-8-sig")
     logger.info(f"[EXPORT] Unassigned transactions with location data saved to {output_file}")
 
 
@@ -183,6 +203,7 @@ def export_income_for_google_sheets(income_df: pd.DataFrame) -> Path:
     rows = []
     for row in income_df.itertuples(index=False):
         rows.append({
+            "Txn_Id": getattr(row, "txn_id", ""),
             "Day": row.day,
             "Month": row.month,
             "Year": row.year,
@@ -226,13 +247,15 @@ def export_unassigned_income(df: pd.DataFrame) -> None:
     Args:
         df: DataFrame containing all categorized income transactions.
     """
-    unassigned_df = df[df["category"] == "INCOME_MISC"]
+    unassigned_df = df[df["category"] == "INCOME_MISC"].copy()
+    if "txn_id" not in unassigned_df.columns:
+        unassigned_df["txn_id"] = ""
 
     sanitized = _sanitize_dataframe(unassigned_df)
     output_file = Path("unassigned_income.csv")
     sanitized.to_csv(
         output_file,
-        columns=["day", "month", "year", "amount", "category", "data"],
+        columns=_UNASSIGNED_INCOME_COLUMNS,
         index=False,
         encoding="utf-8-sig",
     )

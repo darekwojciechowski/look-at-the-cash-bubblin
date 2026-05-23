@@ -84,7 +84,22 @@ class TestExportMiscTransactions:
         export_misc_transactions(sample_dataframe_with_categories)
 
         # Assert
-        mock_to_csv.assert_called_once_with(Path("unassigned_transactions.csv"), index=False, encoding="utf-8-sig")
+        mock_to_csv.assert_called_once_with(
+            Path("unassigned_transactions.csv"),
+            columns=[
+                "txn_id",
+                "day",
+                "month",
+                "year",
+                "amount",
+                "category",
+                "data",
+                "extracted_location",
+                "google_maps_link",
+            ],
+            index=False,
+            encoding="utf-8-sig",
+        )
 
         # Verify only MISC rows are selected
         misc_df = sample_dataframe_with_categories[sample_dataframe_with_categories["category"] == "MISC"]
@@ -154,7 +169,22 @@ class TestExportUnassignedTransactions:
         export_unassigned_transactions_to_csv(sample_dataframe_with_categories)
 
         # Assert
-        mock_to_csv.assert_called_once_with(Path("unassigned_transactions.csv"), index=False, encoding="utf-8-sig")
+        mock_to_csv.assert_called_once_with(
+            Path("unassigned_transactions.csv"),
+            columns=[
+                "txn_id",
+                "day",
+                "month",
+                "year",
+                "amount",
+                "category",
+                "data",
+                "extracted_location",
+                "google_maps_link",
+            ],
+            index=False,
+            encoding="utf-8-sig",
+        )
 
 
 @pytest.mark.unit
@@ -354,7 +384,7 @@ class TestExportIncomeForGoogleSheets:
 
         assert out.name == "google_sheets_income.csv"
         result = pd.read_csv(out, sep="\t")
-        assert list(result.columns) == ["Day", "Month", "Year", "Item", "Category", "Amount", "Importance"]
+        assert list(result.columns) == ["Txn_Id", "Day", "Month", "Year", "Item", "Category", "Amount", "Importance"]
         assert len(result) == 2
 
     def test_amount_uses_comma_decimal(
@@ -379,7 +409,7 @@ class TestExportCleanedIncomeData:
         raw = target.read_bytes()
         assert raw.startswith(b"\xef\xbb\xbf"), "expected utf-8-sig BOM"
         result = pd.read_csv(target, encoding="utf-8-sig")
-        assert list(result.columns) == ["day", "month", "year", "category", "amount"]
+        assert list(result.columns) == ["txn_id", "day", "month", "year", "category", "amount"]
 
 
 @pytest.mark.unit
@@ -405,4 +435,4 @@ class TestExportUnassignedIncome:
         result = pd.read_csv(tmp_path / "unassigned_income.csv", encoding="utf-8-sig")
         assert "extracted_location" not in result.columns
         assert "google_maps_link" not in result.columns
-        assert list(result.columns) == ["day", "month", "year", "amount", "category", "data"]
+        assert list(result.columns) == ["txn_id", "day", "month", "year", "amount", "category", "data"]

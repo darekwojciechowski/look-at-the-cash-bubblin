@@ -94,20 +94,17 @@ jobs:
           poetry run pytest tests/ \
             -m "not integration and not slow and not security and not performance and not property" \
             --cov=config --cov=data_processing --cov=main \
-            --cov-report=xml \
-            --cov-report=html \
-            --cov-report=json \
+            --cov-report= \
             --junitxml=test-results-unit.xml \
             -v
 
-      - name: Upload coverage report
+      - name: Upload coverage data
         uses: actions/upload-artifact@v7
         with:
-          name: coverage-unit
-          path: |
-            coverage.xml
-            coverage.json
-            htmlcov/
+          name: coverage-data-unit
+          path: .coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
 
       - name: Upload test results
         uses: actions/upload-artifact@v7
@@ -152,9 +149,18 @@ jobs:
         run: |
           poetry run pytest tests/ \
             -m "integration" \
+            --cov=config --cov=data_processing --cov=main \
+            --cov-report= \
             --junitxml=test-results-integration.xml \
-            --no-cov \
             -v
+
+      - name: Upload coverage data
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-data-integration
+          path: .coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
 
       - name: Upload test results
         uses: actions/upload-artifact@v7
@@ -199,9 +205,18 @@ jobs:
         run: |
           poetry run pytest tests/ \
             -m "security" \
+            --cov=config --cov=data_processing --cov=main \
+            --cov-report= \
             --junitxml=test-results-security.xml \
-            --no-cov \
             -v
+
+      - name: Upload coverage data
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-data-security
+          path: .coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
 
       - name: Upload test results
         uses: actions/upload-artifact@v7
@@ -246,9 +261,18 @@ jobs:
         run: |
           poetry run pytest tests/ \
             -m "property" \
+            --cov=config --cov=data_processing --cov=main \
+            --cov-report= \
             --junitxml=test-results-property.xml \
-            --no-cov \
             -v
+
+      - name: Upload coverage data
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-data-property
+          path: .coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
 
       - name: Upload test results
         uses: actions/upload-artifact@v7
@@ -311,35 +335,91 @@ jobs:
   coverage-report:
     name: Coverage Report
     runs-on: ubuntu-latest
-    needs: [test-unit, test-integration, test-security, test-property, test-performance]
-    if: always()
+    needs: [test-unit, test-integration, test-security, test-property]
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-
-      - name: Download coverage artifacts
-        uses: actions/download-artifact@v4
-        continue-on-error: true
         with:
-          name: coverage-unit
-          path: coverage/
+          # Need full history + write token to push the coverage commit back.
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Download all coverage data
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-data-*
+          path: coverage-data/
+          merge-multiple: true
+
+      - name: Combine coverage and generate reports
+        run: |
+          # Move all .coverage.* fragments into repo root so `coverage combine` picks them up.
+          mv coverage-data/.coverage.* .
+          poetry run coverage combine
+          poetry run coverage json -o coverage.json
+          poetry run coverage xml -o coverage.xml
+          poetry run coverage html -d htmlcov
+
+      - name: Enforce coverage threshold
+        run: poetry run coverage report --fail-under=90
 
       - name: Display coverage summary
         run: |
+          COVERAGE=$(python3 -c "import json; print(json.load(open('coverage.json'))['totals']['percent_covered_display'])")
           echo "## Coverage Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -f coverage/coverage.json ]; then
-            COVERAGE=$(python3 -c "import json; data=json.load(open('coverage/coverage.json')); print(data['totals']['percent_covered_display'])")
-            echo "**Total Coverage: ${COVERAGE}%**" >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "**Total Coverage: ${COVERAGE}%**" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload final coverage report
         uses: actions/upload-artifact@v7
         with:
           name: coverage-report-final
-          path: coverage/
+          path: |
+            coverage.json
+            coverage.xml
+            htmlcov/
           retention-days: 30
+
+      - name: Commit updated coverage.json to main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- coverage.json; then
+            echo "coverage.json unchanged — nothing to commit."
+            exit 0
+          fi
+          git add coverage.json
+          git commit -m "chore(ci): update coverage.json [skip ci]"
+          # Rebase in case another commit landed while CI was running, then push.
+          git pull --rebase origin main
+          git push origin HEAD:main
 
   # ============================================================================
   # STAGE 4: CI Summary

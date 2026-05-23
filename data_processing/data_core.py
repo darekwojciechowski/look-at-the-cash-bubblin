@@ -51,7 +51,7 @@ def clean_descriptions(
     return df
 
 
-_PROCESSED_COLUMNS: list[str] = ["day", "month", "year", "amount", "category", "data"]
+_PROCESSED_COLUMNS: list[str] = ["txn_id", "day", "month", "year", "amount", "category", "data"]
 
 
 def _prepare_common(df: pd.DataFrame) -> pd.DataFrame:
@@ -63,7 +63,15 @@ def _prepare_common(df: pd.DataFrame) -> pd.DataFrame:
     ``category`` column is preserved on the returned DataFrame so the
     expense track can reuse it without re-mapping; the income track
     overwrites it via ``lookup_income_category``.
+
+    In production, ``main.py`` calls ``assign_txn_ids`` before this function
+    so the ``txn_id`` column is always present. Tests that construct minimal
+    DataFrames directly may omit it — in that case we synthesize an empty
+    placeholder so the downstream column schema stays stable.
     """
+    if "txn_id" not in df.columns:
+        df = df.copy()
+        df["txn_id"] = ""
     df = clean_descriptions(df)
     df["category"] = df["data"].map(mappings)
     df = df[df["category"] != "REMOVE_ENTRY"].reset_index(drop=True)

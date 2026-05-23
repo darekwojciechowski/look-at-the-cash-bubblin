@@ -15,6 +15,7 @@ from data_processing.exporter import (
     export_misc_transactions,
     export_unassigned_income,
 )
+from data_processing.transaction_id import assign_txn_ids
 
 # Constants
 CSV_INPUT_FILE: Path = Path("data/demo_ipko.csv")
@@ -46,6 +47,7 @@ def main() -> None:
     # Read and process the CSV file
     df = read_transaction_csv(CSV_INPUT_FILE, CSV_ENCODING)
     df = ipko_import(df)
+    df = assign_txn_ids(df)
     processed_df = process_dataframe(df)
     income_df = process_income_dataframe(df)
 

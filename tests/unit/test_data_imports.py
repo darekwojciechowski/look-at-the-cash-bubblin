@@ -28,7 +28,20 @@ class TestIpkoImport:
 
         # Assert
         # Verify the expected columns are present
-        expected_columns = ["amount", "data", "month", "year", "day"]
+        # ipko_import now retains source columns required for stable txn_id
+        # computation alongside the merged `data` column.
+        expected_columns = [
+            "booking_date",
+            "value_date",
+            "txn_type",
+            "amount",
+            "currency",
+            "description",
+            "data",
+            "month",
+            "year",
+            "day",
+        ]
         assert list(processed_df.columns) == expected_columns
 
         # Verify date conversion
@@ -39,9 +52,9 @@ class TestIpkoImport:
         # Verify data column transformation
         assert processed_df["data"].iloc[0] == "transfer//description1//extra1//extra3//data1"
 
-        # Verify dropped columns
-        assert "transaction_date" not in processed_df.columns
-        assert "currency" not in processed_df.columns
+        # Verify helper columns are dropped
+        assert "unnamed_6" not in processed_df.columns
+        assert "unnamed_8" not in processed_df.columns
 
     def test_ipko_import_lowercases_text_columns(self, sample_ipko_dataframe: pd.DataFrame) -> None:
         """Test that text columns are properly converted to lowercase.

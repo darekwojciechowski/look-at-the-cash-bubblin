@@ -141,6 +141,7 @@ class TestFormulaInjectionOnExport:
         df = pd.DataFrame({
             "data": [payload],
             "amount": ["10.0"],
+            "day": [1],
             "month": [1],
             "year": [2023],
             "category": ["MISC"],

@@ -20,8 +20,19 @@ from data_processing.location_processor import extract_location_from_data
 # ─────────────────────────────────────────────────────────────────────────────
 
 _IPKO_RAW_COLUMNS = {0, 1, 2, 3, 4, 5, 6, 7, 8}
-_IPKO_OUTPUT_COLUMNS = {"amount", "data", "month", "year", "day"}
-_PROCESSED_COLUMNS = ["day", "month", "year", "amount", "category", "data"]
+_IPKO_OUTPUT_COLUMNS = {
+    "booking_date",
+    "value_date",
+    "txn_type",
+    "amount",
+    "currency",
+    "description",
+    "data",
+    "month",
+    "year",
+    "day",
+}
+_PROCESSED_COLUMNS = ["txn_id", "day", "month", "year", "amount", "category", "data"]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -134,6 +145,7 @@ class TestProcessDataframeOutputContract:
         """
         # Arrange — mixed-sign prices
         df = pd.DataFrame({
+            "txn_id": ["v1:" + "a" * 64, "v1:" + "b" * 64],
             "data": ["orlen", "salary income"],
             "amount": ["-100.0", "3000.0"],
             "month": [1, 1],
