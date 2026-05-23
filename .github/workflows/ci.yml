@@ -98,6 +98,9 @@ jobs:
             --junitxml=test-results-unit.xml \
             -v
 
+      - name: Prepare coverage data
+        run: mv .coverage .coverage.unit 2>/dev/null || true
+
       - name: Upload coverage data
         uses: actions/upload-artifact@v7
         with:
@@ -153,6 +156,9 @@ jobs:
             --cov-report= \
             --junitxml=test-results-integration.xml \
             -v
+
+      - name: Prepare coverage data
+        run: mv .coverage .coverage.integration 2>/dev/null || true
 
       - name: Upload coverage data
         uses: actions/upload-artifact@v7
@@ -210,6 +216,9 @@ jobs:
             --junitxml=test-results-security.xml \
             -v
 
+      - name: Prepare coverage data
+        run: mv .coverage .coverage.security 2>/dev/null || true
+
       - name: Upload coverage data
         uses: actions/upload-artifact@v7
         with:
@@ -265,6 +274,9 @@ jobs:
             --cov-report= \
             --junitxml=test-results-property.xml \
             -v
+
+      - name: Prepare coverage data
+        run: mv .coverage .coverage.property 2>/dev/null || true
 
       - name: Upload coverage data
         uses: actions/upload-artifact@v7
