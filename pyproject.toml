@@ -88,3 +88,8 @@ strict_equality = true
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
+
+[tool.coverage.run]
+parallel = true
+branch = true
+source = ["config", "data_processing", "main"]
