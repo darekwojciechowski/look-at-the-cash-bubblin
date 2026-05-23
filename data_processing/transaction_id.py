@@ -68,11 +68,11 @@ def _iso_date(value: object) -> str:
     if isinstance(value, pd.Timestamp):
         if pd.isna(value):
             return ""
-        return value.strftime("%Y-%m-%d")
+        return str(value.strftime("%Y-%m-%d"))
     parsed = pd.to_datetime(value, errors="coerce")
     if pd.isna(parsed):
         return ""
-    return parsed.strftime("%Y-%m-%d")
+    return str(parsed.strftime("%Y-%m-%d"))
 
 
 def compute_txn_id(

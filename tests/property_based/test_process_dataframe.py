@@ -112,7 +112,7 @@ class TestProcessDataframe:
         result = process_dataframe(df)
 
         # Assert
-        assert list(result.columns) == ["day", "month", "year", "amount", "category", "data"]
+        assert list(result.columns) == ["txn_id", "day", "month", "year", "amount", "category", "data"]
 
     @given(
         month=st.integers(min_value=1, max_value=12),

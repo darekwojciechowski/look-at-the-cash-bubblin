@@ -33,7 +33,7 @@ class PipelineState(StrEnum):
 
 # Column sets per pipeline stage — used to enforce strict structural invariants.
 _RAW_COLUMNS: frozenset[str] = frozenset({"data", "amount", "day", "month", "year"})
-_PROCESSED_COLUMNS: list[str] = ["day", "month", "year", "amount", "category", "data"]
+_PROCESSED_COLUMNS: list[str] = ["txn_id", "day", "month", "year", "amount", "category", "data"]
 
 _SAMPLE_PRICES: list[str] = ["-100.0", "-50.0", "-200.0", "-15.0", "-30.0"]
 
