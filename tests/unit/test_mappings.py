@@ -3,6 +3,7 @@ Covers keyword-to-category mapping, case-insensitive matching, and category set 
 """
 
 import pytest
+from loguru import logger
 
 from data_processing.category import (
     CLOTHES,
@@ -345,7 +346,7 @@ class TestCategorySetIntegrity:
 
         # Report duplicates if any (might be intentional for some keywords)
         if duplicates:
-            print(f"Warning: Duplicate keywords found: {duplicates}")
+            logger.warning("Duplicate keywords found: {}", duplicates)
 
         # This test is informational - duplicates might be intentional
         # depending on business logic requirements

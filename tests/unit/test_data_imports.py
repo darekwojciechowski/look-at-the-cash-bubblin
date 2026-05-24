@@ -249,20 +249,20 @@ class TestReadTransactionCsv:
             "[ERROR] Failed to read CSV file: nonexistent.csv. Error: File not found"
         )
 
-    def test_read_transaction_csv_generic_error(self, mocker: MockerFixture) -> None:
-        """Test that generic errors are logged and re-raised.
+    def test_read_transaction_csv_parser_error(self, mocker: MockerFixture) -> None:
+        """Test that non-encoding parser errors are logged and re-raised.
 
-        Given: pandas.read_csv raises a generic Exception
+        Given: pandas.read_csv raises a pd.errors.ParserError unrelated to encoding
         When:  read_transaction_csv() is called
         Then:  the error is logged and re-raised
         """
         # Arrange
         mock_read_csv = mocker.patch("pandas.read_csv")
-        mock_read_csv.side_effect = Exception("Generic error")
+        mock_read_csv.side_effect = pd.errors.ParserError("Generic error")
         mock_log_error = mocker.patch("loguru.logger.error")
 
         # Act + Assert
-        with pytest.raises(Exception, match="Generic error"):
+        with pytest.raises(pd.errors.ParserError, match="Generic error"):
             read_transaction_csv("test.csv", "utf-8")
 
         mock_log_error.assert_called_once()
@@ -355,9 +355,9 @@ class TestReadTransactionCsv:
         assert df["data"].iloc[0] == "orlen"
 
     def test_read_transaction_csv_encoding_related_exception(self, mocker: MockerFixture) -> None:
-        """Test that encoding-related exceptions trigger fallback to next encoding.
+        """Test that encoding-related parser errors trigger fallback to next encoding.
 
-        Given: the first read attempt raises a generic 'codec error' exception
+        Given: the first read attempt raises a ParserError whose message mentions a codec
         When:  read_transaction_csv() is called
         Then:  it retries and succeeds on the second attempt
         """
@@ -368,7 +368,7 @@ class TestReadTransactionCsv:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
-                raise Exception("codec error detected")
+                raise pd.errors.ParserError("codec error detected")
             return pd.DataFrame({"col1": ["val1"]})
 
         mock_read_csv = mocker.patch("pandas.read_csv")

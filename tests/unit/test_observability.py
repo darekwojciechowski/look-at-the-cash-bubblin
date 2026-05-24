@@ -74,7 +74,7 @@ class TestSetupLoggingAudit:
 
         Given: logger.add raises OSError (e.g. disk full or permission denied)
         When:  setup_logging() is called
-        Then:  no exception propagates and the error text is printed to stdout
+        Then:  no exception propagates and the error text is printed to stderr
         """
         # Arrange
         mocker.patch.object(logger, "remove")
@@ -84,9 +84,9 @@ class TestSetupLoggingAudit:
         # Act — must not raise
         setup_logging()
 
-        # Assert — error message captured on stdout
+        # Assert — error message captured on stderr
         captured = capsys.readouterr()
-        assert "disk full" in captured.out or "Error" in captured.out
+        assert "disk full" in captured.err or "Error" in captured.err
 
 
 # ─────────────────────────────────────────────────────────────────────────────

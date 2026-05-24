@@ -8,6 +8,14 @@ from typing import Any
 import pandas as pd
 from loguru import logger
 
+from config.paths import (
+    GOOGLE_SHEETS_EXPENSES_PATH,
+    GOOGLE_SHEETS_INCOME_PATH,
+    PROCESSED_INCOME_PATH,
+    PROCESSED_TRANSACTIONS_PATH,
+    UNASSIGNED_INCOME_PATH,
+    UNASSIGNED_TRANSACTIONS_PATH,
+)
 from data_processing.expense import CATEGORY_DISPLAY
 from data_processing.location_processor import (
     create_google_maps_link,
@@ -49,6 +57,14 @@ def _sanitize_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _prepare_for_export(df: pd.DataFrame, *, ensure_txn_id: bool = True) -> pd.DataFrame:
+    """Return a sanitized copy of *df*, optionally backfilling an empty txn_id column."""
+    if ensure_txn_id and "txn_id" not in df.columns:
+        df = df.copy()
+        df["txn_id"] = ""
+    return _sanitize_dataframe(df)
+
+
 def _write_google_sheets_csv(output_df: pd.DataFrame, output_path: Path) -> Path:
     """Write *output_df* as a tab-separated Google Sheets export.
 
@@ -82,10 +98,7 @@ def _write_cleaned_csv(df: pd.DataFrame, columns: list[str], output_path: Path |
             f"Output path {output_path!r} must resolve within the project directory {Path.cwd()!r}"
         ) from err
 
-    df = df.copy()
-    if "txn_id" in columns and "txn_id" not in df.columns:
-        df["txn_id"] = ""
-    sanitized = _sanitize_dataframe(df)
+    sanitized = _prepare_for_export(df, ensure_txn_id="txn_id" in columns)
     sanitized.to_csv(output_path, columns=columns, index=False, encoding="utf-8-sig")
 
 
@@ -146,7 +159,7 @@ def export_for_google_sheets(processed_df: pd.DataFrame) -> Path:
     Returns:
         Path to the written CSV file.
     """
-    return _export_google_sheets(processed_df, Path("google_sheets_expenses.csv"), _build_expense_row)
+    return _export_google_sheets(processed_df, GOOGLE_SHEETS_EXPENSES_PATH, _build_expense_row)
 
 
 def export_misc_transactions(df: pd.DataFrame) -> None:
@@ -160,7 +173,7 @@ def export_misc_transactions(df: pd.DataFrame) -> None:
     logger.info("[EXPORT] Unassigned (MISC) transactions exported")
 
 
-def export_cleaned_data(df: pd.DataFrame, output_file: Path | str = Path("data/processed_transactions.csv")) -> None:
+def export_cleaned_data(df: pd.DataFrame, output_file: Path | str = PROCESSED_TRANSACTIONS_PATH) -> None:
     """Write the ``[day, month, year, category, amount]`` columns to a CSV file.
 
     Uses ``utf-8-sig`` encoding so the file opens correctly in Windows Excel.
@@ -188,13 +201,11 @@ def export_unassigned_transactions_to_csv(df: pd.DataFrame) -> None:
     """
     # Add location processing only for unassigned transactions
     df_copy = df.copy()
-    if "txn_id" not in df_copy.columns:
-        df_copy["txn_id"] = ""
     df_copy["extracted_location"] = df_copy["data"].apply(extract_location_from_data)
     df_copy["google_maps_link"] = df_copy["extracted_location"].apply(create_google_maps_link)
 
-    df_copy = _sanitize_dataframe(df_copy)
-    output_file = Path("unassigned_transactions.csv")
+    df_copy = _prepare_for_export(df_copy)
+    output_file = UNASSIGNED_TRANSACTIONS_PATH
     # Keep BOM for Windows Excel when exporting unassigned transactions.
     # Explicit columns= guarantees txn_id is first and the header is stable
     # against any DataFrame column-order drift.
@@ -218,10 +229,10 @@ def export_income_for_google_sheets(income_df: pd.DataFrame) -> Path:
     Returns:
         Path to the written CSV file.
     """
-    return _export_google_sheets(income_df, Path("google_sheets_income.csv"), _build_income_row)
+    return _export_google_sheets(income_df, GOOGLE_SHEETS_INCOME_PATH, _build_income_row)
 
 
-def export_cleaned_income_data(df: pd.DataFrame, output_file: Path | str = Path("data/processed_income.csv")) -> None:
+def export_cleaned_income_data(df: pd.DataFrame, output_file: Path | str = PROCESSED_INCOME_PATH) -> None:
     """Write the ``[day, month, year, category, amount]`` columns to a CSV file.
 
     Mirrors ``export_cleaned_data`` for income — same schema, same encoding,
@@ -248,12 +259,9 @@ def export_unassigned_income(df: pd.DataFrame) -> None:
     Args:
         df: DataFrame containing all categorized income transactions.
     """
-    unassigned_df = df[df["category"] == "INCOME_MISC"].copy()
-    if "txn_id" not in unassigned_df.columns:
-        unassigned_df["txn_id"] = ""
-
-    sanitized = _sanitize_dataframe(unassigned_df)
-    output_file = Path("unassigned_income.csv")
+    unassigned_df = df[df["category"] == "INCOME_MISC"]
+    sanitized = _prepare_for_export(unassigned_df)
+    output_file = UNASSIGNED_INCOME_PATH
     sanitized.to_csv(
         output_file,
         columns=_UNASSIGNED_INCOME_COLUMNS,

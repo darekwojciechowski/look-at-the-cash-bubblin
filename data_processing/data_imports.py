@@ -91,16 +91,18 @@ def ipko_import(df: pd.DataFrame) -> pd.DataFrame:
     for col in columns_to_lower:
         df[col] = df[col].astype(str).str.lower()
 
-    # Combine multiple columns into a single 'data' column
-    df["data"] = df[
-        [
-            "txn_type",
-            "description",
-            "unnamed_6",
-            "unnamed_8",
-            "data",
-        ]
-    ].apply(lambda row: "//".join(s for s in map(str, row) if s != "nan"), axis=1)
+    # Combine multiple columns into a single 'data' column. Vectorised:
+    # mask literal "nan" strings (from NaN→str conversion above) to empty so
+    # they vanish from the join, concatenate with "//", then collapse and strip
+    # the separator runs that the blanks leave behind. Matches the prior
+    # apply()+filter semantics. `.mask` is used instead of `.replace` because
+    # the new pandas StringDtype treats "nan" as the NA sentinel in replace.
+    _merge_cols = ["txn_type", "description", "unnamed_6", "unnamed_8", "data"]
+    _parts = [df[c].fillna("").mask(df[c] == "nan", "") for c in _merge_cols]
+    _joined = _parts[0]
+    for _p in _parts[1:]:
+        _joined = _joined + "//" + _p
+    df["data"] = _joined.str.replace(r"/{2,}", "//", regex=True).str.strip("/")
 
     # Drop helper columns; retain source columns needed for txn_id
     df = df.drop(columns=["unnamed_6", "unnamed_8"])
@@ -175,14 +177,16 @@ def read_transaction_csv(file_path: str | Path, encoding: str) -> pd.DataFrame:
                 # Explicit log message expected by tests and users
                 logger.error(f"[ERROR] Failed to read CSV file: {file_path}. Error: {str(e)}")
                 raise
-            except Exception as e:
-                # If it's clearly encoding-related, try next; otherwise, log and re-raise
+            except (pd.errors.ParserError, OSError) as e:
+                # Narrow catch: pandas parser issues (sometimes wrap codec errors) and OS
+                # errors (permissions, IO). Encoding-related messages → retry next encoding;
+                # everything else is logged and re-raised. Other unexpected exceptions are
+                # intentionally not caught here so bugs surface instead of being swallowed.
                 if "codec" in str(e).lower() or "encoding" in str(e).lower():
                     logger.warning(f"[WARNING] Encoding error with {enc}: {e}")
                     continue
-                else:
-                    logger.error(f"[ERROR] Failed to read CSV file: {file_path}. Error: {str(e)}")
-                    raise
+                logger.error(f"[ERROR] Failed to read CSV file: {file_path}. Error: {str(e)}")
+                raise
     finally:
         # For visibility, log the attempted encodings if we end up failing completely
         logger.debug(f"Tried encodings in order: {encodings_to_try}")

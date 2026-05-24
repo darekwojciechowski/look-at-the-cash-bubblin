@@ -99,15 +99,15 @@ class TestSetupLogging:
         assert "Cannot create file" in call_args
 
     def test_setup_logging_stream_handler_error(self):
-        """Test error handling when logger.add fails.
+        """Test error handling when logger.add fails with a recognised error.
 
-        Given: logger.add raises a generic Exception
+        Given: logger.add raises a ValueError (e.g. bad format/level)
         When:  setup_logging() is called
         Then:  the error message is printed and the function does not raise
         """
         # Arrange
         with (
-            patch("loguru.logger.add", side_effect=Exception("Handler error")),
+            patch("loguru.logger.add", side_effect=ValueError("Handler error")),
             patch("builtins.print") as mock_print,
         ):
             # Act

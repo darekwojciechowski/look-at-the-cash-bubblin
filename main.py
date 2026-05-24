@@ -5,6 +5,7 @@ from pathlib import Path
 from loguru import logger
 
 from config.logging_setup import log_dataframe_preview, setup_logging
+from config.paths import PROCESSED_INCOME_PATH, PROCESSED_TRANSACTIONS_PATH
 from data_processing.data_core import process_dataframe, process_income_dataframe
 from data_processing.data_imports import ipko_import, read_transaction_csv
 from data_processing.exporter import (
@@ -20,8 +21,8 @@ from data_processing.transaction_id import assign_txn_ids
 # Constants
 CSV_INPUT_FILE: Path = Path("data/demo_ipko.csv")
 CSV_ENCODING: str = "cp1250"
-CSV_OUT_FILE: Path = Path("data/processed_transactions.csv")
-CSV_INCOME_OUT_FILE: Path = Path("data/processed_income.csv")
+CSV_OUT_FILE: Path = PROCESSED_TRANSACTIONS_PATH
+CSV_INCOME_OUT_FILE: Path = PROCESSED_INCOME_PATH
 
 
 def main() -> None:

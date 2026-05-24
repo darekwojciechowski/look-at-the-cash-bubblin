@@ -7,6 +7,7 @@ import re
 from collections import defaultdict
 
 import pytest
+from loguru import logger
 
 from data_processing import category
 
@@ -218,9 +219,11 @@ class TestCategoryKeywordUniqueness:
 
         # This is a warning test - we allow some special characters
         if invalid_keywords:
-            print(f"\n⚠️  Warning: Found {len(invalid_keywords)} keywords with special characters")
-            for cat, kw in invalid_keywords[:5]:  # Show first 5
-                print(f"    {cat}: '{kw}'")
+            logger.warning(
+                "Found {} keywords with special characters: {}",
+                len(invalid_keywords),
+                invalid_keywords[:5],
+            )
 
     def test_specific_sensitive_keywords(self):
         """Sensitive keywords known to overlap (e.g. 'car', 'food') must belong to exactly one category.

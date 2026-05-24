@@ -60,8 +60,13 @@ def setup_logging() -> None:
 
         # Confirm that logging is active
         logger.info("Logging initialized successfully")
-    except Exception as e:
-        print(f"Error setting up logging: {e}")
+    except (OSError, ValueError) as e:
+        # OSError covers PermissionError / disk failures when opening app.log;
+        # ValueError covers loguru's bad-format / bad-level rejections. Anything
+        # outside these is unexpected and should not be silently swallowed.
+        _id = logger.add(sys.stderr, level="ERROR", format="{level}: {message}")
+        logger.error("Error setting up logging: {}", e)
+        logger.remove(_id)
 
 
 def log_dataframe_preview(df: pd.DataFrame) -> None:
