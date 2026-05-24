@@ -64,9 +64,8 @@ def setup_logging() -> None:
         # OSError covers PermissionError / disk failures when opening app.log;
         # ValueError covers loguru's bad-format / bad-level rejections. Anything
         # outside these is unexpected and should not be silently swallowed.
-        _id = logger.add(sys.stderr, level="ERROR", format="{level}: {message}")
-        logger.error("Error setting up logging: {}", e)
-        logger.remove(_id)
+        # Use print() here — logger.add may itself be broken at this point.
+        print(f"Error setting up logging: {e}", file=sys.stderr)
 
 
 def log_dataframe_preview(df: pd.DataFrame) -> None:
