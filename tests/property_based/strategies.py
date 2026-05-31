@@ -6,7 +6,7 @@ from hypothesis.extra.pandas import column, data_frames, range_indexes
 
 
 def raw_transaction_dfs(min_size: int = 1, max_size: int = 50) -> st.SearchStrategy[pd.DataFrame]:
-    """DataFrames with the raw transaction schema [data, price, month, year].
+    """DataFrames with the raw transaction schema [data, amount, month, year].
 
     Args:
         min_size: Minimum number of rows (default 1 to avoid trivially empty frames).

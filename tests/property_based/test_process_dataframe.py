@@ -30,7 +30,7 @@ class TestProcessDataframe:
 
         Given: a list of negative floats and an empty category mapping
         When:  process_dataframe() is called
-        Then:  the result is a DataFrame with category and price columns, no more rows than input
+        Then:  the result is a DataFrame with category and amount columns, no more rows than input
         """
         # Arrange
         count = len(prices)
@@ -97,7 +97,7 @@ class TestProcessDataframe:
 
         Given: a DataFrame with a Hypothesis-generated row count and empty mapping
         When:  process_dataframe() is called
-        Then:  columns are always [month, year, price, category, data]
+        Then:  columns are always [txn_id, day, month, year, amount, category, data]
         """
         # Arrange
         df = pd.DataFrame({

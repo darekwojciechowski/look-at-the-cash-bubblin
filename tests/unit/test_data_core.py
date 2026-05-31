@@ -231,7 +231,7 @@ class TestProcessDataframe:
 
         Given: a raw DataFrame and a mock mappings function
         When:  process_dataframe() is called
-        Then:  columns appear in [day, month, year, price, category, data] order
+        Then:  columns appear in [txn_id, day, month, year, amount, category, data] order
         """
         # Arrange
         mocker.patch("data_processing.data_core.mappings", mappings_mock)

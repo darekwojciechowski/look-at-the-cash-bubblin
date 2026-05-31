@@ -46,11 +46,11 @@ class TestIpkoImportOutputContract:
     """ipko_import() must produce a DataFrame with the canonical pipeline schema."""
 
     def test_output_columns_are_exactly_required_set(self, sample_ipko_dataframe: pd.DataFrame) -> None:
-        """ipko_import() produces exactly {price, data, month, year}.
+        """ipko_import() produces the full canonical import schema.
 
         Given: a raw 9-column IPKO DataFrame
         When:  ipko_import() is called
-        Then:  the result has exactly the four canonical columns and no others
+        Then:  the result has exactly the required canonical columns and no others
         """
         # Arrange — via sample_ipko_dataframe fixture
         # Act
@@ -117,9 +117,9 @@ class TestProcessDataframeOutputContract:
     def test_output_column_order_matches_export_schema(self, sample_raw_dataframe: pd.DataFrame) -> None:
         """Output columns must match the canonical export order.
 
-        Given: a raw transaction DataFrame with data/price/month/year/day columns
+        Given: a raw transaction DataFrame with txn_id/data/amount/day/month/year columns
         When:  process_dataframe() is called
-        Then:  output columns are exactly [day, month, year, price, category, data]
+        Then:  output columns are exactly [txn_id, day, month, year, amount, category, data]
         """
         result = process_dataframe(sample_raw_dataframe)
 
@@ -137,13 +137,13 @@ class TestProcessDataframeOutputContract:
         assert result["category"].notna().all()
 
     def test_no_positive_original_prices_in_output(self) -> None:
-        """Income rows (positive price) must be filtered out.
+        """Income rows (positive amount) must be filtered out.
 
-        Given: a DataFrame containing one negative and one positive price
+        Given: a DataFrame containing one negative and one positive amount
         When:  process_dataframe() is called
-        Then:  the positive-price row is absent from the result
+        Then:  the positive-amount row is absent from the result
         """
-        # Arrange — mixed-sign prices
+        # Arrange — mixed-sign amounts
         df = pd.DataFrame({
             "txn_id": ["v1:" + "a" * 64, "v1:" + "b" * 64],
             "data": ["orlen", "salary income"],
@@ -161,11 +161,11 @@ class TestProcessDataframeOutputContract:
         assert float(result["amount"].iloc[0]) > 0  # stored as absolute value
 
     def test_price_column_dtype_is_object_string(self, sample_raw_dataframe: pd.DataFrame) -> None:
-        """Price must be stored as a string dtype after processing.
+        """Amount must be stored as a string dtype after processing.
 
-        Given: a raw transaction DataFrame with string prices
+        Given: a raw transaction DataFrame with string amounts
         When:  process_dataframe() is called
-        Then:  the price column has a string dtype (object or StringDtype)
+        Then:  the amount column has a string dtype (object or StringDtype)
         """
         result = process_dataframe(sample_raw_dataframe)
 

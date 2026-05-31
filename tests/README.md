@@ -13,7 +13,7 @@ tests/
 │   ├── test_data_contracts.py  # Inter-stage DataFrame schema contracts
 │   ├── test_data_core.py
 │   ├── test_data_imports.py
-│   ├── test_data_loader.py
+│   ├── test_expense.py
 │   ├── test_exporter.py
 │   ├── test_location_processor.py
 │   ├── test_logging_setup.py
@@ -114,7 +114,8 @@ Key settings in `pytest.ini`:
 - `--cov=config,data_processing,main` — measures coverage across all source modules
 - `--cov-report=html,json` — writes an HTML report to `htmlcov/` and a
   machine-readable JSON report to `coverage.json`
-- `--cov-fail-under=90` — enforces a 90% coverage threshold
+- Coverage threshold (90%) is enforced in CI via
+  `.github/workflows/ci.yml` (`coverage report --fail-under=90`)
 - `--maxfail=3` — stops the run after three failures
 - `--strict-markers` — treats unknown markers as errors
 - `--strict-config` — treats unknown `pytest.ini` keys as errors
@@ -130,11 +131,11 @@ DataFrame schema that each pipeline stage promises to the next. Four contracts
 are defined:
 
 - `TestIpkoImportOutputContract` — `ipko_import()` must produce exactly
-  `{price, data, month, year}` with lowercase text, no raw integer columns,
-  month values in [1, 12], and correct year extraction.
+  `{booking_date, value_date, txn_type, amount, currency, description, data, month, year, day}`
+  with lowercase merged text, no raw integer columns, month values in [1, 12], and correct year extraction.
 - `TestProcessDataframeOutputContract` — `process_dataframe()` must produce
-  columns in `[month, year, price, category, data]` order, drop income rows,
-  keep price as a string dtype, and never increase row count.
+  columns in `[txn_id, day, month, year, amount, category, data]` order, drop income rows,
+  keep amount as a string dtype, and never increase row count.
 - `TestCleanDescriptionsContract` — `clean_descriptions()` must preserve row
   count and string dtype, and must honour the Open/Closed Principle for custom
   replacement dicts.
@@ -149,8 +150,10 @@ of state transitions through `EMPTY → LOADED → CLEANED → PROCESSED → EMP
 satisfies these invariants at every step:
 
 - The buffer is always a `pd.DataFrame`.
-- Column names never leave the set `{data, price, month, year, category}`.
-- Prices in `PROCESSED` state are non-negative absolute values.
+- Column names never leave the stage-specific schema:
+  - raw stages: `{data, amount, day, month, year}`
+  - processed stage: `[txn_id, day, month, year, amount, category, data]`
+- Amounts in `PROCESSED` state are non-negative absolute values.
 
 This catches ordering bugs and cross-state corruption that per-function unit
 tests miss. Run with `poetry run pytest tests/property_based/test_pipeline_stateful.py`.

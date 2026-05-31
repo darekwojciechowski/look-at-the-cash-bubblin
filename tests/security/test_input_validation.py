@@ -125,7 +125,7 @@ class TestPriceValidation:
         bad_price: str,
         make_transaction_dataframe: Callable[[list[TransactionRow]], pd.DataFrame],
     ) -> None:
-        """Given a non-numeric string in the price column,
+        """Given a non-numeric string in the amount column,
         when process_dataframe() runs,
         then ValueError is raised (locked behaviour — astype(float) contract).
         """

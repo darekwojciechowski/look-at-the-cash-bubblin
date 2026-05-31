@@ -71,11 +71,11 @@ class TestIpkoImport:
         assert "transfer" in processed_df["data"].iloc[0]
 
     def test_ipko_import_preserves_price_column(self, sample_ipko_dataframe: pd.DataFrame) -> None:
-        """Test that price column is preserved correctly.
+        """Test that amount column is preserved correctly.
 
-        Given: a raw IPKO DataFrame with known price values
+        Given: a raw IPKO DataFrame with known amount values
         When:  ipko_import() is called
-        Then:  the price column is present with the original string values
+        Then:  the amount column is present with the original string values
         """
         # Arrange — via sample_ipko_dataframe fixture
         processed_df = ipko_import(sample_ipko_dataframe)

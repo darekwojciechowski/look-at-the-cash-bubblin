@@ -85,7 +85,7 @@ def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
     Refunds, reversals, and income (positive amounts) are excluded. Amounts are
     converted to absolute values. Output columns are
-    ``[day, month, year, amount, category, data]``.
+    ``[txn_id, day, month, year, amount, category, data]``.
 
     Args:
         df: DataFrame produced by ``ipko_import`` with columns
@@ -106,7 +106,7 @@ def process_income_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     Refunds and expenses (non-positive amounts) are excluded. Amounts are
     stringified as-is — no absolute-value conversion, since income amounts
     are already positive. Output columns match the expense schema:
-    ``[day, month, year, amount, category, data]``.
+    ``[txn_id, day, month, year, amount, category, data]``.
 
     Args:
         df: DataFrame produced by ``ipko_import`` with columns

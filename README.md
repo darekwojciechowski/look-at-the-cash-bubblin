@@ -60,7 +60,7 @@ This project maintains high code quality through comprehensive testing practices
 - **GitHub Actions CI/CD Pipeline**: Automated testing on every push and pull request
 - **Multi-Stage Pipeline**:
   - **Stage 1**: Code quality gates (Ruff formatting, linting, mypy type checking)
-  - **Stage 2**: Parallel test execution (unit, integration, security, performance tests)
+  - **Stage 2**: Parallel test execution (unit, integration, security, property-based, performance tests)
   - **Stage 3**: Coverage reporting and artifact archival
 
 ## How to Use

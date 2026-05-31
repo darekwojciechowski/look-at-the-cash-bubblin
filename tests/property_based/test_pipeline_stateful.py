@@ -117,7 +117,8 @@ class TransactionPipelineMachine(RuleBasedStateMachine):
     def column_schema_matches_pipeline_state(self) -> None:
         """Column schema must match the expected structure for each pipeline state.
 
-        PROCESSED state requires exactly [month, year, price, category, data].
+        PROCESSED state requires exactly
+        [txn_id, day, month, year, amount, category, data].
         LOADED/CLEANED state columns must be a subset of the raw schema.
         EMPTY state imposes no column constraint.
         """
