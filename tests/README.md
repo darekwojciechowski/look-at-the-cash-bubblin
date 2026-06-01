@@ -99,6 +99,19 @@ Counts below are approximate and may drift as tests are added.
 | security | ~77 | Medium | Input validation, injection prevention, I/O hardening |
 | property_based | ~9 | Medium | Generative testing with Hypothesis |
 
+## Behavior-First Testing Policy
+
+- Prefer assertions on visible outcomes: written artifacts, file schemas, row-level invariants, and public contracts.
+- Avoid asserting internal call choreography or implementation order unless that order is itself a public contract.
+- Use mocks only at true boundaries that are hard to reproduce in tests (for example OS-level I/O failures).
+- Follow rewrite-first duplicate policy: only remove tests after equivalent or stronger behavior coverage is proven.
+
+## Property, Performance, and Security Guidance
+
+- Property tests keep Hypothesis health checks enabled; avoid fixture-coupled suppression and generate setup directly per example.
+- Performance tests should combine deterministic invariants with bounded guard times and relative scaling checks, rather than tight host-dependent budgets.
+- Security tests should use locale-agnostic numeric assertions and token-precise log expectations to reduce false positives/negatives.
+
 ## Development workflow
 
 1. Run `poetry run pytest tests/unit` during active development for fast feedback.
@@ -116,6 +129,9 @@ Key settings in `pytest.ini`:
   machine-readable JSON report to `coverage.json`
 - Coverage threshold (90%) is enforced in CI via
   `.github/workflows/ci.yml` (`coverage report --fail-under=90`)
+- CI coverage combine intentionally includes unit, integration, security, and
+  property-based jobs only; the performance job runs with `--no-cov` by design
+  to keep benchmark timings stable.
 - `--maxfail=3` — stops the run after three failures
 - `--strict-markers` — treats unknown markers as errors
 - `--strict-config` — treats unknown `pytest.ini` keys as errors

@@ -2,7 +2,7 @@
 
 import pandas as pd
 import pytest
-from hypothesis import HealthCheck, assume, given, settings
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from data_processing.data_core import process_dataframe
@@ -23,9 +23,8 @@ class TestProcessDataframe:
     @settings(
         max_examples=50,
         deadline=None,
-        suppress_health_check=[HealthCheck.function_scoped_fixture],
     )
-    def test_always_returns_dataframe(self, prices: list[float], empty_mappings: None) -> None:
+    def test_always_returns_dataframe(self, prices: list[float]) -> None:
         """Property: process_dataframe always returns a valid DataFrame.
 
         Given: a list of negative floats and an empty category mapping
@@ -61,9 +60,8 @@ class TestProcessDataframe:
     @settings(
         max_examples=30,
         deadline=None,
-        suppress_health_check=[HealthCheck.function_scoped_fixture],
     )
-    def test_price_conversion_always_positive(self, prices: list[float], empty_mappings: None) -> None:
+    def test_price_conversion_always_positive(self, prices: list[float]) -> None:
         """Property: All negative prices are converted to positive absolute values.
 
         Given: a list of negative floats and an empty category mapping
@@ -90,9 +88,8 @@ class TestProcessDataframe:
     @settings(
         max_examples=20,
         deadline=None,
-        suppress_health_check=[HealthCheck.function_scoped_fixture],
     )
-    def test_column_order_consistency(self, count: int, empty_mappings: None) -> None:
+    def test_column_order_consistency(self, count: int) -> None:
         """Property: Output columns are always in the canonical order.
 
         Given: a DataFrame with a Hypothesis-generated row count and empty mapping
@@ -121,9 +118,8 @@ class TestProcessDataframe:
     @settings(
         max_examples=50,
         deadline=None,
-        suppress_health_check=[HealthCheck.function_scoped_fixture],
     )
-    def test_date_fields_preserve_values(self, month: int, year: int, empty_mappings: None) -> None:
+    def test_date_fields_preserve_values(self, month: int, year: int) -> None:
         """Property: Month and year values are preserved through processing.
 
         Given: Hypothesis-generated month and year integers and empty mapping
@@ -145,9 +141,8 @@ class TestProcessDataframe:
     @settings(
         max_examples=100,
         deadline=None,
-        suppress_health_check=[HealthCheck.function_scoped_fixture],
     )
-    def test_price_format_handling(self, price_str: str, empty_mappings: None) -> None:
+    def test_price_format_handling(self, price_str: str) -> None:
         """Property: Negative decimal price strings are converted to their absolute values.
 
         Given: a Hypothesis-generated negative decimal price string and empty mapping

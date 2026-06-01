@@ -55,7 +55,14 @@ def ipko_import(df: pd.DataFrame) -> pd.DataFrame:
         DataFrame with columns: ``booking_date``, ``value_date``, ``txn_type``,
         ``amount``, ``currency``, ``description``, ``data``, ``month``,
         ``year``, ``day``.
+
+    Raises:
+        ValueError: If the raw IPKO input does not contain exactly nine
+            columns.
     """
+    if len(df.columns) != 9:
+        raise ValueError(f"ipko_import expected exactly 9 columns from raw IPKO CSV, got {len(df.columns)}")
+
     # Rename columns for consistency
     df = df.rename(
         columns={

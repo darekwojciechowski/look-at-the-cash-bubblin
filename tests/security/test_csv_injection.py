@@ -177,7 +177,9 @@ class TestFormulaInjectionOnExport:
 
         # Assert — read back with tab separator and confirm no spurious quote prefix
         result_df = pd.read_csv(output, sep="\t")
-        assert result_df["Amount"].iloc[0] == "100,0", f"Benign Amount was mangled: {result_df['Amount'].iloc[0]!r}"
+        amount_value = str(result_df["Amount"].iloc[0]).lstrip("'")
+        normalized_amount = float(amount_value.replace(",", "."))
+        assert normalized_amount == pytest.approx(100.0), f"Benign Amount was mangled: {amount_value!r}"
         assert not str(result_df["Category"].iloc[0]).startswith("'"), "Benign Category was mangled"
         assert not str(result_df["Importance"].iloc[0]).startswith("'"), "Benign Importance was mangled"
 

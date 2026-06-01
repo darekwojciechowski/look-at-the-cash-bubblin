@@ -61,7 +61,11 @@ This project maintains high code quality through comprehensive testing practices
 - **Multi-Stage Pipeline**:
   - **Stage 1**: Code quality gates (Ruff formatting, linting, mypy type checking)
   - **Stage 2**: Parallel test execution (unit, integration, security, property-based, performance tests)
-  - **Stage 3**: Coverage reporting and artifact archival
+  - **Stage 3**: Coverage reporting (unit/integration/security/property tracks) and artifact archival
+
+Performance tests run in a dedicated CI job with coverage disabled by design
+(`--no-cov`) to keep timing-focused checks stable and avoid skewing the
+enforced coverage threshold.
 
 ## How to Use
 1. Place your transaction CSV file in the `data/` directory.

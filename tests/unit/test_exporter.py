@@ -25,43 +25,39 @@ class TestExportForGoogleSheets:
     """Test suite for Google Sheets export functionality."""
 
     def test_export_for_google_sheets_success(
-        self, mocker: MockerFixture, sample_dataframe_with_categories: pd.DataFrame
+        self,
+        sample_dataframe_with_categories: pd.DataFrame,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """Test successful export to Google Sheets format.
-
-        Given: a DataFrame with category data and mocked to_csv/logger
-        When:  export_for_google_sheets() is called
-        Then:  logger.info is called and to_csv writes to the expected path
-        """
+        """Google Sheets export writes tab-separated data with stable columns."""
         # Arrange
-        mock_to_csv = mocker.patch("pandas.DataFrame.to_csv")
-        mock_logger = mocker.patch("data_processing.exporter.logger")
-        mocker.patch.object(Path, "chmod")
+        monkeypatch.chdir(tmp_path)
 
         # Act
-        export_for_google_sheets(sample_dataframe_with_categories)
+        output = export_for_google_sheets(sample_dataframe_with_categories)
+        result = pd.read_csv(output, sep="\t")
 
         # Assert
-        mock_logger.info.assert_called()
-        mock_to_csv.assert_called_once_with(Path("google_sheets_expenses.csv"), sep="\t", index=False)
+        assert output.resolve() == (tmp_path / "google_sheets_expenses.csv").resolve()
+        assert list(result.columns) == ["Txn_Id", "Day", "Month", "Year", "Item", "Category", "Amount", "Importance"]
+        assert len(result) == len(sample_dataframe_with_categories)
+        assert result["Amount"].map(lambda value: "," in str(value)).all()
 
-    def test_export_for_google_sheets_empty_dataframe(self, mocker: MockerFixture) -> None:
-        """Test export with empty DataFrame.
-
-        Given: an empty DataFrame with the expected columns
-        When:  export_for_google_sheets() is called
-        Then:  to_csv is still called with the correct output path
-        """
+    def test_export_for_google_sheets_empty_dataframe(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Google Sheets export of an empty frame preserves the output schema."""
         # Arrange
-        mock_to_csv = mocker.patch("pandas.DataFrame.to_csv")
-        mocker.patch.object(Path, "chmod")
+        monkeypatch.chdir(tmp_path)
         empty_df = pd.DataFrame(columns=["category", "amount", "month", "year", "data"])
 
         # Act
-        export_for_google_sheets(empty_df)
+        output = export_for_google_sheets(empty_df)
+        result = pd.read_csv(output, sep="\t")
 
         # Assert
-        mock_to_csv.assert_called_once_with(Path("google_sheets_expenses.csv"), sep="\t", index=False)
+        assert output.resolve() == (tmp_path / "google_sheets_expenses.csv").resolve()
+        assert list(result.columns) == ["Txn_Id", "Day", "Month", "Year", "Item", "Category", "Amount", "Importance"]
+        assert result.empty
 
 
 @pytest.mark.unit
@@ -69,57 +65,42 @@ class TestExportMiscTransactions:
     """Test suite for MISC category transaction export."""
 
     def test_export_misc_transactions_filters_correctly(
-        self, mocker: MockerFixture, sample_dataframe_with_categories: pd.DataFrame
+        self,
+        sample_dataframe_with_categories: pd.DataFrame,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """Test that only MISC category transactions are exported.
-
-        Given: a DataFrame with two MISC rows and other category rows
-        When:  export_misc_transactions() is called
-        Then:  to_csv is called once with the unassigned path and exactly two MISC rows exist
-        """
+        """Only MISC rows are written to unassigned_transactions.csv."""
         # Arrange
-        mock_to_csv = mocker.patch("pandas.DataFrame.to_csv")
+        monkeypatch.chdir(tmp_path)
 
         # Act
         export_misc_transactions(sample_dataframe_with_categories)
+        result = pd.read_csv(tmp_path / "unassigned_transactions.csv", encoding="utf-8-sig")
 
         # Assert
-        mock_to_csv.assert_called_once_with(
-            Path("unassigned_transactions.csv"),
-            columns=[
-                "txn_id",
-                "day",
-                "month",
-                "year",
-                "amount",
-                "category",
-                "data",
-                "extracted_location",
-                "google_maps_link",
-            ],
-            index=False,
-            encoding="utf-8-sig",
-        )
+        assert list(result.columns) == [
+            "txn_id",
+            "day",
+            "month",
+            "year",
+            "amount",
+            "category",
+            "data",
+            "extracted_location",
+            "google_maps_link",
+        ]
+        assert len(result) == 2
+        assert set(result["category"]) == {"MISC"}
 
-        # Verify only MISC rows are selected
-        misc_df = sample_dataframe_with_categories[sample_dataframe_with_categories["category"] == "MISC"]
-        assert len(misc_df) == 2
-        pd.testing.assert_frame_equal(
-            misc_df, sample_dataframe_with_categories[sample_dataframe_with_categories["category"] == "MISC"]
-        )
-
-    def test_export_misc_transactions_no_misc_category(self, mocker: MockerFixture) -> None:
-        """Test export when no MISC transactions exist.
-
-        Given: a DataFrame containing only FOOD and FUEL rows
-        When:  export_misc_transactions() is called
-        Then:  to_csv is still called once (with an empty selection)
-        """
+    def test_export_misc_transactions_no_misc_category(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Export still writes a schema-only file when no MISC rows are present."""
         # Arrange
-        mock_to_csv = mocker.patch("pandas.DataFrame.to_csv")
+        monkeypatch.chdir(tmp_path)
         df = pd.DataFrame({
             "category": ["FOOD", "FUEL"],
             "amount": [100.0, 50.0],
+            "day": [1, 2],
             "month": [1, 1],
             "year": [2023, 2023],
             "data": ["groceries", "fuel"],
@@ -127,26 +108,45 @@ class TestExportMiscTransactions:
 
         # Act
         export_misc_transactions(df)
+        result = pd.read_csv(tmp_path / "unassigned_transactions.csv", encoding="utf-8-sig")
 
         # Assert
-        mock_to_csv.assert_called_once()
+        assert result.empty
+        assert list(result.columns) == [
+            "txn_id",
+            "day",
+            "month",
+            "year",
+            "amount",
+            "category",
+            "data",
+            "extracted_location",
+            "google_maps_link",
+        ]
 
-    def test_export_misc_transactions_empty_dataframe(self, mocker: MockerFixture) -> None:
-        """Test export with empty DataFrame.
-
-        Given: an empty DataFrame with the expected columns
-        When:  export_misc_transactions() is called
-        Then:  to_csv is called once without raising an error
-        """
+    def test_export_misc_transactions_empty_dataframe(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Export handles empty input DataFrames and keeps stable headers."""
         # Arrange
-        mock_to_csv = mocker.patch("pandas.DataFrame.to_csv")
-        empty_df = pd.DataFrame(columns=["category", "amount", "month", "year", "data"])
+        monkeypatch.chdir(tmp_path)
+        empty_df = pd.DataFrame(columns=["txn_id", "day", "month", "year", "amount", "category", "data"])
 
         # Act
         export_misc_transactions(empty_df)
+        result = pd.read_csv(tmp_path / "unassigned_transactions.csv", encoding="utf-8-sig")
 
         # Assert
-        mock_to_csv.assert_called_once()
+        assert result.empty
+        assert list(result.columns) == [
+            "txn_id",
+            "day",
+            "month",
+            "year",
+            "amount",
+            "category",
+            "data",
+            "extracted_location",
+            "google_maps_link",
+        ]
 
 
 @pytest.mark.unit
@@ -154,37 +154,34 @@ class TestExportUnassignedTransactions:
     """Test suite for unassigned transactions export."""
 
     def test_export_unassigned_transactions_to_csv(
-        self, mocker: MockerFixture, sample_dataframe_with_categories: pd.DataFrame
+        self,
+        sample_dataframe_with_categories: pd.DataFrame,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """Test basic export of unassigned transactions.
-
-        Given: a DataFrame with category data
-        When:  export_unassigned_transactions_to_csv() is called
-        Then:  to_csv is called once with the unassigned path and utf-8-sig encoding
-        """
+        """Unassigned export writes enriched location columns and stable order."""
         # Arrange
-        mock_to_csv = mocker.patch("pandas.DataFrame.to_csv")
+        monkeypatch.chdir(tmp_path)
 
         # Act
         export_unassigned_transactions_to_csv(sample_dataframe_with_categories)
+        result = pd.read_csv(tmp_path / "unassigned_transactions.csv", encoding="utf-8-sig")
 
         # Assert
-        mock_to_csv.assert_called_once_with(
-            Path("unassigned_transactions.csv"),
-            columns=[
-                "txn_id",
-                "day",
-                "month",
-                "year",
-                "amount",
-                "category",
-                "data",
-                "extracted_location",
-                "google_maps_link",
-            ],
-            index=False,
-            encoding="utf-8-sig",
-        )
+        assert len(result) == len(sample_dataframe_with_categories)
+        assert list(result.columns) == [
+            "txn_id",
+            "day",
+            "month",
+            "year",
+            "amount",
+            "category",
+            "data",
+            "extracted_location",
+            "google_maps_link",
+        ]
+        assert "google_maps_link" in result.columns
+        assert "extracted_location" in result.columns
 
     def test_export_unassigned_transactions_does_not_duplicate_txn_id_column(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

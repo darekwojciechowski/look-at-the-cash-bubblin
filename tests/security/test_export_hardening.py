@@ -1,9 +1,9 @@
-"""Export-hardening tests (M14, M15).
+"""Export and importer hardening tests (M14, M15).
 
 Covers:
-- Symlink TOCTOU on the fixed output filename (M15) — xfail.
-- File-mode 0o600 on POSIX after export — xfail.
-- ipko_import robustness to wrong column counts (M14).
+- Symlink-safe export behavior on the fixed output filename.
+- File-mode 0o600 enforcement on POSIX after export.
+- Explicit ipko_import rejection for incorrect raw column counts.
 """
 
 import sys
@@ -45,7 +45,7 @@ def _make_export_df() -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# Symlink TOCTOU (M15) — xfail
+# Symlink TOCTOU (M15)
 # ---------------------------------------------------------------------------
 
 
@@ -64,15 +64,33 @@ class TestSymlinkToctou:
         except OSError, NotImplementedError:
             pytest.skip("Cannot create symlink on this platform")
 
-        with pytest.raises((OSError, PermissionError)):
+        # Act + Assert
+        with pytest.raises(OSError, match=r"Refusing to write to symlink"):
             export_for_google_sheets(_make_export_df())
 
         # Victim file must be untouched
         assert victim.read_text(encoding="utf-8") == "SENSITIVE DATA"
 
+    @pytest.mark.skipif(sys.platform == "win32", reason="symlinks require elevated privileges on Windows")
+    def test_export_refuses_broken_symlink_target(self, isolated_cwd: Path) -> None:
+        """Export must refuse broken symlinks instead of replacing them with files."""
+        # Arrange
+        symlink = isolated_cwd / "google_sheets_expenses.csv"
+        broken_target = isolated_cwd / "missing.txt"
+        try:
+            symlink.symlink_to(broken_target)
+        except OSError, NotImplementedError:
+            pytest.skip("Cannot create symlink on this platform")
+
+        # Act + Assert
+        with pytest.raises(OSError, match=r"Refusing to write to symlink"):
+            export_for_google_sheets(_make_export_df())
+
+        assert symlink.is_symlink()
+
 
 # ---------------------------------------------------------------------------
-# File mode (M02 / PII) — xfail
+# File mode (M02 / PII)
 # ---------------------------------------------------------------------------
 
 
@@ -80,7 +98,26 @@ class TestExportFileMode:
     @pytest.mark.skipif(sys.platform == "win32", reason="POSIX file modes not applicable on Windows")
     def test_export_file_mode_is_0o600_on_posix(self, isolated_cwd: Path) -> None:
         """After export, the output file must be readable only by the owner (0o600)."""
+        # Act
         output = export_for_google_sheets(_make_export_df())
+
+        # Assert
+        file_mode = output.stat().st_mode & 0o777
+        assert file_mode == 0o600, f"Expected 0o600 but got 0o{file_mode:o}"
+
+    @pytest.mark.skipif(sys.platform == "win32", reason="POSIX file modes not applicable on Windows")
+    def test_export_tightens_existing_file_mode_to_0o600(self, isolated_cwd: Path) -> None:
+        """Export must tighten pre-existing output file permissions to owner-only mode."""
+        # Arrange
+        output_path = isolated_cwd / "google_sheets_expenses.csv"
+        output_path.write_text("stale", encoding="utf-8")
+        output_path.chmod(0o644)
+
+        # Act
+        output = export_for_google_sheets(_make_export_df())
+
+        # Assert
+        assert output.resolve() == output_path.resolve()
         file_mode = output.stat().st_mode & 0o777
         assert file_mode == 0o600, f"Expected 0o600 but got 0o{file_mode:o}"
 
@@ -99,23 +136,18 @@ class TestIpkoImportColumnCounts:
         # Arrange — 7-column DataFrame
         df = _make_raw_ipko_df(7)
 
-        # Act + Assert — IndexError from df.columns[8] access
-        with pytest.raises((IndexError, KeyError, ValueError)):
+        # Act + Assert
+        with pytest.raises(ValueError, match=r"expected exactly 9 columns.*got 7"):
             ipko_import(df)
 
-    def test_ipko_import_with_extra_columns_documents_behavior(self) -> None:
-        """Given a raw CSV with 10 columns instead of the expected 9,
+    def test_ipko_import_rejects_extra_columns(self) -> None:
+        """Given a raw CSV with 10 columns instead of 9,
         when ipko_import() is called,
-        then the documented behavior is that the extra column is silently ignored.
-
-        This test pins the current behavior.  A future hardening task should make
-        the column-count mismatch explicit (raise ValueError for M14).
+        then an explicit ValueError is raised.
         """
         # Arrange — 10-column DataFrame (one extra beyond the expected 9)
         df = _make_raw_ipko_df(10)
 
-        # Act — current code accesses columns[0..8] by position and ignores [9]
-        result = ipko_import(df)
-
-        # Assert — pipeline still produces the required output columns
-        assert {"amount", "data", "month", "year"}.issubset(result.columns)
+        # Act + Assert
+        with pytest.raises(ValueError, match=r"expected exactly 9 columns.*got 10"):
+            ipko_import(df)

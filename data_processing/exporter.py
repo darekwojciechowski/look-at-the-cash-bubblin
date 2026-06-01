@@ -1,5 +1,7 @@
 """CSV export functions for processed and unassigned transactions."""
 
+import errno
+import os
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -68,19 +70,36 @@ def _prepare_for_export(df: pd.DataFrame, *, ensure_txn_id: bool = True) -> pd.D
 def _write_google_sheets_csv(output_df: pd.DataFrame, output_path: Path) -> Path:
     """Write *output_df* as a tab-separated Google Sheets export.
 
-    Sanitizes cells against formula injection, refuses to overwrite a symlink
-    (TOCTOU guard), writes with a tab separator, and restricts file permissions
-    to owner-only read/write on POSIX (PII protection).
+    Sanitizes cells against formula injection, writes with a tab separator,
+    and restricts file permissions to owner-only read/write on POSIX
+    (PII protection).
+
+    On POSIX, uses ``os.open(..., O_NOFOLLOW)`` where available to reject
+    symlinks atomically at open-time and close the symlink race window.
     """
     output_df = _sanitize_dataframe(output_df)
 
-    if output_path.is_symlink():
-        raise OSError(f"Refusing to write to symlink: {output_path}")
+    if sys.platform == "win32":
+        # Windows fallback: no O_NOFOLLOW equivalent in the stdlib open path.
+        if output_path.is_symlink():
+            raise OSError(f"Refusing to write to symlink: {output_path}")
+        output_df.to_csv(output_path, sep="\t", index=False)
+        return output_path
 
-    output_df.to_csv(output_path, sep="\t", index=False)
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
 
-    if sys.platform != "win32":  # pragma: no cover
-        output_path.chmod(0o600)
+    try:
+        fd = os.open(output_path, flags, 0o600)
+    except OSError as err:
+        if err.errno == errno.ELOOP:
+            raise OSError(f"Refusing to write to symlink: {output_path}") from err
+        raise
+
+    with os.fdopen(fd, "w", encoding="utf-8", newline="") as fh:
+        os.fchmod(fh.fileno(), 0o600)
+        output_df.to_csv(fh, sep="\t", index=False)
 
     return output_path
 

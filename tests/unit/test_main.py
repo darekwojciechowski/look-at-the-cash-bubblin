@@ -1,176 +1,140 @@
-"""Tests for the main module.
-Covers the end-to-end pipeline: CSV reading, IPKO import, processing, and export.
-"""
+"""Behavior-first tests for the main module pipeline orchestration."""
 
 from pathlib import Path
 
 import pandas as pd
 import pytest
-from pytest_mock import MockerFixture
 
-from main import main
-
-
-@pytest.fixture
-def main_raw_dataframe() -> pd.DataFrame:
-    """Fixture providing minimal raw transaction data for main() pipeline mocking."""
-    return pd.DataFrame({
-        "data": ["orlen fuel station", "starbucks coffee"],
-        "amount": ["-100.0", "-15.0"],
-        "month": [1, 1],
-        "year": [2023, 2023],
-    })
+import main as main_module
 
 
-@pytest.fixture
-def main_processed_dataframe() -> pd.DataFrame:
-    """Fixture providing expected processed transaction data for main() pipeline mocking."""
-    return pd.DataFrame({
-        "month": [1, 1],
-        "year": [2023, 2023],
-        "amount": [100.0, 15.0],
-        "category": ["FUEL", "COFFEE"],
-        "data": ["orlen fuel station", "starbucks coffee"],
-    })
+def _write_demo_ipko_csv(path: Path) -> None:
+    """Write a realistic 9-column IPKO CSV with mixed expense and income rows."""
+    rows = [
+        ["2024-01-15", "2024-01-15", "purchase", "-50.0", "PLN", "orlen fuel station", "", "orlen", ""],
+        ["2024-01-16", "2024-01-16", "purchase", "-20.0", "PLN", "biedronka groceries", "", "biedronka", ""],
+        ["2024-01-20", "2024-01-20", "transfer", "5000.0", "PLN", "salary transfer", "", "salary", ""],
+        ["2024-01-21", "2024-01-21", "transfer", "120.0", "PLN", "bonus", "", "bonus", ""],
+    ]
+    df = pd.DataFrame(rows, columns=[f"col_{idx}" for idx in range(9)])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(path, index=False, encoding="cp1250")
+
+
+def _expected_outputs(root: Path) -> dict[str, Path]:
+    """Return the six output paths produced by main()."""
+    return {
+        "gs_expenses": root / "google_sheets_expenses.csv",
+        "gs_income": root / "google_sheets_income.csv",
+        "processed_expenses": root / "data" / "processed_transactions.csv",
+        "processed_income": root / "data" / "processed_income.csv",
+        "unassigned_expenses": root / "unassigned_transactions.csv",
+        "unassigned_income": root / "unassigned_income.csv",
+    }
 
 
 @pytest.mark.unit
 class TestMainWorkflow:
-    """Test suite for main workflow integration."""
+    """Behavior-first assertions for visible main() outcomes."""
 
-    def test_main_workflow_integration(
-        self,
-        mocker: MockerFixture,
-        main_raw_dataframe: pd.DataFrame,
-        main_processed_dataframe: pd.DataFrame,
-    ) -> None:
-        """Verify call order, data flow, and output paths through the complete main() pipeline.
-
-        Given: mocked pipeline steps returning known DataFrames
-        When:  main() is called
-        Then:  each step is called once in order with the correct arguments and DataFrames
-        """
+    def test_main_creates_artifacts_with_expected_schema(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """main() writes all expected artifacts with stable column contracts."""
         # Arrange
-        mock_setup_logging = mocker.patch("main.setup_logging")
-        mock_read_csv = mocker.patch("main.read_transaction_csv")
-        mock_ipko_import = mocker.patch("main.ipko_import")
-        mock_assign_txn_ids = mocker.patch("main.assign_txn_ids", side_effect=lambda df: df)
-        _ = mock_assign_txn_ids
-        mock_process_df = mocker.patch("main.process_dataframe")
-        mock_process_income = mocker.patch("main.process_income_dataframe")
-        mock_export_misc = mocker.patch("main.export_misc_transactions")
-        mock_export_google = mocker.patch("main.export_for_google_sheets")
-        mock_export_cleaned = mocker.patch("main.export_cleaned_data")
-        mocker.patch("main.export_unassigned_income")
-        mocker.patch("main.export_income_for_google_sheets")
-        mocker.patch("main.export_cleaned_income_data")
-
-        mock_read_csv.return_value = main_raw_dataframe
-        mock_ipko_import.return_value = main_raw_dataframe
-        mock_process_df.return_value = main_processed_dataframe
-        mock_process_income.return_value = main_processed_dataframe
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr(main_module, "setup_logging", lambda: None)
+        _write_demo_ipko_csv(tmp_path / "data" / "demo_ipko.csv")
 
         # Act
-        main()
+        main_module.main()
+        outputs = _expected_outputs(tmp_path)
 
-        # Assert - verify call order and arguments
-        mock_setup_logging.assert_called_once()
-        mock_read_csv.assert_called_once_with(Path("data/demo_ipko.csv"), "cp1250")
+        # Assert
+        for output_path in outputs.values():
+            assert output_path.exists(), f"Expected output file was not created: {output_path}"
 
-        # Verify data flows correctly through pipeline
-        pd.testing.assert_frame_equal(mock_ipko_import.call_args[0][0], main_raw_dataframe)
-        pd.testing.assert_frame_equal(mock_process_df.call_args[0][0], main_raw_dataframe)
+        processed_expenses = pd.read_csv(outputs["processed_expenses"], encoding="utf-8-sig")
+        assert list(processed_expenses.columns) == ["txn_id", "day", "month", "year", "category", "amount"]
+        assert len(processed_expenses) == 2
+        assert processed_expenses["txn_id"].str.match(r"^v1:[0-9a-f]{64}$").all()
+        assert (processed_expenses["amount"].astype(float) > 0).all()
 
-        mock_export_misc.assert_called_once()
-        pd.testing.assert_frame_equal(mock_export_misc.call_args[0][0], main_processed_dataframe)
+        processed_income = pd.read_csv(outputs["processed_income"], encoding="utf-8-sig")
+        assert list(processed_income.columns) == ["txn_id", "day", "month", "year", "category", "amount"]
+        assert len(processed_income) == 2
+        assert processed_income["txn_id"].str.match(r"^v1:[0-9a-f]{64}$").all()
+        assert (processed_income["amount"].astype(float) > 0).all()
 
-        mock_export_google.assert_called_once()
-        pd.testing.assert_frame_equal(mock_export_google.call_args[0][0], main_processed_dataframe)
+        sheets_expenses = pd.read_csv(outputs["gs_expenses"], sep="\t")
+        assert list(sheets_expenses.columns) == [
+            "Txn_Id",
+            "Day",
+            "Month",
+            "Year",
+            "Item",
+            "Category",
+            "Amount",
+            "Importance",
+        ]
+        assert len(sheets_expenses) == len(processed_expenses)
 
-        # Verify export_cleaned_data called with correct parameters
-        mock_export_cleaned.assert_called_once_with(main_processed_dataframe, Path("data/processed_transactions.csv"))
+        sheets_income = pd.read_csv(outputs["gs_income"], sep="\t")
+        assert list(sheets_income.columns) == [
+            "Txn_Id",
+            "Day",
+            "Month",
+            "Year",
+            "Item",
+            "Category",
+            "Amount",
+            "Importance",
+        ]
+        assert len(sheets_income) == len(processed_income)
 
-    def test_main_workflow_with_empty_dataframe(self, mocker: MockerFixture) -> None:
-        """Test main workflow with empty DataFrame.
-
-        Given: mocked pipeline steps all returning an empty DataFrame
-        When:  main() is called
-        Then:  the workflow completes without errors and both exports are called once
-        """
-        # Arrange
-        mock_setup_logging = mocker.patch("main.setup_logging")
-        mock_read_csv = mocker.patch("main.read_transaction_csv")
-        mock_ipko_import = mocker.patch("main.ipko_import")
-        mock_assign_txn_ids = mocker.patch("main.assign_txn_ids", side_effect=lambda df: df)
-        _ = mock_assign_txn_ids
-        mock_process_df = mocker.patch("main.process_dataframe")
-        mock_process_income = mocker.patch("main.process_income_dataframe")
-        mock_export_misc = mocker.patch("main.export_misc_transactions")
-        mock_export_google = mocker.patch("main.export_for_google_sheets")
-        mock_export_cleaned = mocker.patch("main.export_cleaned_data")
-        mocker.patch("main.export_unassigned_income")
-        mocker.patch("main.export_income_for_google_sheets")
-        mocker.patch("main.export_cleaned_income_data")
-
-        empty_df = pd.DataFrame(columns=["data", "amount", "month", "year"])
-        mock_read_csv.return_value = empty_df
-        mock_ipko_import.return_value = empty_df
-        mock_process_df.return_value = empty_df
-        mock_process_income.return_value = empty_df
-
-        # Act
-        main()
-
-        # Assert - workflow should complete without errors
-        mock_setup_logging.assert_called_once()
-        mock_export_misc.assert_called_once()
-        mock_export_google.assert_called_once()
-        mock_export_cleaned.assert_called_once()
-
-    def test_main_handles_read_csv_failure(self, mocker: MockerFixture) -> None:
-        """Test main workflow when CSV reading fails.
-
-        Given: read_transaction_csv raises FileNotFoundError
-        When:  main() is called
-        Then:  the error propagates out of main() and setup_logging was still called
-        """
-        # Arrange
-        mock_setup_logging = mocker.patch("main.setup_logging")
-        mock_read_csv = mocker.patch("main.read_transaction_csv")
-
-        mock_read_csv.side_effect = FileNotFoundError("File not found")
-
-        # Act + Assert
-        with pytest.raises(FileNotFoundError):
-            main()
-
-        mock_setup_logging.assert_called_once()
-
-    def test_main_handles_processing_failure(
+    def test_main_propagates_csv_read_errors_without_writing_outputs(
         self,
-        mocker: MockerFixture,
-        main_raw_dataframe: pd.DataFrame,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """Test main workflow when data processing fails.
-
-        Given: process_dataframe raises a KeyError for an invalid column
-        When:  main() is called
-        Then:  the error propagates out of main() and setup_logging was still called
-        """
+        """If CSV read fails, main() surfaces the error and creates no artifacts."""
         # Arrange
-        mock_setup_logging = mocker.patch("main.setup_logging")
-        mock_read_csv = mocker.patch("main.read_transaction_csv")
-        mock_ipko_import = mocker.patch("main.ipko_import")
-        mock_assign_txn_ids = mocker.patch("main.assign_txn_ids", side_effect=lambda df: df)
-        _ = mock_assign_txn_ids
-        mock_process_df = mocker.patch("main.process_dataframe")
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr(main_module, "setup_logging", lambda: None)
 
-        mock_read_csv.return_value = main_raw_dataframe
-        mock_ipko_import.return_value = main_raw_dataframe
-        mock_process_df.side_effect = KeyError("Invalid column")
+        def _raise_file_not_found(*_args: object, **_kwargs: object) -> pd.DataFrame:
+            raise FileNotFoundError("File not found")
+
+        monkeypatch.setattr(main_module, "read_transaction_csv", _raise_file_not_found)
 
         # Act + Assert
-        with pytest.raises(KeyError):
-            main()
+        with pytest.raises(FileNotFoundError, match="File not found"):
+            main_module.main()
 
-        mock_setup_logging.assert_called_once()
+        assert not (tmp_path / "google_sheets_expenses.csv").exists()
+        assert not (tmp_path / "google_sheets_income.csv").exists()
+        assert not (tmp_path / "data" / "processed_transactions.csv").exists()
+        assert not (tmp_path / "data" / "processed_income.csv").exists()
+
+    def test_main_propagates_processing_errors_before_exports(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """If processing fails, main() surfaces the error and export artifacts are not written."""
+        # Arrange
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr(main_module, "setup_logging", lambda: None)
+        _write_demo_ipko_csv(tmp_path / "data" / "demo_ipko.csv")
+
+        def _raise_processing_error(*_args: object, **_kwargs: object) -> pd.DataFrame:
+            raise KeyError("Invalid column")
+
+        monkeypatch.setattr(main_module, "process_dataframe", _raise_processing_error)
+
+        # Act + Assert
+        with pytest.raises(KeyError, match="Invalid column"):
+            main_module.main()
+
+        assert not (tmp_path / "google_sheets_expenses.csv").exists()
+        assert not (tmp_path / "google_sheets_income.csv").exists()
+        assert not (tmp_path / "unassigned_transactions.csv").exists()
+        assert not (tmp_path / "unassigned_income.csv").exists()

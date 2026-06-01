@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-from pytest_mock import MockerFixture
 
 from data_processing.data_core import clean_descriptions, process_dataframe
 from data_processing.data_imports import ipko_import, read_transaction_csv
@@ -14,14 +13,13 @@ from data_processing.data_imports import ipko_import, read_transaction_csv
 class TestEndToEndDataProcessing:
     """Integration tests for complete data processing workflow."""
 
-    def test_complete_pipeline_with_real_csv(
-        self, sample_csv_file: Path, test_data_dir: Path, mocker: MockerFixture
-    ) -> None:
+    def test_complete_pipeline_with_real_csv(self, sample_csv_file: Path, test_data_dir: Path) -> None:
         """Test complete pipeline from CSV reading to export.
 
         Given: a real CSV file with two transaction rows
         When:  the full pipeline (read → clean → process → export) is executed
-        Then:  the output file contains the same number of rows as the processed DataFrame
+        Then:  the output categories are determined by real mapping tables
+               and the output file row count matches processed rows
         """
         # Arrange — via sample_csv_file fixture
 
@@ -34,22 +32,10 @@ class TestEndToEndDataProcessing:
         cleaned_df = clean_descriptions(df)
         assert "data" in cleaned_df.columns
 
-        # Mock mappings for categorization — use a callable so that
-        # post-cleaning descriptions (e.g. "Orlen gas station") are matched
-        # via substring, replicating real mappings() behaviour.
-        def mock_mappings(data: str) -> str:
-            data_lower = data.lower()
-            if "orlen" in data_lower:
-                return "FUEL"
-            if "biedronka" in data_lower:
-                return "FOOD"
-            return "MISC"
-
-        mocker.patch("data_processing.data_core.mappings", mock_mappings)
-
         processed_df = process_dataframe(cleaned_df)
         assert "category" in processed_df.columns
         assert len(processed_df) > 0
+        assert set(processed_df["category"]) == {"FUEL", "FOOD"}
 
         # Act — Export to file
         output_file = test_data_dir / "output.csv"
@@ -60,32 +46,30 @@ class TestEndToEndDataProcessing:
         result_df = pd.read_csv(output_file)
         assert len(result_df) == len(processed_df)
 
-    def test_ipko_import_and_processing(self, sample_ipko_dataframe: pd.DataFrame, mocker: MockerFixture) -> None:
-        """Test IPKO import format and subsequent processing.
+    def test_ipko_import_and_processing_uses_real_category_mappings(self) -> None:
+        """Test IPKO import and processing with explicit expected category outcomes.
 
-        Given: a raw IPKO-formatted DataFrame and a mock mappings dict
+        Given: a raw IPKO-formatted DataFrame with known merchant descriptions
         When:  the full import → clean → process pipeline is executed
-        Then:  the processed DataFrame contains a category column
+        Then:  category outcomes include FUEL, FOOD, and fallback MISC
         """
-        # Arrange — via sample_ipko_dataframe fixture
+        # Arrange
+        raw_ipko_df = pd.DataFrame({
+            0: ["2023-01-01", "2023-01-02", "2023-01-03"],
+            1: ["2023-01-01", "2023-01-02", "2023-01-03"],
+            2: ["purchase", "purchase", "purchase"],
+            3: ["-100.0", "-50.0", "-30.0"],
+            4: ["PLN", "PLN", "PLN"],
+            5: ["orlen station", "biedronka groceries", "unknown merchant"],
+            6: ["", "", ""],
+            7: ["", "", ""],
+            8: ["", "", ""],
+        })
 
-        # Act — Import IPKO data
-        imported_df = ipko_import(sample_ipko_dataframe)
-        assert "amount" in imported_df.columns
-        assert "data" in imported_df.columns
-
-        # Act — Process imported data
-        cleaned_df = clean_descriptions(imported_df)
-        assert len(cleaned_df) == len(imported_df)
-
-        # Mock mappings
-        mock_mappings = {
-            "transfer//description1//extra1//extra3//data1": "TRANSFER",
-            "payment//description2//extra2//extra4//data2": "PAYMENT",
-        }
-        mocker.patch("data_processing.data_core.mappings", mock_mappings)
-
-        processed_df = process_dataframe(cleaned_df)
+        # Act
+        imported_df = ipko_import(raw_ipko_df)
+        processed_df = process_dataframe(imported_df)
 
         # Assert
         assert "category" in processed_df.columns
+        assert list(processed_df["category"]) == ["FUEL", "FOOD", "MISC"]

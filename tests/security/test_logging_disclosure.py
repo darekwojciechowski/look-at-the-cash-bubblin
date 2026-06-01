@@ -82,9 +82,10 @@ class TestPiiNotLeakedToLogs:
         # Act
         export_for_google_sheets(df)
 
-        # Assert — some log record references the row count
-        assert any("3" in msg for msg in loguru_sink), (
-            f"Expected a log record mentioning 3 rows. Records:\n{loguru_sink}"
+        # Assert — a precise row-count log token is emitted
+        expected_token = "Exporting 3 rows for Google Sheets"
+        assert any(expected_token in msg for msg in loguru_sink), (
+            f"Expected precise row-count token '{expected_token}'. Records:\n{loguru_sink}"
         )
 
 

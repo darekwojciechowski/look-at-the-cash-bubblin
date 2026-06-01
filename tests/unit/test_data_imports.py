@@ -3,7 +3,6 @@ Covers IPKO format import and CSV reading with encoding fallback.
 """
 
 from pathlib import Path
-from unittest.mock import mock_open
 
 import pandas as pd
 import pytest
@@ -119,100 +118,69 @@ class TestIpkoImport:
 class TestReadTransactionCsv:
     """Test suite for CSV file reading with encoding fallback."""
 
-    def test_read_transaction_csv_success(self, mocker: MockerFixture) -> None:
-        """Verify read_transaction_csv calls pandas with the correct encoding and returns data.
-
-        Given: a mocked pandas.read_csv that returns a single-row DataFrame
-        When:  read_transaction_csv() is called with a dummy path and utf-8 encoding
-        Then:  read_csv is called once with correct arguments and the data is returned
-        """
+    def test_read_transaction_csv_success(self, tmp_path: Path) -> None:
+        """A valid UTF-8 CSV is read successfully with the declared encoding."""
         # Arrange
-        mocker.patch("builtins.open", mock_open(read_data="col1,col2\nval1,val2"))
-        mock_read_csv = mocker.patch("pandas.read_csv")
-        mock_read_csv.return_value = pd.DataFrame({"col1": ["val1"], "col2": ["val2"]})
+        csv_file = tmp_path / "transactions.csv"
+        csv_file.write_text("data,amount,month,year\norlen,-10.0,1,2023\n", encoding="utf-8")
 
         # Act
-        df = read_transaction_csv("dummy_path.csv", "utf-8")
+        df = read_transaction_csv(csv_file, "utf-8")
 
         # Assert
-        call_kwargs = mock_read_csv.call_args.kwargs
-        assert call_kwargs["encoding"] == "utf-8"
-        assert callable(call_kwargs["on_bad_lines"])
-        assert call_kwargs["engine"] == "python"
-        assert not df.empty
-        assert df["col1"].iloc[0] == "val1"
-        assert df["col2"].iloc[0] == "val2"
+        assert len(df) == 1
+        assert list(df.columns) == ["data", "amount", "month", "year"]
+        assert df["data"].iloc[0] == "orlen"
 
-    def test_read_transaction_csv_with_path_object(self, mocker: MockerFixture) -> None:
-        """Test that read_transaction_csv works with Path objects.
-
-        Given: a Path object as the file argument
-        When:  read_transaction_csv() is called
-        Then:  the Path is forwarded to read_csv and a non-empty DataFrame is returned
-        """
+    def test_read_transaction_csv_with_path_object(self, tmp_path: Path) -> None:
+        """Path objects are accepted and decoded the same as string paths."""
         # Arrange
-        mock_read_csv = mocker.patch("pandas.read_csv")
-        mock_read_csv.return_value = pd.DataFrame({"col1": ["val1"]})
-        path_obj = Path("test_path.csv")
+        csv_file = tmp_path / "transactions_path_obj.csv"
+        csv_file.write_text("data,amount,month,year\nshop,-15.0,2,2023\n", encoding="utf-8")
 
         # Act
-        df = read_transaction_csv(path_obj, "utf-8")
+        df = read_transaction_csv(csv_file, "utf-8")
 
         # Assert
-        assert not df.empty
-        call_kwargs = mock_read_csv.call_args.kwargs
-        assert call_kwargs["encoding"] == "utf-8"
-        assert callable(call_kwargs["on_bad_lines"])
-        assert call_kwargs["engine"] == "python"
+        assert len(df) == 1
+        assert df["data"].iloc[0] == "shop"
 
-    def test_read_transaction_csv_unicode_error_fallback(self, mocker: MockerFixture) -> None:
-        """Test that function tries alternative encodings on UnicodeDecodeError.
-
-        Given: pandas.read_csv raises UnicodeDecodeError on the first call
-        When:  read_transaction_csv() is called
-        Then:  the function retries with a different encoding and returns data
-        """
+    def test_read_transaction_csv_unicode_error_fallback(self, tmp_path: Path) -> None:
+        """When UTF-8 fails, fallback encodings decode real cp1250 CSV content."""
         # Arrange
-        mock_read_csv = mocker.patch("pandas.read_csv")
-        mock_read_csv.side_effect = [
-            UnicodeDecodeError("utf-8", b"", 0, 1, "invalid"),
-            pd.DataFrame({"col1": ["val1"]}),
-        ]
+        csv_file = tmp_path / "cp1250_transactions.csv"
+        csv_file.write_text("data,amount,month,year\nŁódź,-22.0,3,2023\n", encoding="cp1250")
 
         # Act
-        df = read_transaction_csv("test.csv", "utf-8")
+        df = read_transaction_csv(csv_file, "utf-8")
 
         # Assert
-        assert not df.empty
-        assert mock_read_csv.call_count == 2
+        assert len(df) == 1
+        assert df["data"].iloc[0] == "Łódź"
 
-    def test_read_transaction_csv_tries_polish_encodings(self, mocker: MockerFixture) -> None:
-        """Test that function prefers Polish encodings.
-
-        Given: pandas.read_csv fails twice with UnicodeDecodeError then succeeds
-        When:  read_transaction_csv() is called
-        Then:  three attempts are made in the order utf-8, utf-8-sig, cp1250
-        """
+    def test_read_transaction_csv_tries_polish_encodings(self, tmp_path: Path, mocker: MockerFixture) -> None:
+        """Encoding retries follow utf-8 -> utf-8-sig -> cp1250 order for Polish text."""
         # Arrange
-        call_count = 0
+        csv_file = tmp_path / "order.csv"
+        csv_file.write_text("data,amount,month,year\nŻabka,-30.0,4,2023\n", encoding="cp1250")
+        real_read_csv = pd.read_csv
+        attempted_encodings: list[str | None] = []
 
-        def side_effect(*args, **kwargs):
-            nonlocal call_count
-            call_count += 1
-            if call_count < 3:
-                raise UnicodeDecodeError("utf-8", b"", 0, 1, "invalid")
-            return pd.DataFrame({"col1": ["val1"]})
+        def _side_effect(*args: object, **kwargs: object) -> pd.DataFrame:
+            encoding = kwargs.get("encoding")
+            attempted_encodings.append(encoding if isinstance(encoding, str) else None)
+            if encoding in {"utf-8", "utf-8-sig"}:
+                raise UnicodeDecodeError(str(encoding), b"\x81", 0, 1, "invalid")
+            return real_read_csv(*args, **kwargs)
 
-        mock_read_csv = mocker.patch("pandas.read_csv")
-        mock_read_csv.side_effect = side_effect
+        mocker.patch("pandas.read_csv", side_effect=_side_effect)
 
         # Act
-        df = read_transaction_csv("test.csv", "utf-8")
+        df = read_transaction_csv(csv_file, "utf-8")
 
         # Assert
-        assert not df.empty
-        # Should try utf-8, utf-8-sig, cp1250 in order
-        assert call_count == 3
+        assert len(df) == 1
+        assert attempted_encodings[:3] == ["utf-8", "utf-8-sig", "cp1250"]
 
     def test_read_transaction_csv_all_encodings_fail(self, mocker: MockerFixture) -> None:
         """Test that ValueError is raised when all encodings fail.
@@ -229,45 +197,33 @@ class TestReadTransactionCsv:
         with pytest.raises(ValueError, match="Could not read.*with any of the tried encodings"):
             read_transaction_csv("test.csv", "utf-8")
 
-    def test_read_transaction_csv_file_not_found(self, mocker: MockerFixture) -> None:
-        """Verify FileNotFoundError is logged then re-raised when the file is missing.
-
-        Given: pandas.read_csv raises FileNotFoundError
-        When:  read_transaction_csv() is called
-        Then:  the error is logged and re-raised unchanged
-        """
+    def test_read_transaction_csv_file_not_found(self) -> None:
+        """Missing files raise FileNotFoundError with no silent fallback."""
         # Arrange
-        mock_read_csv = mocker.patch("pandas.read_csv")
-        mock_read_csv.side_effect = FileNotFoundError("File not found")
-        mock_log_error = mocker.patch("loguru.logger.error")
+        missing_file = Path("nonexistent.csv")
 
         # Act + Assert
-        with pytest.raises(FileNotFoundError, match="File not found"):
-            read_transaction_csv("nonexistent.csv", "utf-8")
+        with pytest.raises(FileNotFoundError):
+            read_transaction_csv(missing_file, "utf-8")
 
-        mock_log_error.assert_called_once_with(
-            "[ERROR] Failed to read CSV file: nonexistent.csv. Error: File not found"
+    def test_read_transaction_csv_skips_malformed_rows(self, tmp_path: Path, loguru_sink: list[str]) -> None:
+        """Malformed rows are skipped while valid rows are still loaded."""
+        # Arrange
+        csv_file = tmp_path / "malformed_rows.csv"
+        csv_file.write_text(
+            "data,amount,month,year\ngood,-10.0,1,2023\nbad,-20.0,1,2023,EXTRA\ngood2,-30.0,2,2023\n",
+            encoding="utf-8",
         )
 
-    def test_read_transaction_csv_parser_error(self, mocker: MockerFixture) -> None:
-        """Test that non-encoding parser errors are logged and re-raised.
+        # Act
+        result = read_transaction_csv(csv_file, "utf-8")
 
-        Given: pandas.read_csv raises a pd.errors.ParserError unrelated to encoding
-        When:  read_transaction_csv() is called
-        Then:  the error is logged and re-raised
-        """
-        # Arrange
-        mock_read_csv = mocker.patch("pandas.read_csv")
-        mock_read_csv.side_effect = pd.errors.ParserError("Generic error")
-        mock_log_error = mocker.patch("loguru.logger.error")
+        # Assert
+        assert len(result) == 2
+        assert set(result["data"]) == {"good", "good2"}
+        assert any("[SKIP_BAD_LINE]" in entry for entry in loguru_sink)
 
-        # Act + Assert
-        with pytest.raises(pd.errors.ParserError, match="Generic error"):
-            read_transaction_csv("test.csv", "utf-8")
-
-        mock_log_error.assert_called_once()
-
-    def test_read_transaction_csv_latin1_deprioritized(self, mocker: MockerFixture) -> None:
+    def test_read_transaction_csv_latin1_deprioritized(self, tmp_path: Path, mocker: MockerFixture) -> None:
         """Test that latin-1 encoding is deprioritized to avoid mojibake.
 
         Given: the caller requests latin-1 encoding
@@ -275,25 +231,30 @@ class TestReadTransactionCsv:
         Then:  the first attempt uses a Polish-friendly encoding, not latin-1
         """
         # Arrange
+        csv_file = tmp_path / "latin1_order_test.csv"
+        csv_file.write_text("data,amount,month,year\nshop,-10.0,1,2023\n", encoding="utf-8")
+        real_read_csv = pd.read_csv
         call_encodings: list[str | None] = []
 
-        def track_encoding(*args, **kwargs):
-            call_encodings.append(kwargs.get("encoding"))
-            if len(call_encodings) == 1:
-                raise UnicodeDecodeError("utf-8", b"", 0, 1, "invalid")
-            return pd.DataFrame({"col1": ["val1"]})
+        def track_encoding(*args: object, **kwargs: object) -> pd.DataFrame:
+            encoding = kwargs.get("encoding")
+            call_encodings.append(encoding if isinstance(encoding, str) else None)
+            return real_read_csv(*args, **kwargs)
 
         mock_read_csv = mocker.patch("pandas.read_csv")
         mock_read_csv.side_effect = track_encoding
 
         # Act
-        df = read_transaction_csv("test.csv", "latin-1")
+        try:
+            df = read_transaction_csv(csv_file, "latin-1")
+        finally:
+            csv_file.unlink(missing_ok=True)
 
         # Assert
         assert not df.empty
         assert call_encodings[0] in ["utf-8", "utf-8-sig", "cp1250", "iso-8859-2"]
 
-    def test_read_transaction_csv_respects_non_latin1_encoding(self, mocker: MockerFixture) -> None:
+    def test_read_transaction_csv_respects_non_latin1_encoding(self, tmp_path: Path, mocker: MockerFixture) -> None:
         """Test that non-latin1 caller encoding is tried first.
 
         Given: the caller requests cp1250 encoding
@@ -301,39 +262,35 @@ class TestReadTransactionCsv:
         Then:  the first attempt uses cp1250
         """
         # Arrange
+        csv_file = tmp_path / "cp1250_first.csv"
+        csv_file.write_text("data,amount,month,year\nŻabka,-33.0,1,2023\n", encoding="cp1250")
+        real_read_csv = pd.read_csv
         call_encodings: list[str | None] = []
 
-        def track_encoding(*args, **kwargs):
-            call_encodings.append(kwargs.get("encoding"))
-            return pd.DataFrame({"col1": ["val1"]})
+        def track_encoding(*args: object, **kwargs: object) -> pd.DataFrame:
+            encoding = kwargs.get("encoding")
+            call_encodings.append(encoding if isinstance(encoding, str) else None)
+            return real_read_csv(*args, **kwargs)
 
         mock_read_csv = mocker.patch("pandas.read_csv")
         mock_read_csv.side_effect = track_encoding
 
         # Act
-        df = read_transaction_csv("test.csv", "cp1250")
+        df = read_transaction_csv(csv_file, "cp1250")
 
         # Assert
         assert not df.empty
         assert call_encodings[0] == "cp1250"
 
     def test_read_transaction_csv_permission_denied(self, mocker: MockerFixture) -> None:
-        """Test that PermissionError is logged and re-raised.
-
-        Given: pandas.read_csv raises PermissionError
-        When:  read_transaction_csv() is called
-        Then:  the error is logged once and re-raised
-        """
+        """Permission errors are re-raised without being swallowed."""
         # Arrange
         mock_read_csv = mocker.patch("pandas.read_csv")
         mock_read_csv.side_effect = PermissionError("access denied")
-        mock_log_error = mocker.patch("loguru.logger.error")
 
         # Act + Assert
         with pytest.raises(PermissionError, match="access denied"):
             read_transaction_csv("protected.csv", "utf-8")
-
-        mock_log_error.assert_called_once()
 
     def test_read_transaction_csv_utf8_bom_encoding(self, tmp_path: Path) -> None:
         """Test that UTF-8 BOM files are read correctly.
@@ -354,7 +311,7 @@ class TestReadTransactionCsv:
         assert "data" in df.columns
         assert df["data"].iloc[0] == "orlen"
 
-    def test_read_transaction_csv_encoding_related_exception(self, mocker: MockerFixture) -> None:
+    def test_read_transaction_csv_encoding_related_exception(self, tmp_path: Path, mocker: MockerFixture) -> None:
         """Test that encoding-related parser errors trigger fallback to next encoding.
 
         Given: the first read attempt raises a ParserError whose message mentions a codec
@@ -362,20 +319,23 @@ class TestReadTransactionCsv:
         Then:  it retries and succeeds on the second attempt
         """
         # Arrange
+        csv_file = tmp_path / "encoding_related.csv"
+        csv_file.write_text("data,amount,month,year\nshop,-10.0,1,2023\n", encoding="utf-8")
+        real_read_csv = pd.read_csv
         call_count = 0
 
-        def side_effect(*args, **kwargs):
+        def side_effect(*args: object, **kwargs: object) -> pd.DataFrame:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
                 raise pd.errors.ParserError("codec error detected")
-            return pd.DataFrame({"col1": ["val1"]})
+            return real_read_csv(*args, **kwargs)
 
         mock_read_csv = mocker.patch("pandas.read_csv")
         mock_read_csv.side_effect = side_effect
 
         # Act
-        df = read_transaction_csv("test.csv", "utf-8")
+        df = read_transaction_csv(csv_file, "utf-8")
 
         # Assert
         assert not df.empty
