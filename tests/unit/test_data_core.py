@@ -369,6 +369,22 @@ class TestProcessDataframe:
         assert len(result) == 1
         assert float(result["amount"].iloc[0]) == abs(float(price_value))
 
+    @pytest.mark.parametrize("description", ["Zwrot", "ZWROT", "REFUND", "Refund", "zwrot"])
+    def test_remove_entry_is_case_insensitive(self, description: str) -> None:
+        """REMOVE_ENTRY rows are dropped regardless of the description's case."""
+        df = pd.DataFrame({
+            "data": [description],
+            "amount": ["-10.0"],
+            "month": [1],
+            "year": [2023],
+            "day": [15],
+            "txn_id": [""],
+        })
+
+        result = process_dataframe(df)
+
+        assert len(result) == 0
+
 
 @pytest.mark.unit
 class TestProcessIncomeDataframe:

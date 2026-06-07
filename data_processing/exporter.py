@@ -18,7 +18,7 @@ from config.paths import (
     UNASSIGNED_INCOME_PATH,
     UNASSIGNED_TRANSACTIONS_PATH,
 )
-from data_processing.expense import CATEGORY_DISPLAY
+from data_processing.expense import CATEGORY, CATEGORY_DISPLAY, IMPORTANCE
 from data_processing.location_processor import (
     create_google_maps_link,
     extract_location_from_data,
@@ -46,8 +46,10 @@ _UNASSIGNED_INCOME_COLUMNS: list[str] = ["txn_id", "day", "month", "year", "amou
 
 def _sanitize_cell(value: object) -> object:
     """Prefix formula-injection chars with a literal quote so spreadsheets treat the cell as text."""
-    if isinstance(value, str) and value and value[0] in _FORMULA_INJECTION_CHARS:
-        return "'" + value
+    if isinstance(value, str) and value:
+        stripped = value.lstrip()
+        if stripped and stripped[0] in _FORMULA_INJECTION_CHARS:
+            return "'" + value
     return value
 
 
@@ -123,7 +125,7 @@ def _write_cleaned_csv(df: pd.DataFrame, columns: list[str], output_path: Path |
 
 def _build_expense_row(row: Any) -> dict[str, object]:
     """Build one Google Sheets export row from an expense DataFrame row."""
-    cat, imp = CATEGORY_DISPLAY[str(row.category)]
+    cat, imp = CATEGORY_DISPLAY.get(str(row.category), (CATEGORY.MISC, IMPORTANCE.NEEDS_REVIEW))
     return {
         "Txn_Id": getattr(row, "txn_id", ""),
         "Day": row.day,

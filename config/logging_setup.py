@@ -68,15 +68,19 @@ def setup_logging() -> None:
         print(f"Error setting up logging: {e}", file=sys.stderr)
 
 
-def log_dataframe_preview(df: pd.DataFrame) -> None:
-    """Log the full contents of a DataFrame at INFO level.
+def log_dataframe_preview(df: pd.DataFrame, max_rows: int = 50) -> None:
+    """Log a capped preview of a DataFrame at INFO level.
 
-    Temporarily disables pandas display truncation so all rows and columns
-    appear in the log output.
+    Temporarily disables pandas display truncation so all columns appear.
+    Rows are capped at *max_rows* to avoid multi-MB log entries on large frames.
 
     Args:
         df: DataFrame to log.
+        max_rows: Maximum number of rows to include. Defaults to 50.
     """
+    if len(df) > max_rows:
+        logger.warning("[DATA] DataFrame preview truncated to {} of {} rows", max_rows, len(df))
+        df = df.head(max_rows)
     with pd.option_context(
         "display.max_colwidth",
         None,

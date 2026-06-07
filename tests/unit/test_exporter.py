@@ -44,6 +44,28 @@ class TestExportForGoogleSheets:
         assert len(result) == len(sample_dataframe_with_categories)
         assert result["Amount"].map(lambda value: "," in str(value)).all()
 
+    def test_export_for_google_sheets_unknown_category_falls_back_to_misc(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """export_for_google_sheets must not raise KeyError for an unrecognised category."""
+        # Arrange
+        monkeypatch.chdir(tmp_path)
+        df = pd.DataFrame({
+            "txn_id": ["v1:abc"],
+            "day": [1],
+            "month": [1],
+            "year": [2024],
+            "amount": ["9.99"],
+            "category": ["UNKNOWN_FUTURE_LABEL"],
+            "data": ["some text"],
+        })
+
+        # Act
+        result_path = export_for_google_sheets(df)
+
+        # Assert
+        assert result_path.exists()
+
     def test_export_for_google_sheets_empty_dataframe(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Google Sheets export of an empty frame preserves the output schema."""
         # Arrange

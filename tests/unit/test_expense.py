@@ -377,12 +377,12 @@ class TestClassifyExpense:
         [
             # One keyword hit per rule in _CATEGORY_RULES (order matters).
             ("apartment", CATEGORY.APARTMENT, IMPORTANCE.ESSENTIAL),
-            ("food", CATEGORY.FOOD, IMPORTANCE.ESSENTIAL),
+            ("biedronka", CATEGORY.FOOD, IMPORTANCE.ESSENTIAL),
             ("fuel", CATEGORY.CAR, IMPORTANCE.HAVE_TO_HAVE),
             ("transportation", CATEGORY.TRANSPORTATION, IMPORTANCE.HAVE_TO_HAVE),
             ("groceries", CATEGORY.EATING_OUT, IMPORTANCE.NICE_TO_HAVE),
             ("animals", CATEGORY.ANIMALS, IMPORTANCE.HAVE_TO_HAVE),
-            ("self_development", CATEGORY.SELF_DEVELOPMENT, IMPORTANCE.NICE_TO_HAVE),
+            ("udemy", CATEGORY.SELF_DEVELOPMENT, IMPORTANCE.NICE_TO_HAVE),
             ("clothes", CATEGORY.CLOTHES, IMPORTANCE.NICE_TO_HAVE),
             ("entertainment", CATEGORY.ENTERTAINMENT, IMPORTANCE.NICE_TO_HAVE),
             ("shopping", CATEGORY.SHOPPING, IMPORTANCE.NICE_TO_HAVE),

@@ -69,16 +69,8 @@ _CATEGORY_RULES_BY_NAME: list[tuple[CATEGORY, IMPORTANCE, tuple[str, ...]]] = [
 
 
 def _keywords_for(names: tuple[str, ...]) -> frozenset[str]:
-    """Union the ``category.py`` keyword sets named in *names*.
-
-    Each constant name is also added (lowercased) as a synthetic keyword so
-    that free-text descriptions like ``"car maintenance"`` or
-    ``"investment deposit"`` still classify even when the brand-based set
-    (e.g. ``category.CAR``) does not literally contain the label.
-    """
-    union: frozenset[str] = frozenset().union(*(getattr(category, n) for n in names))
-    synthetic = frozenset(n.lower() for n in names)
-    return union | synthetic
+    """Union the ``category.py`` keyword sets named in *names*."""
+    return frozenset().union(*(getattr(category, n) for n in names))
 
 
 # Resolved keyword frozensets used by the substring classifier. Derived once

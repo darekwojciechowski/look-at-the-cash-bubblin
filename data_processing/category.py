@@ -206,4 +206,11 @@ INCOME_EXTRA: frozenset[str] = frozenset({"zwrot podatku", "darowizna", "prezent
 # the constants above so each entry stays a live view of its set. ``mappings()``
 # in ``mappings.py`` iterates this dict directly — replacing the older pattern
 # of zipping ``all_category`` with ``getattr`` lookups.
-EXPENSE_CATEGORIES: dict[str, set[str]] = {name: globals()[name] for name in all_category}
+_module_globals = globals()
+EXPENSE_CATEGORIES: dict[str, set[str]] = {}
+for _name in all_category:
+    if _name not in _module_globals:
+        raise AttributeError(
+            f"category.py constant {_name!r} is listed in all_category but not defined in this module"
+        )
+    EXPENSE_CATEGORIES[_name] = _module_globals[_name]

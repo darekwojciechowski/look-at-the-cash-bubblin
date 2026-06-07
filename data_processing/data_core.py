@@ -1,6 +1,7 @@
 """Core transformation pipeline: description cleaning and transaction categorization."""
 
 import pandas as pd
+from loguru import logger
 
 from data_processing.mappings import lookup_income_category, mappings
 
@@ -76,6 +77,9 @@ def _prepare_common(df: pd.DataFrame) -> pd.DataFrame:
     df["category"] = df["data"].map(mappings)
     df = df[df["category"] != "REMOVE_ENTRY"].reset_index(drop=True)
     df["amount"] = df["amount"].astype(float)
+    nan_count = int(df["amount"].isna().sum())
+    if nan_count:
+        logger.warning("[DATA] Dropping {} row(s) with unparseable amount values", nan_count)
     df = df[df["amount"].notna()].reset_index(drop=True)
     return df
 
