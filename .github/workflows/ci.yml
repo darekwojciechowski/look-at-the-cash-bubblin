@@ -347,7 +347,17 @@ jobs:
   coverage-report:
     name: Coverage Report
     runs-on: ubuntu-latest
-    needs: [test-unit, test-integration, test-security, test-property]
+    # test-performance is listed in `needs` ONLY so the workflow graph groups it
+    # into the same box as the other test jobs. Its result must not gate this job:
+    # performance runs with --no-cov and uploads no coverage fragment, so a perf
+    # failure must never block the coverage report or the coverage.json commit.
+    needs: [test-unit, test-integration, test-security, test-property, test-performance]
+    if: |
+      always() &&
+      needs.test-unit.result == 'success' &&
+      needs.test-integration.result == 'success' &&
+      needs.test-security.result == 'success' &&
+      needs.test-property.result == 'success'
     permissions:
       contents: write
 
